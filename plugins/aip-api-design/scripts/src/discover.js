@@ -60,10 +60,24 @@ const argsConfig = {
   options: {
     help: { type: 'boolean', short: 'h', default: false },
     format: { type: 'string', short: 'f', default: 'markdown' },
+    ignore: { type: 'string', short: 'i', multiple: true, default: [] },
   },
   allowPositionals: true,
   strict: false,
 };
+
+/**
+ * Default glob patterns to ignore
+ */
+const DEFAULT_IGNORES = [
+  '**/node_modules/**',
+  '**/.git/**',
+  '**/dist/**',
+  '**/build/**',
+  '**/coverage/**',
+  '**/.next/**',
+  '**/.nuxt/**',
+];
 
 /**
  * Glob patterns to find OpenAPI specs
@@ -79,16 +93,14 @@ const GLOB_PATTERNS = [
 /**
  * Find spec files using native glob
  * @param {string} dir - Directory to search
+ * @param {string[]} [ignores] - Glob patterns to ignore (defaults to DEFAULT_IGNORES)
  * @returns {Promise<string[]>}
  */
-async function findSpecFiles(dir) {
+async function findSpecFiles(dir, ignores = DEFAULT_IGNORES) {
   /** @type {Set<string>} */
   const results = new Set();
 
-  const matches = glob(GLOB_PATTERNS, {
-    cwd: dir,
-    exclude: (name) => name.includes('node_modules') || name.includes('.git'),
-  });
+  const matches = glob(GLOB_PATTERNS, { cwd: dir, exclude: ignores });
 
   for await (const match of matches) {
     results.add(resolve(dir, match));
@@ -182,7 +194,9 @@ async function analyzeSpec(filePath, basePath) {
   // Parse with oas-normalize, then use Oas for rich metadata
   try {
     const normalizer = new OASNormalize(filePath, { enablePaths: true });
-    const api = await normalizer.validate();
+    // Validate first to catch errors, then bundle to get the parsed spec
+    await normalizer.validate();
+    const api = await normalizer.bundle();
 
     // @ts-ignore - api shape varies
     if (api.openapi) {
@@ -352,8 +366,13 @@ ARGUMENTS:
   [directory]         Directory to search (default: current directory)
 
 OPTIONS:
-  -h, --help          Show this help message
-  -f, --format <fmt>  Output format: markdown (default), json
+  -h, --help            Show this help message
+  -f, --format <fmt>    Output format: markdown (default), json
+  -i, --ignore <glob>   Glob pattern to ignore (can be repeated)
+
+DEFAULT IGNORES:
+  **/node_modules/**, **/.git/**, **/dist/**, **/build/**,
+  **/coverage/**, **/.next/**, **/.nuxt/**
 
 EXAMPLES:
   # Discover in current directory
@@ -364,6 +383,9 @@ EXAMPLES:
 
   # JSON output
   aip-discover --format json
+
+  # Ignore additional patterns
+  aip-discover -i '**/vendor/**' -i '**/tmp/**'
 `);
 }
 
@@ -384,9 +406,12 @@ async function main(args) {
   const searchPath = resolve(positionals[0] || '.');
   // @ts-ignore
   const format = /** @type {string} */ (values.format);
+  // @ts-ignore
+  const extraIgnores = /** @type {string[]} */ (values.ignore);
+  const ignores = [...DEFAULT_IGNORES, ...extraIgnores];
 
   // Find spec files
-  const files = await findSpecFiles(searchPath);
+  const files = await findSpecFiles(searchPath, ignores);
 
   // Analyze each spec
   /** @type {SpecInfo[]} */
