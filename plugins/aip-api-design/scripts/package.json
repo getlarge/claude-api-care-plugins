@@ -18,10 +18,12 @@
     }
   },
   "bin": {
-    "aip-review": "./src/cli.js"
+    "aip-review": "./src/cli.js",
+    "aip-discover": "./src/discover.js"
   },
   "scripts": {
     "review": "node src/cli.js",
+    "discover": "node src/discover.js",
     "test": "node --test src/**/*.test.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit"
@@ -40,9 +42,8 @@
     "src/"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
-  "dependencies": {},
   "optionalDependencies": {
     "yaml": "^2.3.0"
   },
@@ -51,6 +52,8 @@
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
+    "oas": "^28.5.0",
+    "oas-normalize": "^15.4.0",
     "yaml": ">=2.0.0"
   },
   "peerDependenciesMeta": {
