@@ -1,0 +1,33 @@
+openapi: 3.0.3
+info:
+  title: Test API
+  version: 1.0.0
+  description: A test API for discover.js tests
+paths:
+  /users:
+    get:
+      summary: List users
+      tags:
+        - users
+      responses:
+        '200':
+          description: OK
+  /users/{id}:
+    get:
+      summary: Get user
+      tags:
+        - users
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+servers:
+  - url: https://api.example.com
+tags:
+  - name: users
+    description: User operations

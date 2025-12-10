@@ -453,6 +453,7 @@ export {
   formatJSON,
   main,
   GLOB_PATTERNS,
+  DEFAULT_IGNORES,
 };
 
 // Run CLI only when executed directly
