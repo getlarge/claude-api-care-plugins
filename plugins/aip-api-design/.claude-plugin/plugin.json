@@ -1,0 +1,14 @@
+{
+  "name": "aip-api-design",
+  "description": "Review and improve REST APIs following Google's API Improvement Proposals (AIP). Includes commands for discovering specs, reviewing against AIP rules, planning fixes, and applying framework-specific remediation.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Edouard Maleix",
+    "url": "https://getlarge.eu"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/getlarge/claude-aip-plugins",
+  "repository": "https://github.com/getlarge/claude-aip-plugins",
+  "keywords": ["api", "openapi", "aip", "rest", "linter", "design"],
+  "hooks": "hooks/hooks.json"
+}
