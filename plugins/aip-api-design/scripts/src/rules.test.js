@@ -669,7 +669,10 @@ describe('defaultRules', () => {
       assert.ok(rule.category, `${rule.id} missing category`);
       assert.ok(rule.severity, `${rule.id} missing severity`);
       assert.ok(rule.description, `${rule.id} missing description`);
-      assert.ok(typeof rule.check === 'function', `${rule.id} missing check fn`);
+      assert.ok(
+        typeof rule.check === 'function',
+        `${rule.id} missing check fn`
+      );
     }
   });
 

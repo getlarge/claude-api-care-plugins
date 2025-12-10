@@ -104,7 +104,7 @@ function isSingular(word) {
  */
 function getAllOperations(spec) {
   const operations = [];
-  const methods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head']
+  const methods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'];
 
   for (const [path, pathItem] of Object.entries(spec.paths || {})) {
     for (const method of methods) {

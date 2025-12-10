@@ -34,7 +34,7 @@ value      = string | number | boolean | "null"
 !=    not equal
 <     less than
 <=    less than or equal
->     greater than  
+>     greater than
 >=    greater than or equal
 :     contains / has (for arrays, maps, text search)
 ~     regex match (use sparingly)
@@ -108,7 +108,12 @@ function filterToSQL(node: FilterNode, allowedFields: Set<string>): SQLClause {
 4. **Rate limit** - Complex filters are expensive; rate limit aggressively
 
 ```typescript
-const ALLOWED_FILTER_FIELDS = new Set(['status', 'customer_id', 'created_at', 'total']);
+const ALLOWED_FILTER_FIELDS = new Set([
+  'status',
+  'customer_id',
+  'created_at',
+  'total',
+]);
 const MAX_FILTER_DEPTH = 3;
 const MAX_FILTER_TERMS = 10;
 ```
@@ -165,14 +170,14 @@ const SORTABLE_FIELDS = new Map([
 ]);
 
 function parseOrderBy(orderBy: string): OrderClause[] {
-  return orderBy.split(',').map(part => {
+  return orderBy.split(',').map((part) => {
     const [field, direction = 'asc'] = part.trim().split(/\s+/);
-    
+
     const column = SORTABLE_FIELDS.get(field);
     if (!column) {
       throw new InvalidArgumentError(`Cannot sort by field: ${field}`);
     }
-    
+
     return { column, direction: direction.toLowerCase() as 'asc' | 'desc' };
   });
 }
@@ -191,7 +196,7 @@ GET /orders?filter=status="pending"&order_by=created_at desc&page_size=20&page_t
 ### Execution Order
 
 1. Apply filters (WHERE)
-2. Apply ordering (ORDER BY)  
+2. Apply ordering (ORDER BY)
 3. Apply pagination (LIMIT/cursor)
 
 ### Stable Ordering for Pagination
@@ -200,7 +205,7 @@ Always include a unique field in `order_by` to ensure stable pagination:
 
 ```typescript
 function ensureStableOrder(orderBy: OrderClause[]): OrderClause[] {
-  const hasUniqueField = orderBy.some(o => o.column === 'id');
+  const hasUniqueField = orderBy.some((o) => o.column === 'id');
   if (!hasUniqueField) {
     return [...orderBy, { column: 'id', direction: 'asc' }];
   }
@@ -252,6 +257,7 @@ This is simpler to implement and document, but less flexible.
 ## Common Mistakes
 
 ❌ **SQL in query params**
+
 ```
 GET /orders?where=status='pending'
 ```

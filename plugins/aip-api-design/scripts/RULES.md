@@ -4,25 +4,25 @@ This document lists all 17 rules implemented in the reviewer, organized by categ
 
 ## Quick Reference
 
-| Rule ID                           | Severity   | AIP     | Description                              |
-| --------------------------------- | ---------- | ------- | ---------------------------------------- |
-| `naming/plural-resources`         | warning    | AIP-122 | Resource names should be plural          |
-| `naming/no-verbs`                 | error      | AIP-131 | No verbs in paths, use HTTP methods      |
-| `naming/consistent-casing`        | warning    | AIP-122 | Consistent casing across all paths       |
-| `naming/nested-ownership`         | suggestion | AIP-122 | Nested params should reflect parent      |
-| `methods/get-no-body`             | error      | AIP-131 | GET must not have request body           |
-| `methods/post-returns-201`        | suggestion | AIP-131 | POST should return 201/202               |
-| `methods/patch-over-put`          | suggestion | AIP-134 | Prefer PATCH for partial updates         |
-| `methods/delete-idempotent`       | warning    | AIP-135 | DELETE should be idempotent, no body     |
-| `pagination/list-paginated`       | warning    | AIP-158 | List endpoints need pagination           |
-| `pagination/max-page-size`        | suggestion | AIP-158 | Page size needs maximum limit            |
-| `pagination/response-has-next-token` | warning | AIP-158 | Response must include next_page_token    |
-| `errors/schema-defined`           | warning    | AIP-193 | Consistent error schema required         |
-| `errors/responses-documented`     | suggestion | AIP-193 | Document error responses                 |
-| `errors/standard-codes`           | suggestion | AIP-193 | Use standard HTTP error codes            |
-| `idempotency/post-has-key`        | suggestion | AIP-155 | POST should accept Idempotency-Key       |
-| `filtering/list-filterable`       | suggestion | AIP-160 | List endpoints should support filtering  |
-| `filtering/list-has-ordering`     | suggestion | AIP-132 | List endpoints should support ordering   |
+| Rule ID                              | Severity   | AIP     | Description                             |
+| ------------------------------------ | ---------- | ------- | --------------------------------------- |
+| `naming/plural-resources`            | warning    | AIP-122 | Resource names should be plural         |
+| `naming/no-verbs`                    | error      | AIP-131 | No verbs in paths, use HTTP methods     |
+| `naming/consistent-casing`           | warning    | AIP-122 | Consistent casing across all paths      |
+| `naming/nested-ownership`            | suggestion | AIP-122 | Nested params should reflect parent     |
+| `methods/get-no-body`                | error      | AIP-131 | GET must not have request body          |
+| `methods/post-returns-201`           | suggestion | AIP-131 | POST should return 201/202              |
+| `methods/patch-over-put`             | suggestion | AIP-134 | Prefer PATCH for partial updates        |
+| `methods/delete-idempotent`          | warning    | AIP-135 | DELETE should be idempotent, no body    |
+| `pagination/list-paginated`          | warning    | AIP-158 | List endpoints need pagination          |
+| `pagination/max-page-size`           | suggestion | AIP-158 | Page size needs maximum limit           |
+| `pagination/response-has-next-token` | warning    | AIP-158 | Response must include next_page_token   |
+| `errors/schema-defined`              | warning    | AIP-193 | Consistent error schema required        |
+| `errors/responses-documented`        | suggestion | AIP-193 | Document error responses                |
+| `errors/standard-codes`              | suggestion | AIP-193 | Use standard HTTP error codes           |
+| `idempotency/post-has-key`           | suggestion | AIP-155 | POST should accept Idempotency-Key      |
+| `filtering/list-filterable`          | suggestion | AIP-160 | List endpoints should support filtering |
+| `filtering/list-has-ordering`        | suggestion | AIP-132 | List endpoints should support ordering  |
 
 ---
 
@@ -165,6 +165,7 @@ Prefer PATCH for partial updates over PUT. If you have PUT, consider also adding
 **AIP:** [AIP-135](https://google.aip.dev/135)
 
 DELETE should be idempotent:
+
 - No request body
 - Return `200 OK`, `204 No Content`, or `202 Accepted`
 - Never return `201 Created`

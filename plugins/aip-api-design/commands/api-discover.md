@@ -39,7 +39,6 @@ Find all OpenAPI specifications in this codebase using the deterministic discove
    ```
 
    The script will:
-
    - Search recursively for files named `openapi.yaml`, `swagger.json`, etc.
    - Look in common API directories (`api/`, `docs/`, `specs/`, etc.)
    - Skip `node_modules`, `.git`, `dist`, etc.
@@ -48,7 +47,6 @@ Find all OpenAPI specifications in this codebase using the deterministic discove
    - Detect if specs are auto-generated
 
    Optional flags:
-
    - `--format json`: Machine-readable output
    - `--depth 5`: Limit directory recursion depth
 

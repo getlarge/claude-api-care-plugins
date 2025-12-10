@@ -2,10 +2,10 @@
 
 ## Request Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `page_size` | integer | No | Max items per page (default: 20, max: 100) |
-| `page_token` | string | No | Opaque cursor from previous response |
+| Parameter    | Type    | Required | Description                                |
+| ------------ | ------- | -------- | ------------------------------------------ |
+| `page_size`  | integer | No       | Max items per page (default: 20, max: 100) |
+| `page_token` | string  | No       | Opaque cursor from previous response       |
 
 ## Response Schema
 
@@ -63,36 +63,45 @@ paths:
 ### Cursor-based (Recommended)
 
 **Pros:**
+
 - Stable under concurrent writes
 - Efficient for large datasets
 - No skipped/duplicate items
 
 **Implementation:**
+
 ```typescript
 // Encode cursor
-const cursor = Buffer.from(JSON.stringify({ 
-  last_id: items[items.length - 1].id,
-  last_created: items[items.length - 1].created_at 
-})).toString('base64');
+const cursor = Buffer.from(
+  JSON.stringify({
+    last_id: items[items.length - 1].id,
+    last_created: items[items.length - 1].created_at,
+  })
+).toString('base64');
 
 // Decode and query
 const decoded = JSON.parse(Buffer.from(page_token, 'base64').toString());
-const items = await db.query(`
+const items = await db.query(
+  `
   SELECT * FROM orders 
   WHERE (created_at, id) > ($1, $2)
   ORDER BY created_at, id
   LIMIT $3
-`, [decoded.last_created, decoded.last_id, page_size]);
+`,
+  [decoded.last_created, decoded.last_id, page_size]
+);
 ```
 
 ### Offset-based (Use sparingly)
 
 **When acceptable:**
+
 - Small, static datasets
 - Admin UIs where "jump to page N" is needed
 - Data rarely changes
 
 **Avoid when:**
+
 - Dataset > 10k items
 - Frequent inserts/deletes
 - Real-time data
@@ -133,6 +142,7 @@ function normalizePageSize(requested?: number): number {
 ## Empty Pages
 
 When no items match:
+
 ```json
 {
   "data": [],
@@ -207,8 +217,9 @@ fastify.get('/orders', { schema: paginationSchema }, async (request) => {
 ## Common Mistakes
 
 ❌ **Exposing raw database offset**
+
 ```json
-{ "offset": 500, "limit": 20 }
+{ "limit": 20, "offset": 500 }
 ```
 
 ✅ **Opaque cursor** - Clients can't manipulate, server can change implementation

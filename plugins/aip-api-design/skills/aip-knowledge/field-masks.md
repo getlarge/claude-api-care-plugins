@@ -3,6 +3,7 @@
 ## The Problem
 
 How does the server know if a field was:
+
 - Intentionally set to `null`
 - Omitted (don't change)
 
@@ -31,6 +32,7 @@ Content-Type: application/json
 ```
 
 Now the server knows:
+
 - `title` → set to "Updated Title"
 - `description` → set to null (cleared)
 - `status`, `customer_id`, etc. → unchanged
@@ -62,7 +64,7 @@ paths:
                   description: |
                     Comma-separated list of fields to update.
                     If omitted, all provided fields are updated.
-                  example: "title,description,shipping_address.city"
+                  example: 'title,description,shipping_address.city'
       responses:
         '200':
           content:
@@ -96,9 +98,9 @@ To replace entire nested object:
 {
   "order": {
     "shipping_address": {
-      "street": "123 Main St",
       "city": "New York",
-      "postal_code": "10001"
+      "postal_code": "10001",
+      "street": "123 Main St"
     }
   },
   "update_mask": "shipping_address"
@@ -113,37 +115,37 @@ export class UpdateMaskService {
   applyMask<T extends object>(
     existing: T,
     updates: Partial<T>,
-    mask: string | undefined,
+    mask: string | undefined
   ): T {
     if (!mask) {
       // No mask - merge all provided fields
       return this.deepMerge(existing, updates);
     }
-    
-    const fields = mask.split(',').map(f => f.trim());
+
+    const fields = mask.split(',').map((f) => f.trim());
     const result = { ...existing };
-    
+
     for (const field of fields) {
       this.setNestedValue(result, field, this.getNestedValue(updates, field));
     }
-    
+
     return result;
   }
-  
+
   private setNestedValue(obj: any, path: string, value: any): void {
     const parts = path.split('.');
     let current = obj;
-    
+
     for (let i = 0; i < parts.length - 1; i++) {
       if (!(parts[i] in current)) {
         current[parts[i]] = {};
       }
       current = current[parts[i]];
     }
-    
+
     current[parts[parts.length - 1]] = value;
   }
-  
+
   private getNestedValue(obj: any, path: string): any {
     return path.split('.').reduce((o, k) => o?.[k], obj);
   }
@@ -153,27 +155,33 @@ export class UpdateMaskService {
 ## Validation
 
 Validate that mask fields are:
+
 1. Actually updatable (not read-only like `id`, `created_at`)
 2. Present in the request body
 
 ```typescript
 const READ_ONLY_FIELDS = new Set(['id', 'created_at', 'updated_at']);
-const UPDATABLE_FIELDS = new Set(['title', 'description', 'status', 'shipping_address']);
+const UPDATABLE_FIELDS = new Set([
+  'title',
+  'description',
+  'status',
+  'shipping_address',
+]);
 
 function validateUpdateMask(mask: string, body: object): void {
-  const fields = mask.split(',').map(f => f.trim());
-  
+  const fields = mask.split(',').map((f) => f.trim());
+
   for (const field of fields) {
     const rootField = field.split('.')[0];
-    
+
     if (READ_ONLY_FIELDS.has(rootField)) {
       throw new InvalidArgumentError(`Field '${rootField}' is read-only`);
     }
-    
+
     if (!UPDATABLE_FIELDS.has(rootField)) {
       throw new InvalidArgumentError(`Unknown field: '${rootField}'`);
     }
-    
+
     // Optionally: verify field is present in body
     if (!hasNestedValue(body, field)) {
       throw new InvalidArgumentError(
@@ -199,6 +207,7 @@ Content-Type: application/merge-patch+json
 ```
 
 Rules:
+
 - Present field with value → set
 - Present field with `null` → delete
 - Absent field → unchanged
@@ -221,12 +230,12 @@ Content-Type: application/json-patch+json
 
 ## Comparison
 
-| Approach | Explicitness | Simplicity | Use When |
-|----------|--------------|------------|----------|
-| Field Mask | High | Medium | Complex objects, null is meaningful |
-| Merge Patch | Medium | High | Simple objects, null means "clear" |
-| JSON Patch | Highest | Low | Need atomic operations (test-and-set) |
-| PUT (replace) | N/A | High | Small objects, always send complete |
+| Approach      | Explicitness | Simplicity | Use When                              |
+| ------------- | ------------ | ---------- | ------------------------------------- |
+| Field Mask    | High         | Medium     | Complex objects, null is meaningful   |
+| Merge Patch   | Medium       | High       | Simple objects, null means "clear"    |
+| JSON Patch    | Highest      | Low        | Need atomic operations (test-and-set) |
+| PUT (replace) | N/A          | High       | Small objects, always send complete   |
 
 ## NestJS Implementation
 
@@ -236,7 +245,7 @@ export class UpdateOrderDto {
   @ValidateNested()
   @Type(() => OrderDto)
   order: Partial<OrderDto>;
-  
+
   @IsOptional()
   @IsString()
   update_mask?: string;
@@ -251,14 +260,14 @@ async updateOrder(
   if (dto.update_mask) {
     this.validateUpdateMask(dto.update_mask, dto.order);
   }
-  
+
   const existing = await this.ordersService.findOne(id);
   const updated = this.updateMaskService.applyMask(
     existing,
     dto.order,
     dto.update_mask,
   );
-  
+
   return this.ordersService.save(updated);
 }
 ```

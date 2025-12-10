@@ -2,12 +2,12 @@
 
 ## When to Use
 
-| Pattern | Use When |
-|---------|----------|
-| Synchronous | Operation < 1s, always succeeds/fails quickly |
-| LRO (Operation) | 1s - 30min, client polls for result |
-| Job Resource | Long-lived, repeatable, may have schedule |
-| Webhook/Async | Fire-and-forget, notify on completion |
+| Pattern         | Use When                                      |
+| --------------- | --------------------------------------------- |
+| Synchronous     | Operation < 1s, always succeeds/fails quickly |
+| LRO (Operation) | 1s - 30min, client polls for result           |
+| Job Resource    | Long-lived, repeatable, may have schedule     |
+| Webhook/Async   | Fire-and-forget, notify on completion         |
 
 ## Long-Running Operations (LRO)
 
@@ -33,17 +33,17 @@ components:
       properties:
         name:
           type: string
-          description: "Unique operation ID (e.g., operations/op_abc123)"
+          description: 'Unique operation ID (e.g., operations/op_abc123)'
         done:
           type: boolean
-          description: "Whether operation has completed"
+          description: 'Whether operation has completed'
         metadata:
           type: object
-          description: "Operation-specific progress info"
+          description: 'Operation-specific progress info'
           properties:
             type:
               type: string
-              description: "Operation type (e.g., ImportOrdersMetadata)"
+              description: 'Operation type (e.g., ImportOrdersMetadata)'
             progress_percent:
               type: integer
               minimum: 0
@@ -56,7 +56,7 @@ components:
           oneOf:
             - $ref: '#/components/schemas/OperationResponse'
             - $ref: '#/components/schemas/Error'
-          description: "Present only when done=true"
+          description: 'Present only when done=true'
 ```
 
 ### Initiating an LRO
@@ -123,7 +123,7 @@ export class OperationsService {
     });
     return operation;
   }
-  
+
   async complete(id: string, result: object): Promise<void> {
     await this.operationsRepo.update(id, {
       done: true,
@@ -131,7 +131,7 @@ export class OperationsService {
       completed_at: new Date(),
     });
   }
-  
+
   async fail(id: string, error: ApiError): Promise<void> {
     await this.operationsRepo.update(id, {
       done: true,
@@ -152,13 +152,13 @@ async importOrders(
     'ImportOrders',
     { source: request.source, items_total: request.items?.length },
   );
-  
+
   // Queue background work
   await this.importQueue.add('import-orders', {
     operation_id: operation.id,
     request,
   });
-  
+
   response.setHeader('Location', `/operations/${operation.id}`);
   return operation;
 }
@@ -175,13 +175,13 @@ async getOperation(
   @Res() response: Response,
 ): Promise<Operation> {
   const operation = await this.operationsService.findOne(id);
-  
+
   if (!operation.done) {
     // Suggest poll interval based on operation type
     const retryAfter = this.getRetryInterval(operation);
     response.setHeader('Retry-After', retryAfter);
   }
-  
+
   return operation;
 }
 ```
@@ -191,6 +191,7 @@ async getOperation(
 ## Jobs (AIP-155)
 
 Use Jobs when operations are:
+
 - Repeatable (can be re-run)
 - May be scheduled
 - Have lifecycle (pause, resume, cancel)
@@ -205,7 +206,7 @@ components:
       properties:
         name:
           type: string
-          example: "jobs/job_abc123"
+          example: 'jobs/job_abc123'
         state:
           type: string
           enum: [PENDING, RUNNING, SUCCEEDED, FAILED, CANCELLED]
@@ -220,20 +221,20 @@ components:
           format: date-time
         config:
           type: object
-          description: "Job-specific configuration"
+          description: 'Job-specific configuration'
         result:
           type: object
-          description: "Job output (when SUCCEEDED)"
+          description: 'Job output (when SUCCEEDED)'
         error:
           $ref: '#/components/schemas/Error'
-          description: "Error details (when FAILED)"
+          description: 'Error details (when FAILED)'
 ```
 
 ### Job Lifecycle
 
 ```
 POST /jobs                    → Create job (PENDING)
-POST /jobs/{id}:start        → Start job (RUNNING)  
+POST /jobs/{id}:start        → Start job (RUNNING)
 POST /jobs/{id}:cancel       → Cancel job (CANCELLED)
 GET  /jobs/{id}              → Get status
 GET  /jobs                   → List jobs
@@ -302,15 +303,16 @@ paths:
 ```
 
 Callback payload:
+
 ```json
 {
-  "event": "import.completed",
-  "timestamp": "2024-01-15T10:30:00Z",
   "data": {
+    "items_imported": 150,
     "operation_id": "op_abc123",
-    "status": "succeeded",
-    "items_imported": 150
-  }
+    "status": "succeeded"
+  },
+  "event": "import.completed",
+  "timestamp": "2024-01-15T10:30:00Z"
 }
 ```
 
@@ -324,15 +326,15 @@ Callback payload:
 @Post(':id/cancel')
 async cancelOperation(@Param('id') id: string): Promise<Operation> {
   const operation = await this.operationsService.findOne(id);
-  
+
   if (operation.done) {
     // Already done - return current state (idempotent)
     return operation;
   }
-  
+
   // Request cancellation
   await this.operationsService.requestCancellation(id);
-  
+
   // Return updated state
   return this.operationsService.findOne(id);
 }
@@ -344,11 +346,11 @@ The operation may complete before cancellation takes effect. Design for this:
 
 ```json
 {
-  "name": "operations/op_abc123",
   "done": true,
   "metadata": {
     "cancellation_requested": true
   },
+  "name": "operations/op_abc123",
   "result": {
     "response": { "items_imported": 50 }
   }

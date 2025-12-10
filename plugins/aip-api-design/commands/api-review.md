@@ -17,7 +17,6 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
 ## Instructions
 
 1. **Resolve the spec path**:
-
    - If `$ARGUMENTS` provided, use that file path
    - If no argument, check for recent discovery doc in `thoughts/api/discovery/`
    - If multiple specs in discovery, ask user which to review
@@ -38,7 +37,6 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
    ```
 
    Optional flags:
-
    - `--strict` or `-s`: Treat warnings as errors
    - `--format markdown`: Output as markdown (default for this command)
    - `--format json`: Machine-readable output

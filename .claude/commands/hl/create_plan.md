@@ -11,7 +11,6 @@ You are tasked with creating detailed implementation plans through an interactiv
 When this command is invoked:
 
 1. **Check if parameters were provided**:
-
    - If a file path or ticket reference was provided as a parameter, skip the default message
    - Immediately read any provided files FULLY
    - Begin the research process
@@ -39,7 +38,6 @@ Then wait for the user's input.
 ### Step 1: Context Gathering & Initial Analysis
 
 1. **Read all mentioned files immediately and FULLY**:
-
    - Ticket files (e.g., `thoughts/shared/tickets/eng_1234.md`)
    - Research documents
    - Related implementation plans
@@ -50,25 +48,21 @@ Then wait for the user's input.
 
 2. **Spawn initial research tasks to gather context**:
    Before asking the user any questions, use specialized agents to research in parallel:
-
    - Use the **codebase-locator** agent to find all files related to the ticket/task
    - Use the **codebase-analyzer** agent to understand how the current implementation works
 
    These agents will:
-
    - Find relevant source files, configs, and tests
    - Identify the specific directories to focus on (e.g., if webapp is mentioned, they'll focus on apps/webapp/)
    - Trace data flow and key functions
    - Return detailed explanations with file:line references
 
 3. **Read all files identified by research tasks**:
-
    - After research tasks complete, read ALL files they identified as relevant
    - Read them FULLY into the main context
    - This ensures you have complete understanding before proceeding
 
 4. **Analyze and verify understanding**:
-
    - Cross-reference the ticket requirements with actual code
    - Identify any discrepancies or misunderstandings
    - Note assumptions that need verification
@@ -97,7 +91,6 @@ Then wait for the user's input.
 After getting initial clarifications:
 
 1. **If the user corrects any misunderstanding**:
-
    - DO NOT just accept the correction
    - Spawn new research tasks to verify the correct information
    - Read the specific files/directories they mention
@@ -106,22 +99,18 @@ After getting initial clarifications:
 2. **Create a research todo list** using TodoWrite to track exploration tasks
 
 3. **Spawn parallel sub-tasks for comprehensive research**:
-
    - Create multiple Task agents to research different aspects concurrently
    - Use the right agent for each type of research:
 
    **For deeper investigation:**
-
    - **codebase-locator** - To find more specific files (e.g., "find all files that handle [specific component]")
    - **codebase-analyzer** - To understand implementation details (e.g., "analyze how [system] works")
    - **codebase-pattern-finder** - To find similar features we can model after
 
    **For related tickets:**
-
    - **linear-searcher** - To find similar issues or past implementations
 
    Each agent knows how to:
-
    - Find the right files and code patterns
    - Identify conventions and patterns to follow
    - Look for integration points and dependencies
@@ -306,7 +295,6 @@ After structure approval:
    ```
 
 2. **Iterate based on feedback** - be ready to:
-
    - Add missing phases
    - Adjust technical approach
    - Clarify success criteria (both automated and manual)
@@ -317,21 +305,18 @@ After structure approval:
 ## Important Guidelines
 
 1. **Be Skeptical**:
-
    - Question vague requirements
    - Identify potential issues early
    - Ask "why" and "what about"
    - Don't assume - verify with code
 
 2. **Be Interactive**:
-
    - Don't write the full plan in one shot
    - Get buy-in at each major step
    - Allow course corrections
    - Work collaboratively
 
 3. **Be Thorough**:
-
    - Read all context files COMPLETELY before planning
    - Research actual code patterns using parallel sub-tasks
    - Include specific file paths and line numbers
@@ -339,7 +324,6 @@ After structure approval:
    - automated steps should use `make` whenever possible - for example `nx run webapp:build` instead of `cd apps/webapp && pnpm run build`
 
 4. **Be Practical**:
-
    - Focus on incremental, testable changes
    - Consider migration and rollback
    - Think about edge cases
@@ -347,7 +331,6 @@ After structure approval:
    - Do not create a time plan like week 1, week 2 - focus on technical steps only
 
 5. **Track Progress**:
-
    - Use TodoWrite to track planning tasks
    - Update todos as you complete research
    - Mark planning tasks complete when done
@@ -364,7 +347,6 @@ After structure approval:
 **Always separate success criteria into two categories:**
 
 1. **Automated Verification** (can be run by execution agents):
-
    - Commands that can be run: `nx run webapp:build`, `nx run backend:lint`, etc.
    - Specific files that should exist
    - Code compilation/type checking

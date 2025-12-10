@@ -57,13 +57,13 @@ This plugin follows a **progressive disclosure** pattern. Each command produces 
 
 ### Commands
 
-| Command | Input | Output | Skip When |
-|---------|-------|--------|-----------|
-| `/api-discover` | (scans codebase) | Discovery document | Spec path known |
-| `/api-review {spec}` | OpenAPI spec | Review findings | Already reviewed |
-| `/api-plan {review}` | Review document | Prioritized plan | Few obvious fixes |
-| `/api-fix {plan}` | Plan document | Code changes | Manual preferred |
-| `/api-validate {plan}` | Plan document | Updated plan | Quick check |
+| Command                | Input            | Output             | Skip When         |
+| ---------------------- | ---------------- | ------------------ | ----------------- |
+| `/api-discover`        | (scans codebase) | Discovery document | Spec path known   |
+| `/api-review {spec}`   | OpenAPI spec     | Review findings    | Already reviewed  |
+| `/api-plan {review}`   | Review document  | Prioritized plan   | Few obvious fixes |
+| `/api-fix {plan}`      | Plan document    | Code changes       | Manual preferred  |
+| `/api-validate {plan}` | Plan document    | Updated plan       | Quick check       |
 
 ### Example Session
 
@@ -100,6 +100,7 @@ thoughts/
 ```
 
 These documents:
+
 - Persist across sessions
 - Can be reviewed and edited by humans
 - Serve as input for subsequent commands
@@ -115,6 +116,7 @@ After `/api-review`, edit the review document to add feedback:
 
 ```markdown
 #### 🟡 `GET /orders` — Missing pagination
+
 - **Rule:** `pagination/list-paginated`
 - **AIP:** [AIP-158](https://google.aip.dev/158)
 - **Message:** List endpoint missing pagination parameters
@@ -128,6 +130,7 @@ Edit the plan document to adjust priorities or add context:
 
 ```markdown
 ### Task 2.1: Add pagination to list endpoints
+
 - [ ] `GET /orders` — add page_size, page_token parameters
 
 <!-- FEEDBACK: skip - internal endpoint, not worth the effort -->
@@ -142,13 +145,16 @@ If you find recurring false positives or missing rules, note them:
 ## Feedback for Plugin Improvement
 
 ### False Positives
+
 - `naming/plural-resources` triggers on `/health` endpoint (should be exception)
 
 ### Missing Rules
+
 - No check for required `Content-Type` header on POST/PATCH
 - Should warn about `PUT` for partial updates (use `PATCH` instead)
 
 ### Severity Adjustments
+
 - `idempotency/post-has-key` should be suggestion, not warning for internal APIs
 ```
 

@@ -11,12 +11,10 @@ You are tasked with validating that an implementation plan was correctly execute
 When invoked:
 
 1. **Determine context** - Are you in an existing conversation or starting fresh?
-
    - If existing: Review what was implemented in this session
    - If fresh: Need to discover what was done through git and codebase analysis
 
 2. **Locate the plan**:
-
    - If plan path provided, use it
    - Otherwise, search recent commits for plan references or ask user
 
@@ -39,7 +37,6 @@ If starting fresh or need more context:
 
 1. **Read the implementation plan** completely
 2. **Identify what should have changed**:
-
    - List all files that should be modified
    - Note all success criteria (automated and manual)
    - Identify key functionality to verify
@@ -68,18 +65,15 @@ If starting fresh or need more context:
 For each phase in the plan:
 
 1. **Check completion status**:
-
    - Look for checkmarks in the plan (- [x])
    - Verify the actual code matches claimed completion
 
 2. **Run automated verification**:
-
    - Execute each command from "Automated Verification"
    - Document pass/fail status
    - If failures, investigate root cause
 
 3. **Assess manual criteria**:
-
    - List what needs manual testing
    - Provide clear steps for user verification
 
@@ -128,7 +122,6 @@ Create comprehensive validation summary:
 ### Manual Testing Required:
 
 1. UI functionality:
-
    - [ ] Verify [feature] appears correctly
    - [ ] Test error states with invalid input
 

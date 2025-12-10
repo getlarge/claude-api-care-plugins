@@ -390,7 +390,9 @@ describe('GLOB_PATTERNS', () => {
 
 describe('DEFAULT_IGNORES', () => {
   it('includes node_modules', () => {
-    const hasNodeModules = DEFAULT_IGNORES.some((p) => p.includes('node_modules'));
+    const hasNodeModules = DEFAULT_IGNORES.some((p) =>
+      p.includes('node_modules')
+    );
     assert.ok(hasNodeModules);
   });
 

@@ -2,13 +2,13 @@
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "*",
         "hooks": [
           {
-            "type": "command",
-            "command": "sh ${CLAUDE_PLUGIN_ROOT}/hooks/setup-deps.sh"
+            "command": "sh ${CLAUDE_PLUGIN_ROOT}/hooks/setup-deps.sh",
+            "type": "command"
           }
-        ]
+        ],
+        "matcher": "*"
       }
     ]
   }

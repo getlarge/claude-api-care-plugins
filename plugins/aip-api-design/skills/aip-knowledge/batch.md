@@ -137,17 +137,17 @@ Return error if any item fails:
 {
   "error": {
     "code": "INVALID_ARGUMENT",
-    "message": "Batch operation failed",
     "details": [
       {
-        "type": "batch_failure",
-        "index": 2,
         "error": {
           "code": "NOT_FOUND",
           "message": "Order ord_xyz not found"
-        }
+        },
+        "index": 2,
+        "type": "batch_failure"
       }
-    ]
+    ],
+    "message": "Batch operation failed"
   }
 }
 ```

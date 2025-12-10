@@ -6,14 +6,14 @@
 {
   "error": {
     "code": "INVALID_ARGUMENT",
-    "message": "Human-readable error message",
     "details": [
       {
-        "type": "field_violation",
+        "description": "Invalid email format",
         "field": "email",
-        "description": "Invalid email format"
+        "type": "field_violation"
       }
     ],
+    "message": "Human-readable error message",
     "request_id": "req_abc123"
   }
 }
@@ -23,21 +23,21 @@
 
 Use consistent error codes that map to HTTP status:
 
-| Code | HTTP | When to Use |
-|------|------|-------------|
-| `INVALID_ARGUMENT` | 400 | Client sent invalid data |
-| `FAILED_PRECONDITION` | 400 | Request valid but system not in required state |
-| `OUT_OF_RANGE` | 400 | Value outside acceptable range |
-| `UNAUTHENTICATED` | 401 | Missing or invalid credentials |
-| `PERMISSION_DENIED` | 403 | Valid credentials but insufficient permissions |
-| `NOT_FOUND` | 404 | Resource doesn't exist |
-| `CONFLICT` | 409 | Resource already exists or version conflict |
-| `RESOURCE_EXHAUSTED` | 429 | Rate limit or quota exceeded |
-| `CANCELLED` | 499 | Client cancelled the request |
-| `INTERNAL` | 500 | Unexpected server error |
-| `NOT_IMPLEMENTED` | 501 | Method not supported |
-| `UNAVAILABLE` | 503 | Service temporarily unavailable |
-| `DEADLINE_EXCEEDED` | 504 | Operation timed out |
+| Code                  | HTTP | When to Use                                    |
+| --------------------- | ---- | ---------------------------------------------- |
+| `INVALID_ARGUMENT`    | 400  | Client sent invalid data                       |
+| `FAILED_PRECONDITION` | 400  | Request valid but system not in required state |
+| `OUT_OF_RANGE`        | 400  | Value outside acceptable range                 |
+| `UNAUTHENTICATED`     | 401  | Missing or invalid credentials                 |
+| `PERMISSION_DENIED`   | 403  | Valid credentials but insufficient permissions |
+| `NOT_FOUND`           | 404  | Resource doesn't exist                         |
+| `CONFLICT`            | 409  | Resource already exists or version conflict    |
+| `RESOURCE_EXHAUSTED`  | 429  | Rate limit or quota exceeded                   |
+| `CANCELLED`           | 499  | Client cancelled the request                   |
+| `INTERNAL`            | 500  | Unexpected server error                        |
+| `NOT_IMPLEMENTED`     | 501  | Method not supported                           |
+| `UNAVAILABLE`         | 503  | Service temporarily unavailable                |
+| `DEADLINE_EXCEEDED`   | 504  | Operation timed out                            |
 
 ## OpenAPI Schema Definition
 
@@ -87,19 +87,19 @@ For validation errors, include specific field violations:
 {
   "error": {
     "code": "INVALID_ARGUMENT",
-    "message": "Request contains invalid fields",
     "details": [
       {
-        "type": "field_violation",
+        "description": "Must be greater than 0",
         "field": "$.order.items[0].quantity",
-        "description": "Must be greater than 0"
+        "type": "field_violation"
       },
       {
-        "type": "field_violation",
+        "description": "Invalid postal code format for country US",
         "field": "$.order.shipping_address.postal_code",
-        "description": "Invalid postal code format for country US"
+        "type": "field_violation"
       }
-    ]
+    ],
+    "message": "Request contains invalid fields"
   }
 }
 ```
@@ -115,12 +115,14 @@ X-Retry-Reason: upstream_timeout
 ```
 
 Retryable error codes:
+
 - `UNAVAILABLE` - Always retry with backoff
 - `RESOURCE_EXHAUSTED` - Retry after `Retry-After` duration
 - `DEADLINE_EXCEEDED` - May retry, operation might have succeeded
 - `INTERNAL` - May retry with backoff, but investigate
 
 Non-retryable (client must fix):
+
 - `INVALID_ARGUMENT`
 - `FAILED_PRECONDITION`
 - `PERMISSION_DENIED`
@@ -147,7 +149,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
     });
   }
 
-  private mapException(exception: unknown): { status: number; error: ApiError } {
+  private mapException(exception: unknown): {
+    status: number;
+    error: ApiError;
+  } {
     if (exception instanceof BadRequestException) {
       return {
         status: 400,
@@ -184,11 +189,13 @@ fastify.setErrorHandler((error, request, reply) => {
 ## Common Mistakes
 
 ❌ **Leaking internal details**
+
 ```json
 { "error": "NullPointerException at UserService.java:142" }
 ```
 
 ✅ **User-actionable message**
+
 ```json
 {
   "error": {

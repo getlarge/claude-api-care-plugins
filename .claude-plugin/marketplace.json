@@ -1,15 +1,15 @@
 {
-  "name": "getlarge-aip-plugins",
   "description": "Claude Code plugins for API design, security consulting, and development productivity",
+  "name": "getlarge-aip-plugins",
   "owner": {
     "name": "getlarge",
     "url": "https://github.com/getlarge"
   },
   "plugins": [
     {
+      "description": "Review and improve REST APIs following Google's API Improvement Proposals (AIP). Commands for discovering specs, reviewing against AIP rules, planning fixes, and framework-specific remediation.",
       "name": "aip-api-design",
-      "source": "./plugins/aip-api-design",
-      "description": "Review and improve REST APIs following Google's API Improvement Proposals (AIP). Commands for discovering specs, reviewing against AIP rules, planning fixes, and framework-specific remediation."
+      "source": "./plugins/aip-api-design"
     }
   ]
 }
