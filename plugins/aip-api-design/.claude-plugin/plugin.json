@@ -9,6 +9,5 @@
   "license": "MIT",
   "homepage": "https://github.com/getlarge/claude-aip-plugins",
   "repository": "https://github.com/getlarge/claude-aip-plugins",
-  "keywords": ["api", "openapi", "aip", "rest", "linter", "design"],
-  "hooks": "./hooks/hooks.json"
+  "keywords": ["api", "openapi", "aip", "rest", "linter", "design"]
 }
