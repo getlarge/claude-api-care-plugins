@@ -1,0 +1,14 @@
+{
+  "name": "claude-aip-plugins",
+  "private": true,
+  "description": "Claude Code plugins for API design following Google's AIPs",
+  "type": "module",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "prettier-plugin-sort-json": "^4.0.0"
+  }
+}
