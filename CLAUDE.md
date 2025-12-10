@@ -264,7 +264,7 @@ To improve the plugin based on real usage:
 ### Install Plugin
 
 ```bash
-/plugin install aip-api-design@getlarge-claude-plugins
+/plugin install aip-api-design@getlarge-aip-plugins
 ```
 
 ### Test the Workflow

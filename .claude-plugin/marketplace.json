@@ -1,5 +1,5 @@
 {
-  "name": "getlarge-claude-plugins",
+  "name": "getlarge-aip-plugins",
   "description": "Claude Code plugins for API design, security consulting, and development productivity",
   "owner": {
     "name": "getlarge",

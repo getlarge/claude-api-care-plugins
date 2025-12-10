@@ -18,7 +18,7 @@ A collection of Claude Code plugins for API design, security consulting, and dev
 /plugin
 
 # Or install directly
-/plugin install aip-api-design@getlarge-claude-plugins
+/plugin install aip-api-design@getlarge-aip-plugins
 ```
 
 ## Available Plugins
@@ -59,7 +59,7 @@ git clone https://github.com/getlarge/claude-aip-plugins.git
 /plugin marketplace add ./claude-aip-plugins
 
 # Install and test
-/plugin install aip-api-design@getlarge-claude-plugins
+/plugin install aip-api-design@getlarge-aip-plugins
 ```
 
 ### Adding New Plugins
