@@ -84,7 +84,7 @@ export interface ReviewerConfig {
 }
 
 /**
- * A single review rule
+ * A single review rule (legacy interface)
  */
 export interface Rule {
   /** Unique identifier */
@@ -101,6 +101,96 @@ export interface Rule {
   description: string;
   /** The check function */
   check: RuleChecker;
+}
+
+// ============================================
+// Typed Rule System (Google aip-linter style)
+// ============================================
+
+/**
+ * Base configuration for all typed rules
+ */
+export interface BaseRuleConfig {
+  /** Unique identifier (e.g., "aip122/plural-resources") */
+  id: string;
+  /** Human-readable name */
+  name: string;
+  /** AIP reference (e.g., "AIP-122") */
+  aip?: string;
+  /** Default severity */
+  severity: Severity;
+  /** Description of what the rule checks */
+  description: string;
+}
+
+/**
+ * Rule that runs once per spec
+ */
+export interface SpecRuleChecker {
+  (spec: OpenAPISpec, ctx: RuleContext): Finding[];
+}
+
+/**
+ * Rule that runs for each path
+ */
+export interface PathRuleChecker {
+  (
+    path: string,
+    pathItem: PathItem,
+    spec: OpenAPISpec,
+    ctx: RuleContext
+  ): Finding[];
+}
+
+/**
+ * Rule that runs for each operation
+ */
+export interface OperationRuleChecker {
+  (
+    method: string,
+    operation: Operation,
+    path: string,
+    spec: OpenAPISpec,
+    ctx: RuleContext
+  ): Finding[];
+}
+
+/**
+ * Rule that runs for each schema
+ */
+export interface SchemaRuleChecker {
+  (
+    schemaName: string,
+    schema: Schema,
+    spec: OpenAPISpec,
+    ctx: RuleContext
+  ): Finding[];
+}
+
+/**
+ * Rule that runs for each property in a schema
+ */
+export interface PropertyRuleChecker {
+  (
+    propertyName: string,
+    property: Schema,
+    schemaName: string,
+    spec: OpenAPISpec,
+    ctx: RuleContext
+  ): Finding[];
+}
+
+/**
+ * Rule that runs for each parameter
+ */
+export interface ParameterRuleChecker {
+  (
+    param: Parameter,
+    method: string,
+    path: string,
+    spec: OpenAPISpec,
+    ctx: RuleContext
+  ): Finding[];
 }
 
 /**

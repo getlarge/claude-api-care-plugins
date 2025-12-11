@@ -30,11 +30,224 @@ function getResourceSegments(path) {
 }
 
 /**
+ * Common version prefix patterns
+ */
+const VERSION_PATTERNS = [
+  /^v\d+$/, // v1, v2, v3
+  /^v\d+\.\d+$/, // v1.0, v2.1
+  /^api$/, // /api/v1/...
+];
+
+/**
+ * Check if a segment is a version prefix
+ * @param {string} segment
+ * @returns {boolean}
+ */
+function isVersionPrefix(segment) {
+  const lower = segment.toLowerCase();
+  return VERSION_PATTERNS.some((pattern) => pattern.test(lower));
+}
+
+/**
+ * Escape special regex characters
+ * @param {string} str
+ * @returns {string}
+ */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Analyze spec to find singleton resources (resources without /{id} variants)
+ * Also infers implicit singleton parents from nested paths.
+ * @param {OpenAPISpec} spec
+ * @returns {Set<string>} Set of singleton resource paths (e.g., "/v1/database")
+ */
+function findSingletonResources(spec) {
+  const singletons = new Set();
+  const paths = Object.keys(spec.paths || {});
+  const pathSet = new Set(paths);
+
+  // First pass: find explicit singletons (paths without /{id} children)
+  for (const path of paths) {
+    // Skip if this path itself has a parameter
+    if (path.includes('{')) continue;
+
+    // Check if there's a sibling path with /{id} or /{param}
+    const hasIdVariant = paths.some((other) => {
+      if (other === path) return false;
+      // Match /path/{anything} but not /path/subresource
+      const pattern = new RegExp(`^${escapeRegex(path)}/\\{[^/]+\\}$`);
+      return pattern.test(other);
+    });
+
+    if (!hasIdVariant && path !== '/') {
+      singletons.add(path);
+    }
+  }
+
+  // Second pass: infer implicit singleton parents
+  // If we see /v1/database/backup but no /v1/database/{id} and no /v1/database,
+  // then /v1/database is an implicit singleton
+  for (const path of paths) {
+    if (path.includes('{')) continue;
+
+    const segments = path.split('/').filter(Boolean);
+    // Build parent paths progressively
+    for (let i = 1; i < segments.length; i++) {
+      const parentPath = '/' + segments.slice(0, i).join('/');
+
+      // Skip if parent path explicitly exists (handled in first pass)
+      if (pathSet.has(parentPath)) continue;
+
+      // Skip version prefixes
+      if (segments[i - 1] && isVersionPrefix(segments[i - 1])) continue;
+
+      // Check if parent has an {id} variant anywhere
+      const parentHasIdVariant = paths.some((other) => {
+        const pattern = new RegExp(`^${escapeRegex(parentPath)}/\\{[^/]+\\}`);
+        return pattern.test(other);
+      });
+
+      if (!parentHasIdVariant) {
+        singletons.add(parentPath);
+      }
+    }
+  }
+
+  return singletons;
+}
+
+/**
+ * Check if a path is or is under a singleton resource
+ * @param {string} pathToCheck
+ * @param {Set<string>} singletons
+ * @returns {boolean}
+ */
+function isSingletonPath(pathToCheck, singletons) {
+  // Direct match
+  if (singletons.has(pathToCheck)) return true;
+
+  // Check if any singleton is a prefix of this path
+  for (const singleton of singletons) {
+    if (pathToCheck.startsWith(singleton + '/')) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Common action verbs used in custom methods
+ */
+const CUSTOM_METHOD_VERBS = new Set([
+  'validate',
+  'verify',
+  'check',
+  'test',
+  'export',
+  'import',
+  'download',
+  'upload',
+  'clear',
+  'reset',
+  'restore',
+  'backup',
+  'start',
+  'stop',
+  'pause',
+  'resume',
+  'enable',
+  'disable',
+  'toggle',
+  'send',
+  'publish',
+  'notify',
+  'archive',
+  'unarchive',
+  'approve',
+  'reject',
+  'cancel',
+  'encrypt',
+  'decrypt',
+  'hash',
+  'sync',
+  'refresh',
+  'reload',
+  'train',
+  'predict',
+]);
+
+/**
+ * Check if a path segment looks like a custom method (AIP-136)
+ * Custom methods are verb-based actions, often hyphenated
+ * @param {string} segment - Path segment to check
+ * @param {string} path - Full path for context
+ * @param {Set<string>} singletons - Set of singleton resource paths
+ * @returns {boolean}
+ */
+function isCustomMethod(segment, path, singletons) {
+  // Colon-prefixed custom methods are already handled
+  if (segment.includes(':')) return true;
+
+  const lower = segment.toLowerCase();
+
+  // Check for hyphenated custom methods (e.g., validate-hash)
+  if (lower.includes('-')) {
+    const parts = lower.split('-');
+    // If first part is a verb, it's likely a custom method
+    if (CUSTOM_METHOD_VERBS.has(parts[0])) return true;
+  }
+
+  // Check for verb-only segments on singletons or as terminal actions
+  if (CUSTOM_METHOD_VERBS.has(lower)) {
+    // Get parent path by removing last segment
+    const parentPath = path.substring(0, path.lastIndexOf('/'));
+    // If parent is a singleton, this is likely a custom method
+    if (singletons.has(parentPath)) return true;
+    // If parent has an {id} parameter, this could be an action on a resource
+    if (parentPath.includes('{')) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Known compound nouns that start with verb prefixes but are nouns
+ */
+const NOUN_EXCEPTIONS = new Set([
+  'checklist',
+  'checklists',
+  'checkout',
+  'checkouts',
+  'checkup',
+  'checkups',
+  'checksum',
+  'checksums',
+  'checkpoint',
+  'checkpoints',
+  'update',
+  'updates', // as noun: "the update"
+  'search',
+  'searches', // as noun: "the search results"
+  'download',
+  'downloads', // as noun: "the download"
+  'upload',
+  'uploads',
+  'listing',
+  'listings',
+]);
+
+/**
  * Check if a word looks like a verb
  * @param {string} word - Word to check
  * @returns {boolean}
  */
 function looksLikeVerb(word) {
+  const lower = word.toLowerCase();
+
+  // First check noun exceptions
+  if (NOUN_EXCEPTIONS.has(lower)) return false;
+
   const verbPrefixes = [
     'get',
     'fetch',
@@ -62,7 +275,6 @@ function looksLikeVerb(word) {
     'submit',
   ];
 
-  const lower = word.toLowerCase();
   return verbPrefixes.some(
     (v) => lower.startsWith(v) && lower.length > v.length
   );
@@ -75,6 +287,7 @@ function looksLikeVerb(word) {
  */
 function isSingular(word) {
   const exceptions = new Set([
+    // Uncountable or mass nouns
     'status',
     'address',
     'metadata',
@@ -88,6 +301,24 @@ function isSingular(word) {
     'analytics',
     'news',
     'series',
+    'software',
+    'hardware',
+    'firmware',
+    // Technical terms
+    'api',
+    'graphql',
+    'grpc',
+    'oauth',
+    'oidc',
+    // Already plural or irregular
+    'index',
+    'matrix',
+    'vertex',
+    // Common API endpoints
+    'ping',
+    'proxy',
+    'registry',
+    'wizard',
   ]);
 
   const lower = word.toLowerCase();
@@ -223,12 +454,35 @@ const pluralResourceNames = {
   category: 'naming',
   severity: 'warning',
   aip: 'AIP-122',
-  description: 'Resource names should be plural nouns',
+  description:
+    'Resource names should be plural nouns (except singletons per AIP-156)',
   check(spec, ctx) {
     const findings = [];
+    const singletons = findSingletonResources(spec);
 
     for (const path of Object.keys(spec.paths || {})) {
-      for (const segment of getResourceSegments(path)) {
+      const segments = getResourceSegments(path);
+
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+
+        // Skip version prefixes
+        if (isVersionPrefix(segment)) continue;
+
+        // Skip custom methods
+        if (isCustomMethod(segment, path, singletons)) continue;
+
+        // Build path up to this segment to check singleton status
+        // Need to account for version prefixes when building path
+        const nonVersionSegments = segments
+          .slice(0, i + 1)
+          .filter((s) => !isVersionPrefix(s));
+        const pathToSegment = '/' + segments.slice(0, i + 1).join('/');
+
+        // Skip if this is a known singleton resource
+        // A singleton's name should be singular
+        if (isSingletonPath(pathToSegment, singletons)) continue;
+
         if (isSingular(segment)) {
           findings.push(
             ctx.createFinding({
@@ -253,14 +507,22 @@ const noVerbsInPath = {
   category: 'naming',
   severity: 'error',
   aip: 'AIP-131',
-  description: 'Paths should use nouns, not verbs. Use HTTP methods instead.',
+  description:
+    'Paths should use nouns, not verbs. Custom methods (AIP-136) are exceptions.',
   check(spec, ctx) {
     const findings = [];
+    const singletons = findSingletonResources(spec);
 
     for (const path of Object.keys(spec.paths || {})) {
       for (const segment of getResourceSegments(path)) {
-        // Skip custom method suffixes (e.g., :cancel, :publish)
+        // Skip colon-prefixed custom method suffixes (e.g., :cancel, :publish)
         if (segment.includes(':')) continue;
+
+        // Skip version prefixes
+        if (isVersionPrefix(segment)) continue;
+
+        // Skip recognized custom methods (AIP-136)
+        if (isCustomMethod(segment, path, singletons)) continue;
 
         if (looksLikeVerb(segment)) {
           findings.push(

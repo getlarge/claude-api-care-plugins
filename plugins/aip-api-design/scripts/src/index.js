@@ -21,10 +21,20 @@
  * const reviewer = new OpenAPIReviewer({
  *   strict: true,
  *   categories: ['naming', 'pagination'],
- *   skipRules: ['naming/plural-resources'],
+ *   skipRules: ['aip122/plural-resources'],
  * });
  *
  * const result = reviewer.review(spec, 'api.yaml');
+ *
+ * @example
+ * // Access the rule registry
+ * import { OpenAPIReviewer, defaultRegistry } from 'aip-openapi-reviewer';
+ *
+ * // Get rules by AIP number
+ * const aip122Rules = defaultRegistry.getByAip(122);
+ *
+ * // Get rules by category
+ * const namingRules = defaultRegistry.getByCategory('naming');
  *
  * @example
  * // Custom output format
@@ -40,8 +50,36 @@
 // Core reviewer
 export { OpenAPIReviewer, reviewSpec, reviewSpecStrict } from './reviewer.js';
 
-// Rules
-export { defaultRules, getRulesByCategory, getRuleById } from './rules.js';
+// Rules - new modular structure
+export {
+  // Registry
+  defaultRules,
+  defaultRegistry,
+  RuleRegistry,
+  getRulesByCategory,
+  getRuleById,
+  // Base classes
+  BaseRule,
+  SpecRule,
+  PathRule,
+  OperationRule,
+  SchemaRule,
+  PropertyRule,
+  ParameterRule,
+  // Helpers
+  getResourceSegments,
+  isVersionPrefix,
+  isCollectionEndpoint,
+  findSingletonResources,
+  isSingletonPath,
+  isCustomMethod,
+  isSingular,
+  looksLikeVerb,
+  getAllOperations,
+  hasParameter,
+  resolveRef,
+  getResponseSchema,
+} from './rules/index.js';
 
 // Formatters
 export {

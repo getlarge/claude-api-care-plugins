@@ -1,10 +1,26 @@
 // @ts-check
 /**
  * AIP-based OpenAPI Reviewer
+ *
+ * Uses typed rule dispatch to efficiently run rules on the appropriate
+ * OpenAPI elements (spec, paths, operations, schemas, parameters).
+ *
  * @module reviewer
  */
 
-import { defaultRules, getRulesByCategory } from './rules.js';
+import {
+  defaultRules,
+  defaultRegistry,
+  getRulesByCategory,
+  BaseRule,
+  SpecRule,
+  PathRule,
+  OperationRule,
+  SchemaRule,
+  PropertyRule,
+  ParameterRule,
+  getAllOperations,
+} from './rules/index.js';
 
 /**
  * @typedef {import('./types.js').OpenAPISpec} OpenAPISpec
@@ -16,13 +32,14 @@ import { defaultRules, getRulesByCategory } from './rules.js';
  * @typedef {import('./types.js').RuleCategory} RuleCategory
  */
 
-const REVIEWER_VERSION = '1.0.0';
+const REVIEWER_VERSION = '2.0.0';
 
 /**
  * OpenAPI Reviewer that checks specs against AIP principles
+ * using typed rule dispatch for efficient execution.
  */
 export class OpenAPIReviewer {
-  /** @type {Rule[]} */
+  /** @type {BaseRule[]} */
   #rules;
 
   /** @type {ReviewerConfig} */
@@ -40,9 +57,10 @@ export class OpenAPIReviewer {
   /**
    * Build the set of rules to apply based on config
    * @param {ReviewerConfig} config
-   * @returns {Rule[]}
+   * @returns {BaseRule[]}
    */
   #buildRuleSet(config) {
+    /** @type {BaseRule[]} */
     let rules = [...defaultRules];
 
     // Filter by category if specified
@@ -56,16 +74,20 @@ export class OpenAPIReviewer {
       rules = rules.filter((r) => !skipSet.has(r.id));
     }
 
-    // Add custom rules
+    // Add custom rules (legacy Rule interface support)
     if (config.customRules) {
-      rules = [...rules, ...config.customRules];
+      // Wrap legacy rules in a SpecRule-like interface
+      for (const legacyRule of config.customRules) {
+        const wrapper = new LegacyRuleWrapper(legacyRule);
+        rules.push(wrapper);
+      }
     }
 
     return rules;
   }
 
   /**
-   * Review an OpenAPI spec
+   * Review an OpenAPI spec using typed rule dispatch
    * @param {OpenAPISpec} spec - The OpenAPI specification to review
    * @param {string} [specPath='<inline>'] - Path to the spec file (for reporting)
    * @returns {ReviewResult}
@@ -74,19 +96,115 @@ export class OpenAPIReviewer {
     /** @type {Finding[]} */
     const allFindings = [];
 
-    // Run each rule
-    for (const rule of this.#rules) {
-      const context = this.#createRuleContext(rule, spec);
+    // Group rules by type for efficient dispatch
+    const specRules = this.#rules.filter((r) => r instanceof SpecRule);
+    const pathRules = this.#rules.filter((r) => r instanceof PathRule);
+    const operationRules = this.#rules.filter((r) => r instanceof OperationRule);
+    const schemaRules = this.#rules.filter((r) => r instanceof SchemaRule);
+    const propertyRules = this.#rules.filter((r) => r instanceof PropertyRule);
+    const parameterRules = this.#rules.filter((r) => r instanceof ParameterRule);
 
+    // Run SpecRules (once per spec)
+    for (const rule of specRules) {
+      const ctx = this.#createRuleContext(rule, spec);
       try {
-        const findings = rule.check(spec, context);
+        const findings = /** @type {SpecRule} */ (rule).checkSpec(spec, ctx);
         allFindings.push(...findings);
       } catch (error) {
-        // Rule threw an error - log but continue
-        if (error instanceof Error) {
-          console.error(`Rule ${rule.id} threw error:`, error.message);
-        } else {
-          console.error(`Rule ${rule.id} threw unknown error:`, error);
+        this.#logRuleError(rule, error);
+      }
+    }
+
+    // Run PathRules (for each path)
+    for (const [path, pathItem] of Object.entries(spec.paths || {})) {
+      for (const rule of pathRules) {
+        const ctx = this.#createRuleContext(rule, spec);
+        try {
+          const findings = /** @type {PathRule} */ (rule).checkPath(
+            path,
+            pathItem,
+            spec,
+            ctx
+          );
+          allFindings.push(...findings);
+        } catch (error) {
+          this.#logRuleError(rule, error);
+        }
+      }
+    }
+
+    // Run OperationRules (for each operation)
+    const operations = getAllOperations(spec);
+    for (const { path, method, operation } of operations) {
+      for (const rule of operationRules) {
+        // Check method filter if specified
+        const opRule = /** @type {OperationRule} */ (rule);
+        if (opRule.methods && !opRule.methods.includes(method)) continue;
+
+        const ctx = this.#createRuleContext(rule, spec);
+        try {
+          const findings = opRule.checkOperation(method, operation, path, spec, ctx);
+          allFindings.push(...findings);
+        } catch (error) {
+          this.#logRuleError(rule, error);
+        }
+      }
+
+      // Run ParameterRules (for each parameter in operation)
+      for (const param of operation.parameters || []) {
+        for (const rule of parameterRules) {
+          // Check location filter if specified
+          const paramRule = /** @type {ParameterRule} */ (rule);
+          if (paramRule.locations && !paramRule.locations.includes(param.in)) continue;
+
+          const ctx = this.#createRuleContext(rule, spec);
+          try {
+            const findings = paramRule.checkParameter(param, method, path, spec, ctx);
+            allFindings.push(...findings);
+          } catch (error) {
+            this.#logRuleError(rule, error);
+          }
+        }
+      }
+    }
+
+    // Run SchemaRules (for each schema in components)
+    for (const [schemaName, schema] of Object.entries(
+      spec.components?.schemas || {}
+    )) {
+      for (const rule of schemaRules) {
+        const ctx = this.#createRuleContext(rule, spec);
+        try {
+          const findings = /** @type {SchemaRule} */ (rule).checkSchema(
+            schemaName,
+            schema,
+            spec,
+            ctx
+          );
+          allFindings.push(...findings);
+        } catch (error) {
+          this.#logRuleError(rule, error);
+        }
+      }
+
+      // Run PropertyRules (for each property in schema)
+      for (const [propertyName, property] of Object.entries(
+        schema.properties || {}
+      )) {
+        for (const rule of propertyRules) {
+          const ctx = this.#createRuleContext(rule, spec);
+          try {
+            const findings = /** @type {PropertyRule} */ (rule).checkProperty(
+              propertyName,
+              property,
+              schemaName,
+              spec,
+              ctx
+            );
+            allFindings.push(...findings);
+          } catch (error) {
+            this.#logRuleError(rule, error);
+          }
         }
       }
     }
@@ -118,8 +236,21 @@ export class OpenAPIReviewer {
   }
 
   /**
+   * Log rule error
+   * @param {BaseRule} rule
+   * @param {unknown} error
+   */
+  #logRuleError(rule, error) {
+    if (error instanceof Error) {
+      console.error(`Rule ${rule.id} threw error:`, error.message);
+    } else {
+      console.error(`Rule ${rule.id} threw unknown error:`, error);
+    }
+  }
+
+  /**
    * Create context for a rule
-   * @param {Rule} rule
+   * @param {BaseRule} rule
    * @param {OpenAPISpec} spec
    * @returns {RuleContext}
    */
@@ -180,10 +311,54 @@ export class OpenAPIReviewer {
 
   /**
    * Get the list of rules this reviewer will apply
-   * @returns {Rule[]}
+   * @returns {BaseRule[]}
    */
   getRules() {
     return [...this.#rules];
+  }
+
+  /**
+   * Get the rule registry for advanced queries
+   * @returns {typeof defaultRegistry}
+   */
+  static getRegistry() {
+    return defaultRegistry;
+  }
+}
+
+/**
+ * Wrapper to support legacy Rule interface in the new system
+ */
+class LegacyRuleWrapper extends SpecRule {
+  /** @type {Rule} */
+  #legacyRule;
+
+  /**
+   * @param {Rule} legacyRule
+   */
+  constructor(legacyRule) {
+    super({
+      id: legacyRule.id,
+      name: legacyRule.name,
+      aip: legacyRule.aip,
+      severity: legacyRule.severity,
+      description: legacyRule.description,
+    });
+    this.#legacyRule = legacyRule;
+  }
+
+  /** @override */
+  get category() {
+    return this.#legacyRule.category;
+  }
+
+  /**
+   * @param {OpenAPISpec} spec
+   * @param {RuleContext} ctx
+   * @returns {Finding[]}
+   */
+  checkSpec(spec, ctx) {
+    return this.#legacyRule.check(spec, ctx);
   }
 }
 

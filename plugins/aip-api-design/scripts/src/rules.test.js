@@ -654,6 +654,168 @@ describe('filtering/list-has-ordering', () => {
 });
 
 // ============================================
+// Version Prefix and Singleton Tests
+// ============================================
+
+describe('naming/plural-resources - version handling', () => {
+  it('ignores v1, v2, etc version prefixes', () => {
+    const spec = { paths: { '/v1/users': {}, '/v2/orders': {} } };
+    const findings = runRule('naming/plural-resources', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('ignores api prefix', () => {
+    const spec = { paths: { '/api/v1/users': {} } };
+    const findings = runRule('naming/plural-resources', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('handles versioned path with singular resource', () => {
+    const spec = { paths: { '/v1/user': {}, '/v1/user/{id}': {} } };
+    const findings = runRule('naming/plural-resources', spec);
+    // Should flag 'user' but not 'v1'
+    assert.ok(findings.some((f) => f.message.includes("'user'")));
+    assert.ok(!findings.some((f) => f.message.includes("'v1'")));
+  });
+});
+
+describe('naming/plural-resources - singletons', () => {
+  it('allows singular name for singleton resources', () => {
+    const spec = {
+      paths: {
+        '/v1/database/backup': {},
+        '/v1/database/restore': {},
+        // Note: no /v1/database/{id} path
+      },
+    };
+    const findings = runRule('naming/plural-resources', spec);
+    // Should not flag 'database' since it's a singleton
+    const dbFindings = findings.filter((f) => f.message.includes("'database'"));
+    assert.equal(dbFindings.length, 0);
+  });
+
+  it('still flags singular collection resources', () => {
+    const spec = {
+      paths: {
+        '/v1/user': {}, // singular collection - should flag
+        '/v1/user/{id}': {}, // has id variant, so not singleton
+      },
+    };
+    const findings = runRule('naming/plural-resources', spec);
+    assert.ok(findings.some((f) => f.message.includes("'user'")));
+  });
+
+  it('allows singular name for nested singleton', () => {
+    const spec = {
+      paths: {
+        '/v1/settings/email': {},
+        '/v1/settings/email/smtp-restore': {},
+        // No /v1/settings/email/{id} path
+      },
+    };
+    const findings = runRule('naming/plural-resources', spec);
+    // Should not flag 'email' since it's a singleton under settings
+    const emailFindings = findings.filter((f) =>
+      f.message.includes("'email'")
+    );
+    assert.equal(emailFindings.length, 0);
+  });
+});
+
+describe('naming/no-verbs - custom methods', () => {
+  it('allows hyphenated custom methods on resources', () => {
+    const spec = {
+      paths: {
+        '/v1/passwords': {},
+        '/v1/passwords/validate-hash': {},
+        '/v1/passwords/validate-crypt': {},
+      },
+    };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('allows action verbs on singleton resources', () => {
+    const spec = {
+      paths: {
+        '/v1/database/clear': {},
+        '/v1/database/backup': {},
+        '/v1/database/restore': {},
+      },
+    };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('allows action verbs on resource items', () => {
+    const spec = {
+      paths: {
+        '/v1/models': {},
+        '/v1/models/{id}': {},
+        '/v1/models/{id}/train': {},
+        '/v1/models/{id}/predict': {},
+      },
+    };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('still flags invalid verb usage on collection endpoints', () => {
+    const spec = {
+      paths: {
+        '/v1/getUsers': {},
+        '/v1/createOrder': {},
+      },
+    };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 2);
+  });
+});
+
+describe('naming/no-verbs - noun exceptions', () => {
+  it('allows checklist as a noun', () => {
+    const spec = { paths: { '/v1/checklists': {}, '/v1/checklists/{id}': {} } };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('allows singular checklist on resource paths', () => {
+    const spec = { paths: { '/v1/checklist': {}, '/v1/checklist/{id}': {} } };
+    const findings = runRule('naming/no-verbs', spec);
+    // Should flag singular form by plural rule, but NOT as a verb
+    const verbFindings = findings.filter((f) => f.message.includes('verb'));
+    assert.equal(verbFindings.length, 0);
+  });
+
+  it('allows download/upload as nouns in collection paths', () => {
+    const spec = {
+      paths: {
+        '/v1/downloads': {},
+        '/v1/downloads/{id}': {},
+        '/v1/uploads': {},
+        '/v1/uploads/{id}': {},
+      },
+    };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 0);
+  });
+});
+
+describe('naming/no-verbs - version prefixes', () => {
+  it('does not flag version prefixes', () => {
+    const spec = {
+      paths: {
+        '/v1/users': {},
+        '/v2/orders': {},
+        '/api/v1/items': {},
+      },
+    };
+    const findings = runRule('naming/no-verbs', spec);
+    assert.equal(findings.length, 0);
+  });
+});
+
+// ============================================
 // Meta Tests
 // ============================================
 
