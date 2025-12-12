@@ -9,7 +9,10 @@
  */
 
 import { OperationRule } from '../base.js';
-import { requestBodyToJsonPath, operationToJsonPath } from '../helpers/index.js';
+import {
+  requestBodyToJsonPath,
+  operationToJsonPath,
+} from '../helpers/index.js';
 
 /**
  * Rule: GET requests should not have a request body

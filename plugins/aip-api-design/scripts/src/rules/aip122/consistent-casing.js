@@ -107,7 +107,11 @@ export class ConsistentCasingRule extends SpecRule {
                 fix: {
                   type: 'rename-path-segment',
                   jsonPath: pathToJsonPath(path),
-                  target: { segment, currentStyle: style, dominantStyle: dominant },
+                  target: {
+                    segment,
+                    currentStyle: style,
+                    dominantStyle: dominant,
+                  },
                   replacement: convertedSegment,
                   specChanges: [
                     {

@@ -240,11 +240,7 @@ function formatYAMLValue(value) {
 function formatYAMLObject(obj, indent) {
   const lines = [];
   for (const [key, value] of Object.entries(obj)) {
-    if (
-      typeof value === 'object' &&
-      value !== null &&
-      !Array.isArray(value)
-    ) {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       lines.push(`${indent}${key}:`);
       // @ts-ignore
       lines.push(formatYAMLObject(value, indent + '  '));

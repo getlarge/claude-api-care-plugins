@@ -9,7 +9,10 @@
  */
 
 import { OperationRule } from '../base.js';
-import { isCollectionEndpoint, parametersToJsonPath } from '../helpers/index.js';
+import {
+  isCollectionEndpoint,
+  parametersToJsonPath,
+} from '../helpers/index.js';
 
 /**
  * Rule: List endpoints should have ordering
@@ -48,14 +51,9 @@ export class HasOrderingRule extends OperationRule {
     const hasOrderParam = params.some(
       (p) =>
         p.in === 'query' &&
-        [
-          'order_by',
-          'orderBy',
-          'sort',
-          'sort_by',
-          'sortBy',
-          'order',
-        ].includes(p.name)
+        ['order_by', 'orderBy', 'sort', 'sort_by', 'sortBy', 'order'].includes(
+          p.name
+        )
     );
 
     if (!hasOrderParam) {

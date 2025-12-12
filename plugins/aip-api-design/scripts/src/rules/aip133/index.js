@@ -6,7 +6,10 @@
  * @module rules/aip133
  */
 
-export { postReturnsCreated, PostReturnsCreatedRule } from './post-returns-created.js';
+export {
+  postReturnsCreated,
+  PostReturnsCreatedRule,
+} from './post-returns-created.js';
 
 import { postReturnsCreated } from './post-returns-created.js';
 

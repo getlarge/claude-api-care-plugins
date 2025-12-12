@@ -173,7 +173,7 @@ describe('formatMarkdown fix blocks', () => {
     });
     const output = formatMarkdown(result);
 
-    assert.ok(output.includes("jsonPath: \"$.paths['/user/{id}']\""));
+    assert.ok(output.includes('jsonPath: "$.paths[\'/user/{id}\']"'));
   });
 
   it('includes specChanges in YAML block', () => {
@@ -338,7 +338,9 @@ describe('formatSARIF', () => {
     const output = formatSARIF(result);
     const parsed = JSON.parse(output);
 
-    const levels = parsed.runs[0].results.map((/** @type {{ level: string }} */ r) => r.level);
+    const levels = parsed.runs[0].results.map(
+      (/** @type {{ level: string }} */ r) => r.level
+    );
     assert.ok(levels.includes('error'));
     assert.ok(levels.includes('warning'));
     assert.ok(levels.includes('note')); // suggestion -> note

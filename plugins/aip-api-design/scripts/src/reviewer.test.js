@@ -6,11 +6,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  OpenAPIReviewer,
-  reviewSpec,
-  reviewSpecStrict,
-} from './reviewer.js';
+import { OpenAPIReviewer, reviewSpec, reviewSpecStrict } from './reviewer.js';
 import {
   defaultRules,
   defaultRegistry,
@@ -203,7 +199,10 @@ describe('OpenAPIReviewer', () => {
     const strictErrors = strict.findings.filter((f) => f.severity === 'error');
 
     assert.ok(normalWarnings.length > 0, 'Normal should have warnings');
-    assert.ok(strictErrors.length >= normalWarnings.length, 'Strict should promote warnings to errors');
+    assert.ok(
+      strictErrors.length >= normalWarnings.length,
+      'Strict should promote warnings to errors'
+    );
   });
 });
 
@@ -271,8 +270,7 @@ describe('Rule behaviors (integration)', () => {
 
     const result = reviewSpec(spec);
     const verbFindings = result.findings.filter(
-      (f) =>
-        f.ruleId === 'aip122/no-verbs' && f.message.includes('checklists')
+      (f) => f.ruleId === 'aip122/no-verbs' && f.message.includes('checklists')
     );
 
     assert.equal(verbFindings.length, 0, 'Should not flag noun exceptions');

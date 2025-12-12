@@ -102,7 +102,10 @@ describe('Plugin Commands', () => {
       // Check for common documentation sections
       const hasUsage =
         body.includes('## Usage') || body.includes('## Instructions');
-      assert.ok(hasUsage, `Command ${file} missing Usage or Instructions section`);
+      assert.ok(
+        hasUsage,
+        `Command ${file} missing Usage or Instructions section`
+      );
     }
   });
 

@@ -256,8 +256,8 @@ describe('Acme Commerce API - Integration Tests', () => {
 
   describe('aip158/max-page-size', () => {
     it('flags GET /product - page_size without maximum', () => {
-      const matches = findByRule(findings, 'aip158/max-page-size').filter(
-        (f) => f.path?.includes('/product')
+      const matches = findByRule(findings, 'aip158/max-page-size').filter((f) =>
+        f.path?.includes('/product')
       );
       assert.ok(matches.length > 0, 'Should flag page_size without max');
     });
@@ -293,29 +293,36 @@ describe('Acme Commerce API - Integration Tests', () => {
   describe('aip193/schema-defined', () => {
     it('does NOT flag - Error schema is defined', () => {
       const matches = findByRule(findings, 'aip193/schema-defined');
-      assert.equal(matches.length, 0, 'Should not flag when Error schema exists');
+      assert.equal(
+        matches.length,
+        0,
+        'Should not flag when Error schema exists'
+      );
     });
   });
 
   describe('aip193/responses-documented', () => {
     it('flags GET /orders - no error responses', () => {
-      const matches = findByRule(findings, 'aip193/responses-documented').filter(
-        (f) => f.path === 'GET /orders'
-      );
+      const matches = findByRule(
+        findings,
+        'aip193/responses-documented'
+      ).filter((f) => f.path === 'GET /orders');
       assert.ok(matches.length > 0, 'Should flag missing error docs');
     });
 
     it('flags POST /webhook - no error responses', () => {
-      const matches = findByRule(findings, 'aip193/responses-documented').filter(
-        (f) => f.path === 'POST /webhook'
-      );
+      const matches = findByRule(
+        findings,
+        'aip193/responses-documented'
+      ).filter((f) => f.path === 'POST /webhook');
       assert.ok(matches.length > 0, 'Should flag missing error docs');
     });
 
     it('does NOT flag GET /customers - has error responses', () => {
-      const matches = findByRule(findings, 'aip193/responses-documented').filter(
-        (f) => f.path === 'GET /customers'
-      );
+      const matches = findByRule(
+        findings,
+        'aip193/responses-documented'
+      ).filter((f) => f.path === 'GET /customers');
       assert.equal(matches.length, 0, 'Should not flag documented errors');
     });
   });
@@ -418,7 +425,10 @@ describe('Acme Commerce API - Integration Tests', () => {
         categories.has('standard-methods'),
         'Should have methods findings'
       );
-      assert.ok(categories.has('pagination'), 'Should have pagination findings');
+      assert.ok(
+        categories.has('pagination'),
+        'Should have pagination findings'
+      );
       assert.ok(categories.has('errors'), 'Should have error findings');
       assert.ok(
         categories.has('idempotency'),
@@ -514,9 +524,21 @@ describe('Acme Commerce API - Known Issues Breakdown', () => {
 
     // Basic sanity checks on intentional issues
     assert.ok(byRule['aip122/no-verbs'] >= 1, 'Should find verb violations');
-    assert.ok(byRule['aip122/plural-resources'] >= 1, 'Should find singular resources');
-    assert.ok(byRule['aip134/patch-over-put'] >= 1, 'Should find PUT without PATCH');
-    assert.ok(byRule['aip158/list-paginated'] >= 1, 'Should find unpaginated lists');
-    assert.ok(byRule['aip155/idempotency-key'] >= 1, 'Should find missing idempotency');
+    assert.ok(
+      byRule['aip122/plural-resources'] >= 1,
+      'Should find singular resources'
+    );
+    assert.ok(
+      byRule['aip134/patch-over-put'] >= 1,
+      'Should find PUT without PATCH'
+    );
+    assert.ok(
+      byRule['aip158/list-paginated'] >= 1,
+      'Should find unpaginated lists'
+    );
+    assert.ok(
+      byRule['aip155/idempotency-key'] >= 1,
+      'Should find missing idempotency'
+    );
   });
 });

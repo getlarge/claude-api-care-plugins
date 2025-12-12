@@ -10,7 +10,10 @@
  */
 
 import { OperationRule } from '../base.js';
-import { isCollectionEndpoint, parametersToJsonPath } from '../helpers/index.js';
+import {
+  isCollectionEndpoint,
+  parametersToJsonPath,
+} from '../helpers/index.js';
 
 /**
  * Rule: List endpoints should have filtering

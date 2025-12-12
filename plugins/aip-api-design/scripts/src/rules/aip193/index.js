@@ -7,7 +7,10 @@
  */
 
 export { schemaDefined, ErrorSchemaDefinedRule } from './schema-defined.js';
-export { responsesDocumented, ErrorResponsesDocumentedRule } from './responses-documented.js';
+export {
+  responsesDocumented,
+  ErrorResponsesDocumentedRule,
+} from './responses-documented.js';
 export { standardCodes, StandardErrorCodesRule } from './standard-codes.js';
 
 import { schemaDefined } from './schema-defined.js';

@@ -88,7 +88,11 @@ export function isVerb(word, context = 'api-path') {
   // In API context, disambiguate plural-verb forms using "the X" context
   // Words like "logs", "orders", "files" have Plural|Verb switch
   // With "the logs", compromise correctly identifies them as plural nouns
-  if (context === 'api-path' && term?.switch && term.switch.includes('Plural')) {
+  if (
+    context === 'api-path' &&
+    term?.switch &&
+    term.switch.includes('Plural')
+  ) {
     const contextDoc = nlp('the ' + word);
     const hasNoun = contextDoc.nouns().length > 0;
     const hasVerb = contextDoc.verbs().length > 0;
@@ -133,7 +137,11 @@ export function isNoun(word, context = 'api-path') {
   }
 
   // In API context, disambiguate plural-verb forms using "the X" context
-  if (context === 'api-path' && term?.switch && term.switch.includes('Plural')) {
+  if (
+    context === 'api-path' &&
+    term?.switch &&
+    term.switch.includes('Plural')
+  ) {
     const contextDoc = nlp('the ' + word);
     if (contextDoc.nouns().length > 0) {
       return true;

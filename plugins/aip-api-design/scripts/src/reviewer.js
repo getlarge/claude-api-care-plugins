@@ -99,10 +99,14 @@ export class OpenAPIReviewer {
     // Group rules by type for efficient dispatch
     const specRules = this.#rules.filter((r) => r instanceof SpecRule);
     const pathRules = this.#rules.filter((r) => r instanceof PathRule);
-    const operationRules = this.#rules.filter((r) => r instanceof OperationRule);
+    const operationRules = this.#rules.filter(
+      (r) => r instanceof OperationRule
+    );
     const schemaRules = this.#rules.filter((r) => r instanceof SchemaRule);
     const propertyRules = this.#rules.filter((r) => r instanceof PropertyRule);
-    const parameterRules = this.#rules.filter((r) => r instanceof ParameterRule);
+    const parameterRules = this.#rules.filter(
+      (r) => r instanceof ParameterRule
+    );
 
     // Run SpecRules (once per spec)
     for (const rule of specRules) {
@@ -143,7 +147,13 @@ export class OpenAPIReviewer {
 
         const ctx = this.#createRuleContext(rule, spec);
         try {
-          const findings = opRule.checkOperation(method, operation, path, spec, ctx);
+          const findings = opRule.checkOperation(
+            method,
+            operation,
+            path,
+            spec,
+            ctx
+          );
           allFindings.push(...findings);
         } catch (error) {
           this.#logRuleError(rule, error);
@@ -155,11 +165,18 @@ export class OpenAPIReviewer {
         for (const rule of parameterRules) {
           // Check location filter if specified
           const paramRule = /** @type {ParameterRule} */ (rule);
-          if (paramRule.locations && !paramRule.locations.includes(param.in)) continue;
+          if (paramRule.locations && !paramRule.locations.includes(param.in))
+            continue;
 
           const ctx = this.#createRuleContext(rule, spec);
           try {
-            const findings = paramRule.checkParameter(param, method, path, spec, ctx);
+            const findings = paramRule.checkParameter(
+              param,
+              method,
+              path,
+              spec,
+              ctx
+            );
             allFindings.push(...findings);
           } catch (error) {
             this.#logRuleError(rule, error);

@@ -27,7 +27,10 @@ function assertValidFix(fix, expectedType) {
   // Validate each spec change
   for (const change of fix.specChanges) {
     assert.ok(change.operation, 'Spec change should have operation');
-    assert.ok(change.path.startsWith('$'), 'Spec change path should start with $');
+    assert.ok(
+      change.path.startsWith('$'),
+      'Spec change path should start with $'
+    );
   }
 }
 
@@ -42,18 +45,18 @@ describe('Fix objects', () => {
             get: {
               operationId: 'getUser',
               requestBody: { content: { 'application/json': {} } },
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
             put: {
               operationId: 'updateUser',
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
           '/users': {
             get: {
               operationId: 'listUsers',
               responses: {
-                '200': {
+                200: {
                   description: 'OK',
                   content: {
                     'application/json': {
@@ -65,7 +68,7 @@ describe('Fix objects', () => {
             },
             post: {
               operationId: 'createUser',
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -76,10 +79,16 @@ describe('Fix objects', () => {
       assert.ok(result.findings.length > 0, 'Should have findings');
 
       for (const finding of result.findings) {
-        assert.ok(finding.fix, `Finding ${finding.ruleId} should have fix object`);
+        assert.ok(
+          finding.fix,
+          `Finding ${finding.ruleId} should have fix object`
+        );
         assert.ok(finding.fix.type, 'Fix should have type');
         assert.ok(finding.fix.jsonPath, 'Fix should have jsonPath');
-        assert.ok(Array.isArray(finding.fix.specChanges), 'Fix should have specChanges array');
+        assert.ok(
+          Array.isArray(finding.fix.specChanges),
+          'Fix should have specChanges array'
+        );
       }
     });
   });
@@ -91,7 +100,7 @@ describe('Fix objects', () => {
         info: { title: 'Test', version: '1.0.0' },
         paths: {
           '/user/{id}': {
-            get: { responses: { '200': { description: 'OK' } } },
+            get: { responses: { 200: { description: 'OK' } } },
           },
         },
       };
@@ -125,7 +134,7 @@ describe('Fix objects', () => {
         paths: {
           '/users': {
             post: {
-              responses: { '201': { description: 'Created' } },
+              responses: { 201: { description: 'Created' } },
             },
           },
         },
@@ -145,10 +154,11 @@ describe('Fix objects', () => {
 
       assert.ok(idempotencyFinding, 'Should have idempotency-key finding');
       assertValidFix(idempotencyFinding.fix, 'add-parameter');
-      // @ts-expect-error - we know this is an add-parameter fix with replacement
-      assert.equal(idempotencyFinding.fix?.replacement?.name, 'Idempotency-Key');
-      // @ts-expect-error - we know this is an add-parameter fix with replacement
-      assert.equal(idempotencyFinding.fix?.replacement?.in, 'header');
+      const idempotencyReplacement = /** @type {{name: string, in: string}} */ (
+        idempotencyFinding.fix?.replacement
+      );
+      assert.equal(idempotencyReplacement.name, 'Idempotency-Key');
+      assert.equal(idempotencyReplacement.in, 'header');
     });
 
     it('should produce correct fix for missing filter parameter', () => {
@@ -159,9 +169,13 @@ describe('Fix objects', () => {
           '/users': {
             get: {
               parameters: [
-                { name: 'page_size', in: /** @type {const} */ ('query'), schema: { type: 'integer' } },
+                {
+                  name: 'page_size',
+                  in: /** @type {const} */ ('query'),
+                  schema: { type: 'integer' },
+                },
               ],
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -197,7 +211,7 @@ describe('Fix objects', () => {
         paths: {
           '/users': {
             get: {
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -218,7 +232,10 @@ describe('Fix objects', () => {
 
       assert.ok(paginationFinding, 'Should have list-paginated finding');
       assertValidFix(paginationFinding.fix, 'add-parameters');
-      assert.ok(Array.isArray(paginationFinding.fix?.replacement), 'Replacement should be array');
+      assert.ok(
+        Array.isArray(paginationFinding.fix?.replacement),
+        'Replacement should be array'
+      );
       assert.equal(paginationFinding.fix?.replacement?.length, 2);
     });
   });
@@ -232,7 +249,7 @@ describe('Fix objects', () => {
           '/users/{id}': {
             get: {
               requestBody: { content: { 'application/json': {} } },
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -260,7 +277,7 @@ describe('Fix objects', () => {
         paths: {
           '/users': {
             post: {
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -294,7 +311,7 @@ describe('Fix objects', () => {
           '/users/{id}': {
             put: {
               requestBody: { content: { 'application/json': {} } },
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -321,7 +338,7 @@ describe('Fix objects', () => {
         info: { title: 'Test', version: '1.0.0' },
         paths: {
           '/users': {
-            get: { responses: { '200': { description: 'OK' } } },
+            get: { responses: { 200: { description: 'OK' } } },
           },
         },
         components: {
@@ -358,7 +375,7 @@ describe('Fix objects', () => {
         paths: {
           '/users/{id}': {
             get: {
-              responses: { '200': { description: 'OK' } },
+              responses: { 200: { description: 'OK' } },
             },
           },
         },
@@ -396,7 +413,7 @@ describe('JSONPath validity', () => {
               },
             ],
             responses: {
-              '200': {
+              200: {
                 description: 'OK',
                 content: {
                   'application/json': {
@@ -404,16 +421,16 @@ describe('JSONPath validity', () => {
                   },
                 },
               },
-              '418': { description: "I'm a teapot" },
+              418: { description: "I'm a teapot" },
             },
           },
           put: {
-            responses: { '200': { description: 'OK' } },
+            responses: { 200: { description: 'OK' } },
           },
         },
         '/users': {
           post: {
-            responses: { '200': { description: 'OK' } },
+            responses: { 200: { description: 'OK' } },
           },
         },
       },

@@ -19,4 +19,9 @@ import { noVerbs } from './no-verbs.js';
 import { consistentCasing } from './consistent-casing.js';
 import { nestedOwnership } from './nested-ownership.js';
 
-export const rules = [pluralResources, noVerbs, consistentCasing, nestedOwnership];
+export const rules = [
+  pluralResources,
+  noVerbs,
+  consistentCasing,
+  nestedOwnership,
+];

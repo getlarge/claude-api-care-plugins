@@ -25,19 +25,19 @@
  * @type {Record<string, RuleCategory>}
  */
 const AIP_CATEGORIES = {
-  '122': 'naming',
-  '123': 'naming',
-  '131': 'standard-methods',
-  '132': 'standard-methods',
-  '133': 'standard-methods',
-  '134': 'standard-methods',
-  '135': 'standard-methods',
-  '136': 'standard-methods',
-  '155': 'idempotency',
-  '158': 'pagination',
-  '160': 'filtering',
-  '193': 'errors',
-  '194': 'errors',
+  122: 'naming',
+  123: 'naming',
+  131: 'standard-methods',
+  132: 'standard-methods',
+  133: 'standard-methods',
+  134: 'standard-methods',
+  135: 'standard-methods',
+  136: 'standard-methods',
+  155: 'idempotency',
+  158: 'pagination',
+  160: 'filtering',
+  193: 'errors',
+  194: 'errors',
 };
 
 /**

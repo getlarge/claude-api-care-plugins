@@ -66,7 +66,8 @@ export class NestedOwnershipRule extends PathRule {
       const parentResource = segments[i - 1];
 
       // Skip if parent is also a parameter or a version prefix
-      if (parentResource.startsWith('{') || isVersionPrefix(parentResource)) continue;
+      if (parentResource.startsWith('{') || isVersionPrefix(parentResource))
+        continue;
 
       // Check if generic 'id' is used
       if (paramName === 'id') {

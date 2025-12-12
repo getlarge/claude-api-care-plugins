@@ -9,7 +9,10 @@
  */
 
 import { SpecRule } from '../base.js';
-import { schemasContainerJsonPath, schemaToJsonPath } from '../helpers/index.js';
+import {
+  schemasContainerJsonPath,
+  schemaToJsonPath,
+} from '../helpers/index.js';
 
 /**
  * Rule: Error schema should be defined
@@ -48,9 +51,18 @@ export class ErrorSchemaDefinedRule extends SpecRule {
             required: ['code', 'message'],
             properties: {
               code: { type: 'string', description: 'Error code' },
-              message: { type: 'string', description: 'Human-readable error message' },
-              details: { type: 'array', description: 'Additional error details' },
-              request_id: { type: 'string', description: 'Request identifier for debugging' },
+              message: {
+                type: 'string',
+                description: 'Human-readable error message',
+              },
+              details: {
+                type: 'array',
+                description: 'Additional error details',
+              },
+              request_id: {
+                type: 'string',
+                description: 'Request identifier for debugging',
+              },
             },
           },
         },
