@@ -16,6 +16,7 @@ import {
   findSingletonResources,
   isSingletonPath,
   isSingular,
+  pluralize,
   pathToJsonPath,
   computeRenamedPath,
 } from '../helpers/index.js';
@@ -77,7 +78,7 @@ export class PluralResourcesRule extends PathRule {
       if (isSingletonPath(pathToSegment, singletons)) continue;
 
       if (isSingular(segment)) {
-        const suggestedPlural = `${segment}s`;
+        const suggestedPlural = pluralize(segment);
         const newPath = computeRenamedPath(path, segment, suggestedPlural);
         findings.push(
           ctx.createFinding({

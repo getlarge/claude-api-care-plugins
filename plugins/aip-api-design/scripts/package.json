@@ -55,6 +55,7 @@
     "typescript": "^5.0.0"
   },
   "peerDependencies": {
+    "compromise": "^14.14.4",
     "oas": "^28.5.0",
     "oas-normalize": "^15.4.0",
     "yaml": ">=2.0.0"

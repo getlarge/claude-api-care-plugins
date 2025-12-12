@@ -4,8 +4,11 @@
  * @module rules/helpers/naming
  */
 
+import { isVerb as nlpIsVerb, isNoun, singularize } from './nlp.js';
+
 /**
  * Common action verbs used in custom methods (AIP-136)
+ * These are API-specific action verbs, not general language rules
  * @type {Set<string>}
  */
 export const CUSTOM_METHOD_VERBS = new Set([
@@ -47,62 +50,6 @@ export const CUSTOM_METHOD_VERBS = new Set([
 ]);
 
 /**
- * Known compound nouns that start with verb prefixes but are nouns
- * @type {Set<string>}
- */
-export const NOUN_EXCEPTIONS = new Set([
-  // Words starting with "add-"
-  'address',
-  'addresses',
-  'addendum',
-  'addenda',
-  'addition',
-  'additions',
-  // Words starting with "check-"
-  'checklist',
-  'checklists',
-  'checkout',
-  'checkouts',
-  'checkup',
-  'checkups',
-  'checksum',
-  'checksums',
-  'checkpoint',
-  'checkpoints',
-  // Words starting with "process-"
-  'process',
-  'processes', // as noun: "the process"
-  // Words starting with "run-"
-  'runtime',
-  'runtimes',
-  'runbook',
-  'runbooks',
-  // Words starting with "send-"
-  'sender',
-  'senders',
-  // Words starting with "submit-"
-  'submission',
-  'submissions',
-  // Verb-noun homographs (words that can be both verb and noun)
-  'update',
-  'updates', // as noun: "the update"
-  'search',
-  'searches', // as noun: "the search results"
-  'download',
-  'downloads', // as noun: "the download"
-  'upload',
-  'uploads',
-  'listing',
-  'listings',
-  'insert',
-  'inserts', // as noun: "the database insert"
-  'edit',
-  'edits', // as noun: "the edit history"
-  'fetch',
-  'fetches', // as noun: "the fetch operation"
-]);
-
-/**
  * Check if a path segment looks like a custom method (AIP-136)
  * Custom methods are verb-based actions, often hyphenated
  *
@@ -138,92 +85,22 @@ export function isCustomMethod(segment, path, singletons) {
 }
 
 /**
- * Check if a word looks like a verb
+ * Check if a word looks like a verb using NLP
  * @param {string} word - Word to check
  * @returns {boolean}
  */
 export function looksLikeVerb(word) {
-  const lower = word.toLowerCase();
-
-  // First check noun exceptions
-  if (NOUN_EXCEPTIONS.has(lower)) return false;
-
-  const verbPrefixes = [
-    'get',
-    'fetch',
-    'retrieve',
-    'list',
-    'create',
-    'add',
-    'insert',
-    'update',
-    'modify',
-    'edit',
-    'delete',
-    'remove',
-    'destroy',
-    'find',
-    'search',
-    'check',
-    'validate',
-    'process',
-    'execute',
-    'run',
-    'do',
-    'perform',
-    'send',
-    'submit',
-  ];
-
-  return verbPrefixes.some(
-    (v) => lower.startsWith(v) && lower.length > v.length
-  );
+  // Use NLP-based detection
+  // Returns true only if it's a verb and NOT a noun
+  return nlpIsVerb(word) && !isNoun(word);
 }
 
 /**
- * Check if a word is likely singular (simple heuristic)
+ * Check if a word is likely singular using NLP
  * @param {string} word - Word to check
  * @returns {boolean}
  */
 export function isSingular(word) {
-  const exceptions = new Set([
-    // Uncountable or mass nouns
-    'status',
-    'address',
-    'metadata',
-    'info',
-    'health',
-    'auth',
-    'config',
-    'settings',
-    'data',
-    'media',
-    'analytics',
-    'news',
-    'series',
-    'software',
-    'hardware',
-    'firmware',
-    // Technical terms
-    'api',
-    'graphql',
-    'grpc',
-    'oauth',
-    'oidc',
-    // Already plural or irregular
-    'index',
-    'matrix',
-    'vertex',
-    // Common API endpoints
-    'ping',
-    'proxy',
-    'registry',
-    'wizard',
-  ]);
-
-  const lower = word.toLowerCase();
-  if (exceptions.has(lower)) return false;
-
-  // Very simple: doesn't end in 's'
-  return !lower.endsWith('s');
+  const singular = singularize(word);
+  return singular.toLowerCase() === word.toLowerCase();
 }

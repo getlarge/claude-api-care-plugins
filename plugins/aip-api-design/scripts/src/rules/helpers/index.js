@@ -20,11 +20,20 @@ export { findSingletonResources, isSingletonPath } from './singleton.js';
 // Naming utilities
 export {
   CUSTOM_METHOD_VERBS,
-  NOUN_EXCEPTIONS,
   isCustomMethod,
   looksLikeVerb,
   isSingular,
 } from './naming.js';
+
+// NLP utilities
+export {
+  pluralize,
+  isVerb,
+  isNoun,
+  isUncountable,
+  singularize,
+  analyzeWord,
+} from './nlp.js';
 
 // Spec traversal utilities
 export {
