@@ -89,6 +89,9 @@ export {
   formatSARIF,
 } from './formatters.js';
 
+// AIP Metadata
+export { AIP_METADATA, getAIPInfo, getImplementedAIPs } from './aip-metadata.js';
+
 // Types are exported via TypeScript declaration files
 // For JSDoc users, import types like:
 // /** @typedef {import('aip-openapi-reviewer').Finding} Finding */
