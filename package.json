@@ -9,11 +9,14 @@
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "npm run lint --prefix plugins/aip-api-design/scripts",
-    "typecheck": "npm run typecheck --prefix plugins/aip-api-design/scripts",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "prepare": "test \"$HUSKY\" = \"0\" || husky"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "globals": "^16.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
