@@ -85,12 +85,27 @@ export function isCustomMethod(segment, path, singletons) {
 }
 
 /**
+ * Common verb prefixes that indicate bad REST naming
+ * (e.g., /getUsers instead of GET /users)
+ * @type {RegExp}
+ */
+const VERB_PREFIX_PATTERN =
+  /^(get|fetch|create|add|update|edit|delete|remove|list|find|search|retrieve)/i;
+
+/**
  * Check if a word looks like a verb using NLP
+ * Also detects common verb prefixes in compound words (e.g., getUsers)
  * @param {string} word - Word to check
  * @returns {boolean}
  */
 export function looksLikeVerb(word) {
-  // Use NLP-based detection
+  // First, check for common verb prefixes (catches getUsers, createOrder, etc.)
+  // These patterns indicate incorrect REST naming (using verbs instead of HTTP methods)
+  if (VERB_PREFIX_PATTERN.test(word)) {
+    return true;
+  }
+
+  // Use NLP-based detection for plain verbs
   // Returns true only if it's a verb and NOT a noun
   return nlpIsVerb(word) && !isNoun(word);
 }
