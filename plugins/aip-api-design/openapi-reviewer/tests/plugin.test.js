@@ -197,7 +197,7 @@ describe('Plugin README', () => {
 
 describe('Plugin Scripts', () => {
   it('CLI script exists and is executable', async () => {
-    const cliPath = join(PLUGIN_ROOT, 'scripts', 'src', 'cli.js');
+    const cliPath = join(PLUGIN_ROOT, 'openapi-reviewer', 'src', 'cli.js');
     const content = await readFile(cliPath, 'utf-8');
 
     assert.ok(content.includes('#!/'), 'CLI should have shebang');
@@ -208,7 +208,7 @@ describe('Plugin Scripts', () => {
   });
 
   it('scripts package.json has correct bin entry', async () => {
-    const pkgPath = join(PLUGIN_ROOT, 'scripts', 'package.json');
+    const pkgPath = join(PLUGIN_ROOT, 'openapi-reviewer', 'package.json');
     const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
 
     assert.ok(pkg.bin, 'package.json should have bin entry');

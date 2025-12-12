@@ -11,7 +11,7 @@
     "format:check": "prettier --check .",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @getlarge/aip-openapi-reviewer && npm run build -w @getlarge/aip-openapi-reviewer-mcp",
     "test": "npm run test --workspaces --if-present",
     "prepare": "test \"$HUSKY\" = \"0\" || husky"
   },
