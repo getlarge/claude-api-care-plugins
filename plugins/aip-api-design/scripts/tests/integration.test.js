@@ -271,9 +271,9 @@ describe('Acme Commerce API - Integration Tests', () => {
   });
 
   describe('aip158/response-next-token', () => {
-    it('flags GET /product - ProductList missing next_page_token', () => {
+    it('flags GET /inventory_items - InventoryItemList missing next_page_token', () => {
       const matches = findByRule(findings, 'aip158/response-next-token').filter(
-        (f) => f.path?.includes('/product')
+        (f) => f.path?.includes('/inventory_items')
       );
       assert.ok(matches.length > 0, 'Should flag missing next_page_token');
     });
