@@ -98,6 +98,3 @@ export {
 
 // Fixer
 export { OpenAPIFixer, applyAllFixes } from './fixer.js';
-
-// Re-export types from types.ts (tsc will include in declaration output)
-export * from './types.js';
