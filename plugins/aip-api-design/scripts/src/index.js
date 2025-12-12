@@ -99,6 +99,5 @@ export {
 // Fixer
 export { OpenAPIFixer, applyAllFixes } from './fixer.js';
 
-// Types are exported via TypeScript declaration files
-// For JSDoc users, import types like:
-// /** @typedef {import('aip-openapi-reviewer').Finding} Finding */
+// Re-export types from types.ts (tsc will include in declaration output)
+export * from './types.js';

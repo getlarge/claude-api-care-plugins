@@ -4,11 +4,11 @@
   "description": "Review OpenAPI specifications against Google's API Improvement Proposals (AIP)",
   "type": "module",
   "main": "./src/index.js",
-  "types": "./src/types.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./src/index.js",
-      "types": "./src/types.ts"
+      "types": "./dist/index.d.ts"
     },
     "./rules": {
       "import": "./src/rules/index.js"
@@ -29,7 +29,8 @@
     "test:plugin": "node --test tests/plugin.test.js",
     "test:all": "node --test src/**/*.test.js tests/**/*.test.js",
     "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc"
   },
   "keywords": [
     "openapi",
