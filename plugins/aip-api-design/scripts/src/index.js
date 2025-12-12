@@ -90,7 +90,14 @@ export {
 } from './formatters.js';
 
 // AIP Metadata
-export { AIP_METADATA, getAIPInfo, getImplementedAIPs } from './aip-metadata.js';
+export {
+  AIP_METADATA,
+  getAIPInfo,
+  getImplementedAIPs,
+} from './aip-metadata.js';
+
+// Fixer
+export { OpenAPIFixer, applyAllFixes } from './fixer.js';
 
 // Types are exported via TypeScript declaration files
 // For JSDoc users, import types like:

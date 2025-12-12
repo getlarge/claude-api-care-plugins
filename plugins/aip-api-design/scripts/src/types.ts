@@ -37,7 +37,12 @@ export type FixType =
   | 'set-schema-constraint'; // Set max/min/pattern constraint on a schema
 
 /** Types of JSON operations for spec changes */
-export type SpecChangeOperation = 'rename-key' | 'set' | 'add' | 'remove' | 'merge';
+export type SpecChangeOperation =
+  | 'rename-key'
+  | 'set'
+  | 'add'
+  | 'remove'
+  | 'merge';
 
 /**
  * A single atomic change to the OpenAPI spec.
@@ -281,6 +286,10 @@ export interface OpenAPISpec {
     title?: string;
     version?: string;
     description?: string;
+    contact?: { name?: string; email?: string; url?: string };
+    license?: { name?: string; url?: string };
+    termsOfService?: string;
+    [key: string]: unknown;
   };
   paths?: Record<string, PathItem>;
   components?: {

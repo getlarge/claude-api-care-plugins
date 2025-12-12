@@ -21,8 +21,8 @@
  * @module cli
  */
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve, extname } from 'node:path';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, extname, basename, dirname, join } from 'node:path';
 import { parseArgs as nodeParseArgs } from 'node:util';
 import { OpenAPIReviewer } from './reviewer.js';
 import {
@@ -31,6 +31,7 @@ import {
   formatJSON,
   formatSARIF,
 } from './formatters.js';
+import { OpenAPIFixer } from './fixer.js';
 
 /**
  * @typedef {import('./types.ts').ReviewerConfig} ReviewerConfig
@@ -46,6 +47,9 @@ const argsConfig = {
     category: { type: 'string', short: 'c', multiple: true, default: [] },
     skip: { type: 'string', short: 'x', multiple: true, default: [] },
     'no-color': { type: 'boolean', default: false },
+    fix: { type: 'boolean', short: 'F', default: false },
+    output: { type: 'string', short: 'o' },
+    'dry-run': { type: 'boolean', default: false },
   },
   allowPositionals: true,
   strict: false,
@@ -59,6 +63,9 @@ const argsConfig = {
  * @property {string[]} [category]
  * @property {string[]} [skip]
  * @property {boolean} [no-color]
+ * @property {boolean} [fix]
+ * @property {string} [output]
+ * @property {boolean} [dry-run]
  */
 
 /**
@@ -79,6 +86,9 @@ function parseArgs(args) {
       categories: v.category ?? [],
       skipRules: v.skip ?? [],
       noColor: v['no-color'] ?? false,
+      fix: v.fix ?? false,
+      output: v.output,
+      dryRun: v['dry-run'] ?? false,
     },
   };
 }
@@ -91,6 +101,9 @@ function parseArgs(args) {
  * @property {string[]} skipRules
  * @property {boolean} noColor
  * @property {boolean} help
+ * @property {boolean} fix
+ * @property {string} [output]
+ * @property {boolean} dryRun
  */
 
 /**
@@ -114,6 +127,9 @@ OPTIONS:
   -c, --category <c>  Only run rules in category (can repeat)
   -x, --skip <rule>   Skip specific rule by ID (can repeat)
   --no-color          Disable colored output
+  -F, --fix           Apply fixes to the spec and write output
+  -o, --output <path> Output path for fixed spec (default: <spec>.fixed.<ext>)
+  --dry-run           Show what fixes would be applied without writing
 
 CATEGORIES:
   naming              Resource naming conventions (AIP-122, AIP-123)
@@ -135,10 +151,16 @@ EXAMPLES:
   aip-review api.yaml -c naming -c pagination
 
   # Skip specific rules
-  aip-review api.yaml -x naming/plural-resources
+  aip-review api.yaml -x aip122/plural-resources
+
+  # Apply fixes and write to a new file
+  aip-review api.yaml --fix --output api-fixed.yaml
+
+  # Preview fixes without writing
+  aip-review api.yaml --fix --dry-run
 
 EXIT CODES:
-  0   No errors found
+  0   No errors found (or fixes applied successfully)
   1   Errors found (or warnings in strict mode)
   2   Invalid arguments or file not found
 `);
@@ -199,6 +221,40 @@ async function parseSimpleYAML(content) {
 }
 
 /**
+ * Serialize spec to YAML
+ * @param {object} spec
+ * @returns {Promise<string>}
+ */
+async function serializeYAML(spec) {
+  try {
+    const yaml = await import('yaml');
+    return yaml.stringify(spec, { lineWidth: 0 });
+  } catch {
+    try {
+      // @ts-expect-error - js-yaml doesn't have type declarations
+      const jsYaml = await import('js-yaml');
+      return jsYaml.default.dump(spec, { lineWidth: -1, noRefs: true });
+    } catch {
+      throw new Error(
+        'YAML serialization requires "yaml" or "js-yaml" package. Install with: npm install yaml'
+      );
+    }
+  }
+}
+
+/**
+ * Get the default output path for fixed spec
+ * @param {string} specPath
+ * @returns {string}
+ */
+function getDefaultOutputPath(specPath) {
+  const ext = extname(specPath);
+  const base = basename(specPath, ext);
+  const dir = dirname(specPath);
+  return join(dir, `${base}.fixed${ext}`);
+}
+
+/**
  * Main CLI function
  * @param {string[]} args
  * @returns {Promise<number>} Exit code
@@ -236,6 +292,11 @@ async function main(args) {
   const reviewer = new OpenAPIReviewer(config);
   const result = reviewer.review(spec, specPath);
 
+  // Handle fix mode
+  if (options.fix) {
+    return await handleFixMode(spec, specPath, result, options);
+  }
+
   // Format and output
   let output;
   switch (options.format) {
@@ -262,6 +323,120 @@ async function main(args) {
   }
 
   return 0;
+}
+
+/**
+ * Handle fix mode - apply fixes and write output
+ * @param {import('./types.ts').OpenAPISpec} spec
+ * @param {string} specPath
+ * @param {import('./types.ts').ReviewResult} result
+ * @param {CLIOptions} options
+ * @returns {Promise<number>}
+ */
+async function handleFixMode(spec, specPath, result, options) {
+  const useColor = !options.noColor && process.stdout.isTTY;
+  const green = useColor ? '\x1b[32m' : '';
+  const yellow = useColor ? '\x1b[33m' : '';
+  const red = useColor ? '\x1b[31m' : '';
+  const reset = useColor ? '\x1b[0m' : '';
+  const dim = useColor ? '\x1b[2m' : '';
+
+  // Count fixable findings
+  const fixableFindings = result.findings.filter((f) => f.fix);
+  const unfixableFindings = result.findings.filter((f) => !f.fix);
+
+  if (fixableFindings.length === 0) {
+    console.log(`${yellow}No fixes available.${reset}`);
+    if (unfixableFindings.length > 0) {
+      console.log(
+        `${dim}${unfixableFindings.length} finding(s) require manual intervention.${reset}`
+      );
+    }
+    return result.summary.errors > 0 ? 1 : 0;
+  }
+
+  console.log(
+    `\n${dim}Found ${fixableFindings.length} fixable issue(s)${reset}\n`
+  );
+
+  // Apply fixes
+  const fixer = new OpenAPIFixer(spec, { dryRun: options.dryRun });
+  const fixResults = fixer.applyFixes(fixableFindings);
+  const summary = fixer.getSummary();
+
+  // Report results
+  for (const fixResult of fixResults) {
+    const status = fixResult.applied ? `${green}✓${reset}` : `${red}✗${reset}`;
+    console.log(`  ${status} ${fixResult.ruleId}`);
+
+    // Show errors for failed fixes
+    if (!fixResult.applied) {
+      for (const change of fixResult.changes) {
+        if (!change.applied && change.error) {
+          console.log(`    ${red}${change.error}${reset}`);
+        }
+      }
+    }
+  }
+
+  console.log('');
+
+  // Summary line
+  if (options.dryRun) {
+    console.log(
+      `${yellow}Dry run:${reset} Would apply ${green}${summary.applied}${reset} fix(es) (${summary.changes} change(s))`
+    );
+    if (summary.failed > 0) {
+      console.log(`  ${red}${summary.failed} fix(es) would fail${reset}`);
+    }
+  } else {
+    console.log(
+      `Applied ${green}${summary.applied}${reset} fix(es) (${summary.changes} change(s))`
+    );
+    if (summary.failed > 0) {
+      console.log(`  ${red}${summary.failed} fix(es) failed${reset}`);
+    }
+  }
+
+  // Write output
+  if (!options.dryRun && summary.applied > 0) {
+    const outputPath = options.output || getDefaultOutputPath(specPath);
+    const ext = extname(outputPath).toLowerCase();
+
+    try {
+      let content;
+      if (ext === '.json') {
+        content = JSON.stringify(fixer.getSpec(), null, 2);
+      } else {
+        content = await serializeYAML(fixer.getSpec());
+      }
+
+      writeFileSync(outputPath, content, 'utf-8');
+      console.log(`\n${green}Fixed spec written to:${reset} ${outputPath}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`${red}Error writing output:${reset} ${message}`);
+      return 2;
+    }
+  }
+
+  // Report unfixable issues
+  if (unfixableFindings.length > 0) {
+    console.log(
+      `\n${dim}${unfixableFindings.length} issue(s) require manual fixes:${reset}`
+    );
+    for (const finding of unfixableFindings.slice(0, 5)) {
+      console.log(`  ${dim}- ${finding.path}: ${finding.message}${reset}`);
+    }
+    if (unfixableFindings.length > 5) {
+      console.log(
+        `  ${dim}... and ${unfixableFindings.length - 5} more${reset}`
+      );
+    }
+  }
+
+  // Return success if no errors remain
+  return summary.failed > 0 ? 1 : 0;
 }
 
 // Run CLI
