@@ -100,14 +100,168 @@ export function formatMarkdown(result) {
 function formatFindingMarkdown(finding) {
   const lines = [];
   lines.push(`- \`${finding.path}\` — ${finding.message}`);
+  lines.push(`  - **Rule:** \`${finding.ruleId}\``);
 
   if (finding.aip) {
     lines.push(`  - **Reference:** ${finding.aip}`);
   }
   if (finding.suggestion) {
-    lines.push(`  - **Fix:** ${finding.suggestion}`);
+    lines.push(`  - **Suggestion:** ${finding.suggestion}`);
   }
 
+  // Add machine-readable fix block
+  if (finding.fix) {
+    lines.push('');
+    lines.push('  <details>');
+    lines.push('  <summary>Machine-readable fix</summary>');
+    lines.push('');
+    lines.push('  ```yaml');
+    lines.push(formatFixAsYAML(finding.fix, '  '));
+    lines.push('  ```');
+    lines.push('');
+    lines.push('  </details>');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format a fix object as YAML
+ * @param {import('./types.js').Fix} fix
+ * @param {string} indent
+ * @returns {string}
+ */
+function formatFixAsYAML(fix, indent = '') {
+  const lines = [];
+  lines.push(`${indent}type: ${fix.type}`);
+  lines.push(`${indent}jsonPath: "${fix.jsonPath}"`);
+
+  if (fix.target !== undefined && Object.keys(fix.target).length > 0) {
+    lines.push(`${indent}target:`);
+    for (const [key, value] of Object.entries(fix.target)) {
+      lines.push(`${indent}  ${key}: ${formatYAMLValue(value)}`);
+    }
+  }
+
+  if (fix.replacement !== undefined) {
+    if (
+      typeof fix.replacement === 'object' &&
+      fix.replacement !== null &&
+      !Array.isArray(fix.replacement)
+    ) {
+      lines.push(`${indent}replacement:`);
+      // @ts-ignore
+      lines.push(formatYAMLObject(fix.replacement, indent + '  '));
+    } else if (Array.isArray(fix.replacement)) {
+      lines.push(`${indent}replacement:`);
+      for (const item of fix.replacement) {
+        if (typeof item === 'object' && item !== null) {
+          lines.push(`${indent}  -`);
+          lines.push(formatYAMLObject(item, indent + '    '));
+        } else {
+          lines.push(`${indent}  - ${formatYAMLValue(item)}`);
+        }
+      }
+    } else {
+      lines.push(`${indent}replacement: ${formatYAMLValue(fix.replacement)}`);
+    }
+  }
+
+  if (fix.specChanges?.length) {
+    lines.push(`${indent}specChanges:`);
+    for (const change of fix.specChanges) {
+      lines.push(`${indent}  - operation: ${change.operation}`);
+      lines.push(`${indent}    path: "${change.path}"`);
+      if (change.from !== undefined)
+        lines.push(`${indent}    from: "${change.from}"`);
+      if (change.to !== undefined)
+        lines.push(`${indent}    to: "${change.to}"`);
+      if (change.value !== undefined) {
+        if (
+          typeof change.value === 'object' &&
+          change.value !== null &&
+          !Array.isArray(change.value)
+        ) {
+          lines.push(`${indent}    value:`);
+          // @ts-ignore
+          lines.push(formatYAMLObject(change.value, indent + '      '));
+        } else {
+          lines.push(`${indent}    value: ${formatYAMLValue(change.value)}`);
+        }
+      }
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * Format a value for YAML output
+ * @param {unknown} value
+ * @returns {string}
+ */
+function formatYAMLValue(value) {
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+  if (typeof value === 'string') {
+    // Quote strings that need it
+    if (
+      value.includes(':') ||
+      value.includes('#') ||
+      value.includes("'") ||
+      value.includes('"') ||
+      value.includes('\n') ||
+      value.startsWith(' ') ||
+      value.endsWith(' ')
+    ) {
+      return JSON.stringify(value);
+    }
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    return JSON.stringify(value);
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
+/**
+ * Format an object as indented YAML lines
+ * @param {Record<string, unknown>} obj
+ * @param {string} indent
+ * @returns {string}
+ */
+function formatYAMLObject(obj, indent) {
+  const lines = [];
+  for (const [key, value] of Object.entries(obj)) {
+    if (
+      typeof value === 'object' &&
+      value !== null &&
+      !Array.isArray(value)
+    ) {
+      lines.push(`${indent}${key}:`);
+      // @ts-ignore
+      lines.push(formatYAMLObject(value, indent + '  '));
+    } else if (Array.isArray(value)) {
+      lines.push(`${indent}${key}:`);
+      for (const item of value) {
+        if (typeof item === 'object' && item !== null) {
+          lines.push(`${indent}  -`);
+          lines.push(formatYAMLObject(item, indent + '    '));
+        } else {
+          lines.push(`${indent}  - ${formatYAMLValue(item)}`);
+        }
+      }
+    } else {
+      lines.push(`${indent}${key}: ${formatYAMLValue(value)}`);
+    }
+  }
   return lines.join('\n');
 }
 
