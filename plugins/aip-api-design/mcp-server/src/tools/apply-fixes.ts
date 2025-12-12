@@ -6,12 +6,16 @@
  * - specPath: Local file path (STDIO transport only)
  * - specUrl: HTTP(S) URL to fetch spec (works with remote HTTP transport)
  * - spec: Inline JSON object (fallback, inefficient for large specs)
+ *
+ * For token efficiency, modified specs are stored temporarily and a
+ * signed URL is returned instead of the full spec content.
  */
 
 import { z } from 'zod';
 import { OpenAPIFixer } from '@getlarge/aip-openapi-reviewer';
 import type { Finding } from '@getlarge/aip-openapi-reviewer/types';
 import { loadSpec, writeSpecToPath } from './spec-loader.js';
+import { getTempStorage } from '../services/temp-storage.js';
 
 const SpecChangeSchema = z.object({
   operation: z.enum(['rename-key', 'set', 'add', 'remove', 'merge']),
@@ -87,7 +91,7 @@ export type ApplyFixesInput = z.infer<typeof ApplyFixesInputSchema>;
 export const applyFixesTool = {
   name: 'aip-apply-fixes',
   description:
-    'Apply suggested fixes to an OpenAPI spec. Provide spec via: specPath (local file), specUrl (HTTP URL), or spec (inline JSON). Returns the modified spec and a log of applied changes. Use writeBack=true with specPath to save changes.',
+    'Apply suggested fixes to an OpenAPI spec. Provide spec via: specPath (local file), specUrl (HTTP URL), or spec (inline JSON). Use writeBack=true with specPath to save to disk. Returns a signed URL to download the modified spec (valid for 5 minutes).',
   inputSchema: ApplyFixesInputSchema,
 
   async execute(input: ApplyFixesInput) {
@@ -114,6 +118,7 @@ export const applyFixesTool = {
     const results = fixer.applyFixes(findings as unknown as Finding[]);
     const summary = fixer.getSummary();
     const modifiedSpec = fixer.getSpec();
+    const errors = fixer.getErrors();
 
     // Write back to file if requested and using specPath
     let writtenTo: string | undefined;
@@ -122,21 +127,46 @@ export const applyFixesTool = {
       writtenTo = specPath;
     }
 
+    // Store modified spec and get signed URL (token efficiency)
+    const tempStorage = getTempStorage();
+    const contentType =
+      loaded.sourcePath.endsWith('.yaml') || loaded.sourcePath.endsWith('.yml')
+        ? 'yaml'
+        : 'json';
+
+    const stored = await tempStorage.store(
+      modifiedSpec as Record<string, unknown>,
+      {
+        contentType,
+        filename: `fixed-${Date.now()}.${contentType === 'yaml' ? 'yaml' : 'json'}`,
+      }
+    );
+
+    // Build response without full spec content
+    const response: Record<string, unknown> = {
+      results,
+      summary,
+      errors,
+      specSource: loaded.sourcePath,
+    };
+
+    if (writtenTo) {
+      response.writtenTo = writtenTo;
+    }
+
+    // Include URL or path to download the modified spec
+    if (stored.url) {
+      response.modifiedSpecUrl = stored.url;
+      response.expiresAt = new Date(stored.expiresAt).toISOString();
+    } else if (stored.path) {
+      response.modifiedSpecPath = stored.path;
+    }
+
     return {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify(
-            {
-              modifiedSpec,
-              results,
-              summary,
-              errors: fixer.getErrors(),
-              writtenTo,
-            },
-            null,
-            2
-          ),
+          text: JSON.stringify(response, null, 2),
         },
       ],
     };
