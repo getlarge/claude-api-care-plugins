@@ -16,10 +16,34 @@ import {
 } from './rules/index.js';
 
 /**
+ * @typedef {import('./types.ts').Parameter} Parameter
+ */
+
+/**
+ * Helper to create a query parameter with proper typing
+ * @param {string} name
+ * @param {object} [schema]
+ * @returns {Parameter}
+ */
+function queryParam(name, schema) {
+  return { name, in: 'query', schema };
+}
+
+/**
+ * Helper to create a header parameter with proper typing
+ * @param {string} name
+ * @param {object} [schema]
+ * @returns {Parameter}
+ */
+function headerParam(name, schema) {
+  return { name, in: 'header', schema };
+}
+
+/**
  * Helper to run a single rule against a spec
  * Uses the same dispatch logic as OpenAPIReviewer
  * @param {string} ruleId
- * @param {object} spec
+ * @param {import('./types.ts').OpenAPISpec} spec
  * @returns {import('./types.ts').Finding[]}
  */
 function runRule(ruleId, spec) {
@@ -29,8 +53,10 @@ function runRule(ruleId, spec) {
   /** @type {import('./types.js').RuleContext} */
   const ctx = {
     spec,
-    // @ts-expect-error - path is provided by the partial in tests
-    createFinding: (/** @type {Partial<import('./types.js').Finding>} */ partial) => ({
+    createFinding: (
+      /** @type {Partial<import('./types.js').Finding>} */ partial
+      // @ts-ignore
+    ) => ({
       ruleId: rule.id,
       severity: rule.severity,
       category: rule.category,
@@ -347,7 +373,7 @@ describe('aip158/list-paginated', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'page_size', in: 'query' }],
+            parameters: [queryParam('page_size')],
           },
         },
       },
@@ -361,7 +387,7 @@ describe('aip158/list-paginated', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'limit', in: 'query' }],
+            parameters: [queryParam('limit')],
           },
         },
       },
@@ -427,9 +453,7 @@ describe('aip158/max-page-size', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [
-              { name: 'page_size', in: 'query', schema: { type: 'integer' } },
-            ],
+            parameters: [queryParam('page_size', { type: 'integer' })],
           },
         },
       },
@@ -444,11 +468,7 @@ describe('aip158/max-page-size', () => {
         '/users': {
           get: {
             parameters: [
-              {
-                name: 'page_size',
-                in: 'query',
-                schema: { type: 'integer', maximum: 100 },
-              },
+              queryParam('page_size', { type: 'integer', maximum: 100 }),
             ],
           },
         },
@@ -465,7 +485,7 @@ describe('aip158/response-next-token', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'page_size', in: 'query' }],
+            parameters: [queryParam('page_size')],
             responses: {
               200: {
                 content: {
@@ -492,7 +512,7 @@ describe('aip158/response-next-token', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'page_size', in: 'query' }],
+            parameters: [queryParam('page_size')],
             responses: {
               200: {
                 content: {
@@ -520,7 +540,7 @@ describe('aip158/response-next-token', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'page_size', in: 'query' }],
+            parameters: [queryParam('page_size')],
             responses: {
               200: {
                 content: {
@@ -660,7 +680,7 @@ describe('aip155/idempotency-key', () => {
       paths: {
         '/users': {
           post: {
-            parameters: [{ name: 'Idempotency-Key', in: 'header' }],
+            parameters: [headerParam('Idempotency-Key')],
           },
         },
       },
@@ -692,10 +712,7 @@ describe('aip132/has-filtering', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [
-              { name: 'page_size', in: 'query' },
-              { name: 'page_token', in: 'query' },
-            ],
+            parameters: [queryParam('page_size'), queryParam('page_token')],
           },
         },
       },
@@ -709,7 +726,7 @@ describe('aip132/has-filtering', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'filter', in: 'query' }],
+            parameters: [queryParam('filter')],
           },
         },
       },
@@ -723,7 +740,7 @@ describe('aip132/has-filtering', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'status', in: 'query' }],
+            parameters: [queryParam('status')],
           },
         },
       },
@@ -751,7 +768,7 @@ describe('aip132/has-ordering', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'order_by', in: 'query' }],
+            parameters: [queryParam('order_by')],
           },
         },
       },
@@ -765,7 +782,7 @@ describe('aip132/has-ordering', () => {
       paths: {
         '/users': {
           get: {
-            parameters: [{ name: 'sort', in: 'query' }],
+            parameters: [queryParam('sort')],
           },
         },
       },
@@ -837,9 +854,7 @@ describe('naming/plural-resources - singletons', () => {
     };
     const findings = runRule('aip122/plural-resources', spec);
     // Should not flag 'email' since it's a singleton under settings
-    const emailFindings = findings.filter((f) =>
-      f.message.includes("'email'")
-    );
+    const emailFindings = findings.filter((f) => f.message.includes("'email'"));
     assert.equal(emailFindings.length, 0);
   });
 });
