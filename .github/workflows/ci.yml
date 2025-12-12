@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  PLUGIN_SCRIPTS_DIR: plugins/aip-api-design/scripts
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22, 24]
+
+    defaults:
+      run:
+        working-directory: ${{ env.PLUGIN_SCRIPTS_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: ${{ env.PLUGIN_SCRIPTS_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Run plugin validation tests
+        run: npm run test:plugin
+
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ env.PLUGIN_SCRIPTS_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ${{ env.PLUGIN_SCRIPTS_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+  cli-smoke-test:
+    name: CLI Smoke Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ${{ env.PLUGIN_SCRIPTS_DIR }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: ${{ env.PLUGIN_SCRIPTS_DIR }}/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test JSON output format
+        run: |
+          output=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format json)
+          echo "$output" | jq -e '.findings | length > 0' || (echo "Expected findings in JSON output" && exit 1)
+          echo "JSON format: OK"
+
+      - name: Test markdown output format
+        run: |
+          output=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format markdown)
+          echo "$output" | grep -q "## Summary" || (echo "Expected Summary section in markdown" && exit 1)
+          echo "Markdown format: OK"
+
+      - name: Test console output format
+        run: |
+          output=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format console)
+          echo "$output" | grep -q "findings" || (echo "Expected findings in console output" && exit 1)
+          echo "Console format: OK"
+
+      - name: Test SARIF output format
+        run: |
+          output=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format sarif)
+          echo "$output" | jq -e '.runs[0].results | length > 0' || (echo "Expected results in SARIF output" && exit 1)
+          echo "SARIF format: OK"
+
+      - name: Test category filtering
+        run: |
+          output=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format json -c naming)
+          categories=$(echo "$output" | jq -r '.findings[].category' | sort -u)
+          if echo "$categories" | grep -qv "naming"; then
+            echo "Expected only naming category findings"
+            exit 1
+          fi
+          echo "Category filtering: OK"
+
+      - name: Test rule skipping
+        run: |
+          # Get count without skipping
+          count_all=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format json | jq '.findings | length')
+
+          # Get count with skipping a rule
+          count_skip=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format json -x aip122/plural-resources | jq '.findings | length')
+
+          if [ "$count_skip" -ge "$count_all" ]; then
+            echo "Expected fewer findings when skipping a rule"
+            exit 1
+          fi
+          echo "Rule skipping: OK (all=$count_all, skip=$count_skip)"
+
+      - name: Test strict mode
+        run: |
+          # In strict mode, warnings become errors
+          warnings=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format json | jq '[.findings[] | select(.severity == "warning")] | length')
+          errors_strict=$(node src/cli.js tests/fixtures/acme-commerce.yaml --format json --strict | jq '[.findings[] | select(.severity == "error")] | length')
+
+          if [ "$errors_strict" -lt "$warnings" ]; then
+            echo "Expected strict mode to promote warnings to errors"
+            exit 1
+          fi
+          echo "Strict mode: OK"
