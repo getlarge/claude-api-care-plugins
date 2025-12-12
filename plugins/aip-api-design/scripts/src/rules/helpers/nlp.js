@@ -62,12 +62,18 @@ export function pluralize(word) {
 }
 
 /**
+ * @typedef {'api-path' | 'general'} NLPContext
+ */
+
+/**
  * Check if a word is primarily a verb (not a noun)
- * Words with "Noun|Verb" switch property are treated as nouns in API context
+ * In API path context, disambiguates plural-verb forms (logs, orders, files)
+ *
  * @param {string} word
+ * @param {NLPContext} [context='api-path'] - Context for disambiguation
  * @returns {boolean}
  */
-export function isVerb(word) {
+export function isVerb(word, context = 'api-path') {
   const doc = nlp(word);
   const json = doc.json()[0];
   const term = json?.terms?.[0];
@@ -77,6 +83,20 @@ export function isVerb(word) {
   // These are words like "download", "upload", "search", "order"
   if (term?.switch && term.switch.includes('Noun')) {
     return false;
+  }
+
+  // In API context, disambiguate plural-verb forms using "the X" context
+  // Words like "logs", "orders", "files" have Plural|Verb switch
+  // With "the logs", compromise correctly identifies them as plural nouns
+  if (context === 'api-path' && term?.switch && term.switch.includes('Plural')) {
+    const contextDoc = nlp('the ' + word);
+    const hasNoun = contextDoc.nouns().length > 0;
+    const hasVerb = contextDoc.verbs().length > 0;
+
+    // If "the X" is recognized as noun without verb, it's a plural noun
+    if (hasNoun && !hasVerb) {
+      return false;
+    }
   }
 
   // If tagged as Noun, it's not primarily a verb
@@ -89,10 +109,13 @@ export function isVerb(word) {
 
 /**
  * Check if a word is primarily a noun
+ * In API path context, disambiguates plural-verb forms (logs, orders, files)
+ *
  * @param {string} word
+ * @param {NLPContext} [context='api-path'] - Context for disambiguation
  * @returns {boolean}
  */
-export function isNoun(word) {
+export function isNoun(word, context = 'api-path') {
   const lower = word.toLowerCase();
 
   // API-specific uncountables are nouns
@@ -107,6 +130,14 @@ export function isNoun(word) {
   // Words with noun-verb switch are nouns in API context
   if (term?.switch && term.switch.includes('Noun')) {
     return true;
+  }
+
+  // In API context, disambiguate plural-verb forms using "the X" context
+  if (context === 'api-path' && term?.switch && term.switch.includes('Plural')) {
+    const contextDoc = nlp('the ' + word);
+    if (contextDoc.nouns().length > 0) {
+      return true;
+    }
   }
 
   return doc.has('#Noun') || doc.has('#Uncountable');
@@ -150,16 +181,17 @@ export function singularize(word) {
 /**
  * Analyze a word and return its likely parts of speech
  * @param {string} word
+ * @param {NLPContext} [context='api-path'] - Context for disambiguation
  * @returns {{ isVerb: boolean, isNoun: boolean, isUncountable: boolean, tags: string[] }}
  */
-export function analyzeWord(word) {
+export function analyzeWord(word, context = 'api-path') {
   const doc = nlp(word);
   const json = doc.json()[0];
   const tags = json?.terms?.[0]?.tags || [];
 
   return {
-    isVerb: isVerb(word),
-    isNoun: isNoun(word),
+    isVerb: isVerb(word, context),
+    isNoun: isNoun(word, context),
     isUncountable: isUncountable(word),
     tags,
   };
