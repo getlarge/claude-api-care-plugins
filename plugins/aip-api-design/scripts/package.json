@@ -11,7 +11,7 @@
       "types": "./src/types.ts"
     },
     "./rules": {
-      "import": "./src/rules.js"
+      "import": "./src/rules/index.js"
     },
     "./formatters": {
       "import": "./src/formatters.js"

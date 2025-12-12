@@ -5,10 +5,19 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultRules, getRuleById } from './rules.js';
+import {
+  defaultRules,
+  getRuleById,
+  SpecRule,
+  PathRule,
+  OperationRule,
+  ParameterRule,
+  getAllOperations,
+} from './rules/index.js';
 
 /**
  * Helper to run a single rule against a spec
+ * Uses the same dispatch logic as OpenAPIReviewer
  * @param {string} ruleId
  * @param {object} spec
  * @returns {import('./types.ts').Finding[]}
@@ -30,55 +39,85 @@ function runRule(ruleId, spec) {
     }),
   };
 
-  return rule.check(spec, ctx);
+  /** @type {import('./types.ts').Finding[]} */
+  const findings = [];
+
+  // Dispatch based on rule type (same logic as reviewer.js)
+  if (rule instanceof SpecRule) {
+    findings.push(...rule.checkSpec(spec, ctx));
+  } else if (rule instanceof PathRule) {
+    for (const [path, pathItem] of Object.entries(spec.paths || {})) {
+      findings.push(...rule.checkPath(path, pathItem, spec, ctx));
+    }
+  } else if (rule instanceof OperationRule) {
+    const operations = getAllOperations(spec);
+    for (const { path, method, operation } of operations) {
+      // Check method filter if specified
+      if (rule.methods && !rule.methods.includes(method)) continue;
+      findings.push(...rule.checkOperation(method, operation, path, spec, ctx));
+    }
+  } else if (rule instanceof ParameterRule) {
+    // ParameterRule checks individual parameters
+    const operations = getAllOperations(spec);
+    for (const { path, method, operation } of operations) {
+      // Check location filter if specified
+      const params = operation.parameters || [];
+      for (const param of params) {
+        if (rule.locations && !rule.locations.includes(param.in)) continue;
+        findings.push(...rule.checkParameter(param, method, path, spec, ctx));
+      }
+    }
+  }
+
+  return findings;
 }
 
 // ============================================
 // Naming Rules
 // ============================================
 
-describe('naming/plural-resources', () => {
+describe('aip122/plural-resources', () => {
   it('flags singular resource names', () => {
     const spec = { paths: { '/user': {}, '/user/{id}': {} } };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     assert.equal(findings.length, 2);
     assert.ok(findings[0].message.includes("'user'"));
   });
 
   it('passes plural resource names', () => {
     const spec = { paths: { '/users': {}, '/users/{id}': {} } };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     assert.equal(findings.length, 0);
   });
 
   it('ignores exceptions like health, status, config', () => {
     const spec = { paths: { '/health': {}, '/status': {}, '/config': {} } };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('naming/no-verbs', () => {
+describe('aip122/no-verbs', () => {
   it('flags verb prefixes in paths', () => {
     const spec = { paths: { '/getUsers': {}, '/createOrder': {} } };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 2);
   });
 
   it('passes noun-only paths', () => {
     const spec = { paths: { '/users': {}, '/orders': {} } };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 
   it('allows custom method suffixes with colon', () => {
     const spec = { paths: { '/orders/{id}:cancel': {} } };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('naming/consistent-casing', () => {
+describe('aip122/consistent-casing', () => {
   it('flags mixed casing styles', () => {
     const spec = {
       paths: {
@@ -86,7 +125,7 @@ describe('naming/consistent-casing', () => {
         '/orderItems': {}, // camelCase
       },
     };
-    const findings = runRule('naming/consistent-casing', spec);
+    const findings = runRule('aip122/consistent-casing', spec);
     assert.ok(findings.length > 0);
     assert.ok(findings[0].message.includes('Inconsistent casing'));
   });
@@ -98,21 +137,21 @@ describe('naming/consistent-casing', () => {
         '/order_items': {},
       },
     };
-    const findings = runRule('naming/consistent-casing', spec);
+    const findings = runRule('aip122/consistent-casing', spec);
     assert.equal(findings.length, 0);
   });
 
   it('passes all lowercase (no special casing)', () => {
     const spec = { paths: { '/users': {}, '/orders': {} } };
-    const findings = runRule('naming/consistent-casing', spec);
+    const findings = runRule('aip122/consistent-casing', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('naming/nested-ownership', () => {
-  it('flags generic {id} in nested paths', () => {
+describe('aip122/nested-ownership', () => {
+  it('flags generic {id} in truly nested paths', () => {
     const spec = { paths: { '/users/{userId}/orders/{id}': {} } };
-    const findings = runRule('naming/nested-ownership', spec);
+    const findings = runRule('aip122/nested-ownership', spec);
     assert.equal(findings.length, 1);
     assert.ok(findings[0].message.includes("'{id}'"));
     assert.ok(findings[0].suggestion?.includes('orderId'));
@@ -120,13 +159,44 @@ describe('naming/nested-ownership', () => {
 
   it('passes descriptive parameter names', () => {
     const spec = { paths: { '/users/{userId}/orders/{orderId}': {} } };
-    const findings = runRule('naming/nested-ownership', spec);
+    const findings = runRule('aip122/nested-ownership', spec);
     assert.equal(findings.length, 0);
   });
 
   it('allows {id} at root level', () => {
     const spec = { paths: { '/users/{id}': {} } };
-    const findings = runRule('naming/nested-ownership', spec);
+    const findings = runRule('aip122/nested-ownership', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('allows {id} with version prefix (not truly nested)', () => {
+    // /v1/maintenance/{id} has only 1 resource-param pair, so not nested
+    const spec = { paths: { '/v1/maintenance/{id}': {} } };
+    const findings = runRule('aip122/nested-ownership', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('allows {id} on simple versioned paths', () => {
+    // /v1/users/{id} has only 1 resource-param pair
+    const spec = { paths: { '/v1/users/{id}': {} } };
+    const findings = runRule('aip122/nested-ownership', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('flags {id} in deeply nested paths', () => {
+    // /v1/users/{userId}/posts/{postId}/comments/{id} has 3 resource-param pairs
+    const spec = {
+      paths: { '/v1/users/{userId}/posts/{postId}/comments/{id}': {} },
+    };
+    const findings = runRule('aip122/nested-ownership', spec);
+    assert.equal(findings.length, 1);
+    assert.ok(findings[0].suggestion?.includes('commentId'));
+  });
+
+  it('handles api prefix correctly', () => {
+    // /api/v1/items/{id} has only 1 resource-param pair
+    const spec = { paths: { '/api/v1/items/{id}': {} } };
+    const findings = runRule('aip122/nested-ownership', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -135,7 +205,7 @@ describe('naming/nested-ownership', () => {
 // Standard Methods Rules
 // ============================================
 
-describe('methods/get-no-body', () => {
+describe('aip131/get-no-body', () => {
   it('flags GET with request body', () => {
     const spec = {
       paths: {
@@ -144,7 +214,7 @@ describe('methods/get-no-body', () => {
         },
       },
     };
-    const findings = runRule('methods/get-no-body', spec);
+    const findings = runRule('aip131/get-no-body', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -152,12 +222,12 @@ describe('methods/get-no-body', () => {
     const spec = {
       paths: { '/users': { get: { responses: { 200: {} } } } },
     };
-    const findings = runRule('methods/get-no-body', spec);
+    const findings = runRule('aip131/get-no-body', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('methods/post-returns-201', () => {
+describe('aip133/post-returns-201', () => {
   it('flags POST returning only 200', () => {
     const spec = {
       paths: {
@@ -166,7 +236,7 @@ describe('methods/post-returns-201', () => {
         },
       },
     };
-    const findings = runRule('methods/post-returns-201', spec);
+    const findings = runRule('aip133/post-returns-201', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -178,7 +248,7 @@ describe('methods/post-returns-201', () => {
         },
       },
     };
-    const findings = runRule('methods/post-returns-201', spec);
+    const findings = runRule('aip133/post-returns-201', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -190,19 +260,19 @@ describe('methods/post-returns-201', () => {
         },
       },
     };
-    const findings = runRule('methods/post-returns-201', spec);
+    const findings = runRule('aip133/post-returns-201', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('methods/patch-over-put', () => {
+describe('aip134/patch-over-put', () => {
   it('flags PUT without PATCH on resource path', () => {
     const spec = {
       paths: {
         '/users/{id}': { put: {} },
       },
     };
-    const findings = runRule('methods/patch-over-put', spec);
+    const findings = runRule('aip134/patch-over-put', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -212,12 +282,12 @@ describe('methods/patch-over-put', () => {
         '/users/{id}': { put: {}, patch: {} },
       },
     };
-    const findings = runRule('methods/patch-over-put', spec);
+    const findings = runRule('aip134/patch-over-put', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('methods/delete-idempotent', () => {
+describe('aip135/delete-idempotent', () => {
   it('flags DELETE with request body', () => {
     const spec = {
       paths: {
@@ -226,7 +296,7 @@ describe('methods/delete-idempotent', () => {
         },
       },
     };
-    const findings = runRule('methods/delete-idempotent', spec);
+    const findings = runRule('aip135/delete-idempotent', spec);
     assert.equal(findings.length, 1);
     assert.ok(findings[0].message.includes('request body'));
   });
@@ -239,7 +309,7 @@ describe('methods/delete-idempotent', () => {
         },
       },
     };
-    const findings = runRule('methods/delete-idempotent', spec);
+    const findings = runRule('aip135/delete-idempotent', spec);
     assert.equal(findings.length, 1);
     assert.ok(findings[0].message.includes('201'));
   });
@@ -252,7 +322,7 @@ describe('methods/delete-idempotent', () => {
         },
       },
     };
-    const findings = runRule('methods/delete-idempotent', spec);
+    const findings = runRule('aip135/delete-idempotent', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -261,14 +331,14 @@ describe('methods/delete-idempotent', () => {
 // Pagination Rules
 // ============================================
 
-describe('pagination/list-paginated', () => {
+describe('aip158/list-paginated', () => {
   it('flags collection GET without pagination', () => {
     const spec = {
       paths: {
         '/users': { get: { parameters: [] } },
       },
     };
-    const findings = runRule('pagination/list-paginated', spec);
+    const findings = runRule('aip158/list-paginated', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -282,7 +352,7 @@ describe('pagination/list-paginated', () => {
         },
       },
     };
-    const findings = runRule('pagination/list-paginated', spec);
+    const findings = runRule('aip158/list-paginated', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -296,12 +366,62 @@ describe('pagination/list-paginated', () => {
         },
       },
     };
-    const findings = runRule('pagination/list-paginated', spec);
+    const findings = runRule('aip158/list-paginated', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('skips singleton endpoints like /health, /status', () => {
+    const spec = {
+      paths: {
+        '/health': { get: { parameters: [] } },
+        '/status': { get: { parameters: [] } },
+        '/metrics': { get: { parameters: [] } },
+        '/info': { get: { parameters: [] } },
+      },
+    };
+    const findings = runRule('aip158/list-paginated', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('skips singular noun endpoints (not collections)', () => {
+    const spec = {
+      paths: {
+        '/user': { get: { parameters: [] } }, // singular, not a collection
+        '/config': { get: { parameters: [] } }, // uncountable
+        '/data': { get: { parameters: [] } }, // uncountable
+      },
+    };
+    const findings = runRule('aip158/list-paginated', spec);
+    assert.equal(findings.length, 0);
+  });
+
+  it('flags plural noun endpoints (collections)', () => {
+    const spec = {
+      paths: {
+        '/orders': { get: { parameters: [] } },
+        '/products': { get: { parameters: [] } },
+        '/categories': { get: { parameters: [] } },
+      },
+    };
+    const findings = runRule('aip158/list-paginated', spec);
+    assert.equal(findings.length, 3);
+  });
+
+  it('skips auth-related endpoints', () => {
+    const spec = {
+      paths: {
+        '/auth': { get: { parameters: [] } },
+        '/login': { get: { parameters: [] } },
+        '/logout': { get: { parameters: [] } },
+        '/token': { get: { parameters: [] } },
+      },
+    };
+    const findings = runRule('aip158/list-paginated', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('pagination/max-page-size', () => {
+describe('aip158/max-page-size', () => {
   it('flags page_size without maximum', () => {
     const spec = {
       paths: {
@@ -314,7 +434,7 @@ describe('pagination/max-page-size', () => {
         },
       },
     };
-    const findings = runRule('pagination/max-page-size', spec);
+    const findings = runRule('aip158/max-page-size', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -334,12 +454,12 @@ describe('pagination/max-page-size', () => {
         },
       },
     };
-    const findings = runRule('pagination/max-page-size', spec);
+    const findings = runRule('aip158/max-page-size', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('pagination/response-has-next-token', () => {
+describe('aip158/response-next-token', () => {
   it('flags paginated endpoint without next_page_token in response', () => {
     const spec = {
       paths: {
@@ -363,7 +483,7 @@ describe('pagination/response-has-next-token', () => {
         },
       },
     };
-    const findings = runRule('pagination/response-has-next-token', spec);
+    const findings = runRule('aip158/response-next-token', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -391,7 +511,7 @@ describe('pagination/response-has-next-token', () => {
         },
       },
     };
-    const findings = runRule('pagination/response-has-next-token', spec);
+    const findings = runRule('aip158/response-next-token', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -424,7 +544,7 @@ describe('pagination/response-has-next-token', () => {
         },
       },
     };
-    const findings = runRule('pagination/response-has-next-token', spec);
+    const findings = runRule('aip158/response-next-token', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -433,27 +553,27 @@ describe('pagination/response-has-next-token', () => {
 // Error Rules
 // ============================================
 
-describe('errors/schema-defined', () => {
+describe('aip193/schema-defined', () => {
   it('flags missing error schema', () => {
     const spec = { components: { schemas: { User: {} } } };
-    const findings = runRule('errors/schema-defined', spec);
+    const findings = runRule('aip193/schema-defined', spec);
     assert.equal(findings.length, 1);
   });
 
   it('passes with Error schema', () => {
     const spec = { components: { schemas: { Error: {} } } };
-    const findings = runRule('errors/schema-defined', spec);
+    const findings = runRule('aip193/schema-defined', spec);
     assert.equal(findings.length, 0);
   });
 
   it('passes with ApiError schema', () => {
     const spec = { components: { schemas: { ApiError: {} } } };
-    const findings = runRule('errors/schema-defined', spec);
+    const findings = runRule('aip193/schema-defined', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('errors/responses-documented', () => {
+describe('aip193/responses-documented', () => {
   it('flags operation with no error responses', () => {
     const spec = {
       paths: {
@@ -462,7 +582,7 @@ describe('errors/responses-documented', () => {
         },
       },
     };
-    const findings = runRule('errors/responses-documented', spec);
+    const findings = runRule('aip193/responses-documented', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -474,7 +594,7 @@ describe('errors/responses-documented', () => {
         },
       },
     };
-    const findings = runRule('errors/responses-documented', spec);
+    const findings = runRule('aip193/responses-documented', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -486,12 +606,12 @@ describe('errors/responses-documented', () => {
         },
       },
     };
-    const findings = runRule('errors/responses-documented', spec);
+    const findings = runRule('aip193/responses-documented', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('errors/standard-codes', () => {
+describe('aip193/standard-codes', () => {
   it('flags non-standard error codes', () => {
     const spec = {
       paths: {
@@ -500,7 +620,7 @@ describe('errors/standard-codes', () => {
         },
       },
     };
-    const findings = runRule('errors/standard-codes', spec);
+    const findings = runRule('aip193/standard-codes', spec);
     assert.equal(findings.length, 1);
     assert.ok(findings[0].message.includes('418'));
   });
@@ -513,7 +633,7 @@ describe('errors/standard-codes', () => {
         },
       },
     };
-    const findings = runRule('errors/standard-codes', spec);
+    const findings = runRule('aip193/standard-codes', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -522,7 +642,7 @@ describe('errors/standard-codes', () => {
 // Idempotency Rules
 // ============================================
 
-describe('idempotency/post-has-key', () => {
+describe('aip155/idempotency-key', () => {
   it('flags POST without Idempotency-Key header', () => {
     const spec = {
       paths: {
@@ -531,7 +651,7 @@ describe('idempotency/post-has-key', () => {
         },
       },
     };
-    const findings = runRule('idempotency/post-has-key', spec);
+    const findings = runRule('aip155/idempotency-key', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -545,7 +665,7 @@ describe('idempotency/post-has-key', () => {
         },
       },
     };
-    const findings = runRule('idempotency/post-has-key', spec);
+    const findings = runRule('aip155/idempotency-key', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -557,7 +677,7 @@ describe('idempotency/post-has-key', () => {
         },
       },
     };
-    const findings = runRule('idempotency/post-has-key', spec);
+    const findings = runRule('aip155/idempotency-key', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -566,7 +686,7 @@ describe('idempotency/post-has-key', () => {
 // Filtering Rules
 // ============================================
 
-describe('filtering/list-filterable', () => {
+describe('aip132/has-filtering', () => {
   it('flags collection GET without filter params', () => {
     const spec = {
       paths: {
@@ -580,7 +700,7 @@ describe('filtering/list-filterable', () => {
         },
       },
     };
-    const findings = runRule('filtering/list-filterable', spec);
+    const findings = runRule('aip132/has-filtering', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -594,7 +714,7 @@ describe('filtering/list-filterable', () => {
         },
       },
     };
-    const findings = runRule('filtering/list-filterable', spec);
+    const findings = runRule('aip132/has-filtering', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -608,12 +728,12 @@ describe('filtering/list-filterable', () => {
         },
       },
     };
-    const findings = runRule('filtering/list-filterable', spec);
+    const findings = runRule('aip132/has-filtering', spec);
     assert.equal(findings.length, 0);
   });
 });
 
-describe('filtering/list-has-ordering', () => {
+describe('aip132/has-ordering', () => {
   it('flags collection GET without order_by', () => {
     const spec = {
       paths: {
@@ -622,7 +742,7 @@ describe('filtering/list-has-ordering', () => {
         },
       },
     };
-    const findings = runRule('filtering/list-has-ordering', spec);
+    const findings = runRule('aip132/has-ordering', spec);
     assert.equal(findings.length, 1);
   });
 
@@ -636,7 +756,7 @@ describe('filtering/list-has-ordering', () => {
         },
       },
     };
-    const findings = runRule('filtering/list-has-ordering', spec);
+    const findings = runRule('aip132/has-ordering', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -650,7 +770,7 @@ describe('filtering/list-has-ordering', () => {
         },
       },
     };
-    const findings = runRule('filtering/list-has-ordering', spec);
+    const findings = runRule('aip132/has-ordering', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -662,19 +782,19 @@ describe('filtering/list-has-ordering', () => {
 describe('naming/plural-resources - version handling', () => {
   it('ignores v1, v2, etc version prefixes', () => {
     const spec = { paths: { '/v1/users': {}, '/v2/orders': {} } };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     assert.equal(findings.length, 0);
   });
 
   it('ignores api prefix', () => {
     const spec = { paths: { '/api/v1/users': {} } };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     assert.equal(findings.length, 0);
   });
 
   it('handles versioned path with singular resource', () => {
     const spec = { paths: { '/v1/user': {}, '/v1/user/{id}': {} } };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     // Should flag 'user' but not 'v1'
     assert.ok(findings.some((f) => f.message.includes("'user'")));
     assert.ok(!findings.some((f) => f.message.includes("'v1'")));
@@ -690,7 +810,7 @@ describe('naming/plural-resources - singletons', () => {
         // Note: no /v1/database/{id} path
       },
     };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     // Should not flag 'database' since it's a singleton
     const dbFindings = findings.filter((f) => f.message.includes("'database'"));
     assert.equal(dbFindings.length, 0);
@@ -703,7 +823,7 @@ describe('naming/plural-resources - singletons', () => {
         '/v1/user/{id}': {}, // has id variant, so not singleton
       },
     };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     assert.ok(findings.some((f) => f.message.includes("'user'")));
   });
 
@@ -715,7 +835,7 @@ describe('naming/plural-resources - singletons', () => {
         // No /v1/settings/email/{id} path
       },
     };
-    const findings = runRule('naming/plural-resources', spec);
+    const findings = runRule('aip122/plural-resources', spec);
     // Should not flag 'email' since it's a singleton under settings
     const emailFindings = findings.filter((f) =>
       f.message.includes("'email'")
@@ -733,7 +853,7 @@ describe('naming/no-verbs - custom methods', () => {
         '/v1/passwords/validate-crypt': {},
       },
     };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -745,7 +865,7 @@ describe('naming/no-verbs - custom methods', () => {
         '/v1/database/restore': {},
       },
     };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -758,7 +878,7 @@ describe('naming/no-verbs - custom methods', () => {
         '/v1/models/{id}/predict': {},
       },
     };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 
@@ -769,7 +889,7 @@ describe('naming/no-verbs - custom methods', () => {
         '/v1/createOrder': {},
       },
     };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 2);
   });
 });
@@ -777,13 +897,13 @@ describe('naming/no-verbs - custom methods', () => {
 describe('naming/no-verbs - noun exceptions', () => {
   it('allows checklist as a noun', () => {
     const spec = { paths: { '/v1/checklists': {}, '/v1/checklists/{id}': {} } };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 
   it('allows singular checklist on resource paths', () => {
     const spec = { paths: { '/v1/checklist': {}, '/v1/checklist/{id}': {} } };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     // Should flag singular form by plural rule, but NOT as a verb
     const verbFindings = findings.filter((f) => f.message.includes('verb'));
     assert.equal(verbFindings.length, 0);
@@ -798,7 +918,7 @@ describe('naming/no-verbs - noun exceptions', () => {
         '/v1/uploads/{id}': {},
       },
     };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -812,7 +932,7 @@ describe('naming/no-verbs - version prefixes', () => {
         '/api/v1/items': {},
       },
     };
-    const findings = runRule('naming/no-verbs', spec);
+    const findings = runRule('aip122/no-verbs', spec);
     assert.equal(findings.length, 0);
   });
 });
@@ -833,10 +953,15 @@ describe('defaultRules', () => {
       assert.ok(rule.category, `${rule.id} missing category`);
       assert.ok(rule.severity, `${rule.id} missing severity`);
       assert.ok(rule.description, `${rule.id} missing description`);
-      assert.ok(
-        typeof rule.check === 'function',
-        `${rule.id} missing check fn`
-      );
+      // Rules use typed methods (checkSpec, checkPath, checkOperation, checkParameter, etc.)
+      const hasCheckMethod =
+        (rule instanceof SpecRule && typeof rule.checkSpec === 'function') ||
+        (rule instanceof PathRule && typeof rule.checkPath === 'function') ||
+        (rule instanceof OperationRule &&
+          typeof rule.checkOperation === 'function') ||
+        (rule instanceof ParameterRule &&
+          typeof rule.checkParameter === 'function');
+      assert.ok(hasCheckMethod, `${rule.id} missing typed check method`);
     }
   });
 
