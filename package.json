@@ -3,6 +3,9 @@
   "private": true,
   "description": "Claude Code plugins for API design following Google's AIPs",
   "type": "module",
+  "workspaces": [
+    "plugins/*/*"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -19,7 +22,7 @@
   "lint-staged": {
     "*.{js,ts,json,md,yaml,yml}": "prettier --write",
     "plugins/aip-api-design/scripts/src/**/*.js": [
-      "eslint --fix",
+      "eslint --fix --config plugins/aip-api-design/scripts/eslint.config.js",
       "prettier --write"
     ]
   }
