@@ -1,4 +1,7 @@
 {
+  "enabledPlugins": {
+    "aip-api-design@getlarge-aip-plugins": true
+  },
   "permissions": {
     "allow": [
       "WebFetch(domain:linter.aip.dev)",

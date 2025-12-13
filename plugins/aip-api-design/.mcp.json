@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "aip-reviewer": {
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-server/dist/stdio.js"],
+      "command": "node",
+      "description": "AIP OpenAPI Reviewer - provides tools for reviewing OpenAPI specs against Google AIP guidelines"
+    }
+  }
+}

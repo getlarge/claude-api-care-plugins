@@ -7,15 +7,6 @@
   "homepage": "https://github.com/getlarge/claude-aip-plugins",
   "keywords": ["api", "openapi", "aip", "rest", "linter", "design"],
   "license": "MIT",
-  "mcp": {
-    "servers": {
-      "aip-reviewer": {
-        "args": ["mcp-server/dist/stdio.js"],
-        "command": "node",
-        "description": "AIP OpenAPI Reviewer - provides tools for reviewing OpenAPI specs against Google AIP guidelines"
-      }
-    }
-  },
   "name": "aip-api-design",
   "repository": "https://github.com/getlarge/claude-aip-plugins",
   "version": "0.1.0"
