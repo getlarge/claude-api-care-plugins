@@ -53,12 +53,13 @@ export class MemoryStore extends BaseStore {
   async store(
     spec: Record<string, unknown>,
     options: {
+      id?: string;
       contentType?: 'json' | 'yaml';
       sessionId?: string;
       filename?: string;
     } = {}
   ): Promise<StoreResult> {
-    const id = this.generateId();
+    const id = options.id ?? this.generateId();
     const contentType = options.contentType ?? 'json';
     const now = Date.now();
     const expiresAt = this.calculateExpiry();

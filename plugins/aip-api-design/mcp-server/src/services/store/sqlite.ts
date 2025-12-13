@@ -90,6 +90,7 @@ export class SqliteStore extends BaseStore {
   async store(
     spec: Record<string, unknown>,
     options: {
+      id?: string;
       contentType?: 'json' | 'yaml';
       sessionId?: string;
       filename?: string;
@@ -99,7 +100,7 @@ export class SqliteStore extends BaseStore {
       throw new Error('SqliteStore not initialized');
     }
 
-    const id = this.generateId();
+    const id = options.id ?? this.generateId();
     const contentType = options.contentType ?? 'json';
     const now = Date.now();
     const expiresAt = this.calculateExpiry();
@@ -114,9 +115,9 @@ export class SqliteStore extends BaseStore {
     const filename = options.filename ?? `${id}.${ext}`;
     await this.fileBackend.write(filename, content);
 
-    // Store metadata in SQLite
+    // Store metadata in SQLite (upsert for custom IDs like reviewId)
     const stmt = this.db.prepare(`
-      INSERT INTO specs (id, filename, content_type, created_at, expires_at, session_id)
+      INSERT OR REPLACE INTO specs (id, filename, content_type, created_at, expires_at, session_id)
       VALUES (?, ?, ?, ?, ?, ?)
     `);
     stmt.run(

@@ -23,6 +23,10 @@ import {
   shutdownTempStorage,
   getTempStorage,
 } from './services/temp-storage.js';
+import {
+  initFindingsStorage,
+  shutdownFindingsStorage,
+} from './services/findings-storage.js';
 import { WorkerPool } from './tools/worker-pool.js';
 import type { ToolContext } from './tools/types.js';
 
@@ -167,6 +171,13 @@ export async function createServer(config: ServerConfig = {}) {
     type: 'sqlite',
     baseUrl,
     ttlMs: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Initialize findings storage for caching review results
+  // Uses longer TTL (1 day) since findings are useful across sessions
+  await initFindingsStorage({
+    type: 'sqlite',
+    ttlMs: 24 * 60 * 60 * 1000, // 1 day
   });
 
   // Initialize worker pool for CPU-intensive operations
@@ -336,6 +347,7 @@ export async function createServer(config: ServerConfig = {}) {
     },
     async stop() {
       await workerPool.shutdown();
+      await shutdownFindingsStorage();
       await shutdownTempStorage();
       await fastify.close();
     },

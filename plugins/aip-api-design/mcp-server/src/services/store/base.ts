@@ -64,6 +64,8 @@ export abstract class BaseStore {
   abstract store(
     spec: Record<string, unknown>,
     options?: {
+      /** Use this ID instead of generating one (e.g., for reviewId = spec hash) */
+      id?: string;
       contentType?: 'json' | 'yaml';
       sessionId?: string;
       filename?: string;

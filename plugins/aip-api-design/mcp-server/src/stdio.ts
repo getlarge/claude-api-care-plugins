@@ -12,6 +12,10 @@ import {
   initTempStorage,
   shutdownTempStorage,
 } from './services/temp-storage.js';
+import {
+  initFindingsStorage,
+  shutdownFindingsStorage,
+} from './services/findings-storage.js';
 import { WorkerPool } from './tools/worker-pool.js';
 import type { ToolContext } from './tools/types.js';
 
@@ -21,6 +25,13 @@ async function main() {
     type: 'memory',
     memory: { useFileSystem: true },
     ttlMs: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Initialize findings storage for caching review results
+  await initFindingsStorage({
+    type: 'memory',
+    memory: { useFileSystem: true },
+    ttlMs: 24 * 60 * 60 * 1000, // 1 day
   });
 
   // Initialize worker pool for CPU-intensive operations
@@ -37,9 +48,9 @@ async function main() {
   // Log to stderr to avoid interfering with MCP protocol on stdout
   console.error(`${SERVER_NAME} v${SERVER_VERSION} starting in STDIO mode...`);
 
-  // Cleanup on exit
   const cleanup = async () => {
     await workerPool.shutdown();
+    await shutdownFindingsStorage();
     await shutdownTempStorage();
     process.exit(0);
   };
