@@ -12,6 +12,7 @@
 
 import { z } from 'zod';
 import { loadSpecRaw } from './spec-loader.js';
+import { storeFindings } from '../services/findings-storage.js';
 import type { ToolContext } from './types.js';
 import type { WorkerTask } from './worker-pool.js';
 
@@ -54,6 +55,9 @@ export type ReviewInput = z.infer<typeof ReviewInputSchema>;
 
 // Schema for structured review output (the actual data, not the MCP wrapper)
 export const ReviewResultSchema = z.object({
+  reviewId: z
+    .string()
+    .describe('Hash of spec content, use to retrieve cached findings'),
   findings: z.array(
     z.object({
       ruleId: z.string(),
@@ -144,7 +148,6 @@ export function createReviewTool(context: ToolContext) {
       };
 
       const result = await context.workerPool.execute(task);
-
       if (!result.success) {
         return {
           content: [
@@ -157,14 +160,23 @@ export function createReviewTool(context: ToolContext) {
         };
       }
 
-      // Parse worker result for structuredContent
-      const resultData = JSON.parse(result.data as string) as ReviewResult;
+      // TODO: validate result.data against ReviewResultSchema
+      // Worker returns structured data with reviewId
+      const resultData = result.data as ReviewResult;
+      const { reviewId, findings, summary, specSource } = resultData;
+
+      // Cache findings for later use (e.g., by apply-fixes with reviewId)
+      try {
+        await storeFindings(reviewId, { findings, summary, specSource });
+      } catch {
+        // Caching failure is non-fatal, continue with response
+      }
 
       return {
         content: [
           {
             type: 'text' as const,
-            text: result.data as string,
+            text: JSON.stringify(resultData, null, 2),
           },
         ],
         structuredContent: resultData,

@@ -8,7 +8,6 @@
  * - Separate storage location
  */
 
-import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { BaseStore, createStore, CreateStoreOptions } from './store/index.js';
@@ -18,16 +17,6 @@ const DEFAULT_FINDINGS_TTL_MS = 24 * 60 * 60 * 1000;
 
 // Singleton storage instance for findings
 let findingsStore: BaseStore | null = null;
-
-/**
- * Generate a reviewId from spec content.
- * Uses SHA-256, truncated to 16 chars for readability.
- */
-export function generateReviewId(specContent: string | Buffer): string {
-  const content =
-    typeof specContent === 'string' ? specContent : specContent.toString();
-  return createHash('sha256').update(content).digest('hex').slice(0, 16);
-}
 
 /**
  * Get the current findings storage instance.

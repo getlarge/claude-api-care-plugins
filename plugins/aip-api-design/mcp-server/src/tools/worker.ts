@@ -6,6 +6,7 @@
  */
 
 import { parentPort } from 'node:worker_threads';
+import { createHash } from 'node:crypto';
 import { parse as parseYaml } from 'yaml';
 import {
   OpenAPIReviewer,
@@ -30,31 +31,46 @@ interface ApplyFixesPayload {
 }
 
 /**
+ * Generate reviewId from spec content.
+ * Uses SHA-256, truncated to 16 chars for readability.
+ */
+function generateReviewId(content: string): string {
+  return createHash('sha256').update(content).digest('hex').slice(0, 16);
+}
+
+/**
  * Parse spec from SharedArrayBuffer.
  * Decodes bytes to string, then parses as JSON or YAML.
+ * Also returns the raw text for reviewId generation.
  *
  * Note: Uint8Array creates a view over the SharedArrayBuffer, not a copy.
  */
 function parseSpecFromBuffer(
   buffer: SharedArrayBuffer,
   contentType: 'json' | 'yaml'
-): Record<string, unknown> {
+): { spec: Record<string, unknown>; rawText: string } {
   const uint8 = new Uint8Array(buffer);
   const text = new TextDecoder().decode(uint8);
 
-  if (contentType === 'yaml') {
-    return parseYaml(text) as Record<string, unknown>;
-  }
-  return JSON.parse(text);
+  const spec =
+    contentType === 'yaml'
+      ? (parseYaml(text) as Record<string, unknown>)
+      : JSON.parse(text);
+
+  return { spec, rawText: text };
 }
 
 function handleReview(
   payload: ReviewPayload,
   spec: Record<string, unknown>,
-  sourcePath: string
+  sourcePath: string,
+  rawText: string
 ): WorkerResult {
   try {
     const { strict, categories, skipRules } = payload;
+
+    // Generate reviewId from raw spec content
+    const reviewId = generateReviewId(rawText);
 
     const reviewer = new OpenAPIReviewer({
       strict,
@@ -64,9 +80,13 @@ function handleReview(
 
     const result = reviewer.review(spec, sourcePath);
 
+    // Return structured data with reviewId
     return {
       success: true,
-      data: formatJSON(result),
+      data: {
+        reviewId,
+        ...JSON.parse(formatJSON(result)),
+      },
     };
   } catch (error) {
     return {
@@ -130,14 +150,18 @@ parentPort?.on('message', (task: WorkerTask) => {
 
   try {
     // Parse spec from SharedArrayBuffer (CPU-intensive, done in worker)
-    const spec = parseSpecFromBuffer(task.specBuffer, task.contentType);
+    const { spec, rawText } = parseSpecFromBuffer(
+      task.specBuffer,
+      task.contentType
+    );
 
     switch (task.type) {
       case 'review':
         result = handleReview(
           task.payload as ReviewPayload,
           spec,
-          task.sourcePath
+          task.sourcePath,
+          rawText
         );
         break;
       case 'apply-fixes':
