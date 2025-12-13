@@ -84,6 +84,31 @@ export const ApplyFixesInputSchema = z
 
 export type ApplyFixesInput = z.infer<typeof ApplyFixesInputSchema>;
 
+// Schema for structured apply-fixes output
+export const ApplyFixesOutputSchema = z.object({
+  results: z.array(
+    z.object({
+      ruleId: z.string(),
+      path: z.string(),
+      success: z.boolean(),
+      error: z.string().optional(),
+    })
+  ),
+  summary: z.object({
+    attempted: z.number(),
+    succeeded: z.number(),
+    failed: z.number(),
+  }),
+  errors: z.array(z.string()),
+  specSource: z.string(),
+  writtenTo: z.string().optional(),
+  modifiedSpecUrl: z.string().optional(),
+  modifiedSpecPath: z.string().optional(),
+  expiresAt: z.string().optional(),
+});
+
+export type ApplyFixesOutput = z.infer<typeof ApplyFixesOutputSchema>;
+
 interface ApplyFixesResult {
   modifiedSpec: Record<string, unknown>;
   results: unknown;
@@ -169,33 +194,58 @@ export function createApplyFixesTool(context: ToolContext) {
         filename: `fixed-${Date.now()}.${contentType === 'yaml' ? 'yaml' : 'json'}`,
       });
 
-      // Build response without full spec content
-      const response: Record<string, unknown> = {
-        results,
-        summary,
-        errors,
+      // Build typed output
+      const output: ApplyFixesOutput = {
+        results: results as ApplyFixesOutput['results'],
+        summary: summary as ApplyFixesOutput['summary'],
+        errors: errors as ApplyFixesOutput['errors'],
         specSource: sourcePath,
+        ...(writtenTo && { writtenTo }),
+        ...(stored.url && {
+          modifiedSpecUrl: stored.url,
+          expiresAt: new Date(stored.expiresAt).toISOString(),
+        }),
+        ...(stored.path && { modifiedSpecPath: stored.path }),
       };
 
-      if (writtenTo) {
-        response.writtenTo = writtenTo;
+      // Build content array with text and optional resource link
+      const mimeType =
+        contentType === 'yaml' ? 'application/x-yaml' : 'application/json';
+      const filename = `fixed-spec.${contentType === 'yaml' ? 'yaml' : 'json'}`;
+
+      // Determine resource link URI
+      let resourceUri: string | undefined;
+      if (stored.url) {
+        resourceUri = stored.url;
+      } else if (stored.path) {
+        resourceUri = `file://${stored.path}`;
       }
 
-      // Include URL or path to download the modified spec
-      if (stored.url) {
-        response.modifiedSpecUrl = stored.url;
-        response.expiresAt = new Date(stored.expiresAt).toISOString();
-      } else if (stored.path) {
-        response.modifiedSpecPath = stored.path;
+      // Build content with proper MCP types
+      const textContent = {
+        type: 'text' as const,
+        text: JSON.stringify(output, null, 2),
+      };
+
+      if (resourceUri) {
+        return {
+          content: [
+            textContent,
+            {
+              type: 'resource_link' as const,
+              uri: resourceUri,
+              name: filename,
+              description: 'Modified OpenAPI spec with fixes applied',
+              mimeType,
+            },
+          ],
+          structuredContent: output,
+        };
       }
 
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(response, null, 2),
-          },
-        ],
+        content: [textContent],
+        structuredContent: output,
       };
     },
   };

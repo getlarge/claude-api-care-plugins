@@ -52,6 +52,52 @@ export const ReviewInputSchema = z
 
 export type ReviewInput = z.infer<typeof ReviewInputSchema>;
 
+// Schema for structured review output (the actual data, not the MCP wrapper)
+export const ReviewResultSchema = z.object({
+  findings: z.array(
+    z.object({
+      ruleId: z.string(),
+      severity: z.enum(['error', 'warning', 'suggestion']),
+      category: z.string(),
+      path: z.string(),
+      message: z.string(),
+      aip: z.string().optional(),
+      suggestion: z.string().optional(),
+      context: z.record(z.string(), z.unknown()).optional(),
+      fix: z
+        .object({
+          type: z.string(),
+          jsonPath: z.string(),
+          specChanges: z.array(
+            z.object({
+              operation: z.enum([
+                'rename-key',
+                'set',
+                'add',
+                'remove',
+                'merge',
+              ]),
+              path: z.string(),
+              from: z.string().optional(),
+              to: z.string().optional(),
+              value: z.unknown().optional(),
+            })
+          ),
+        })
+        .optional(),
+    })
+  ),
+  summary: z.object({
+    total: z.number(),
+    errors: z.number(),
+    warnings: z.number(),
+    suggestions: z.number(),
+  }),
+  specSource: z.string(),
+});
+
+export type ReviewResult = z.infer<typeof ReviewResultSchema>;
+
 /**
  * Create a review tool with the given context (worker pool).
  */
@@ -111,6 +157,9 @@ export function createReviewTool(context: ToolContext) {
         };
       }
 
+      // Parse worker result for structuredContent
+      const resultData = JSON.parse(result.data as string) as ReviewResult;
+
       return {
         content: [
           {
@@ -118,6 +167,7 @@ export function createReviewTool(context: ToolContext) {
             text: result.data as string,
           },
         ],
+        structuredContent: resultData,
       };
     },
   };

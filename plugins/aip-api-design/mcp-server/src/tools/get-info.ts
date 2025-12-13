@@ -15,6 +15,17 @@ export const GetInfoInputSchema = z.object({
 
 export type GetInfoInput = z.infer<typeof GetInfoInputSchema>;
 
+export const GetInfoOutputSchema = z.object({
+  aip: z.string(),
+  title: z.string(),
+  summary: z.string(),
+  category: z.string().optional(),
+  url: z.string(),
+  linterDocs: z.string(),
+});
+
+export type GetInfoOutput = z.infer<typeof GetInfoOutputSchema>;
+
 export const getInfoTool = {
   name: 'aip-get-info',
   description:
@@ -39,24 +50,23 @@ export const getInfoTool = {
       };
     }
 
+    const output: GetInfoOutput = {
+      aip: `AIP-${aip}`,
+      title: info.title,
+      summary: info.summary,
+      category: info.category,
+      url: `https://google.aip.dev/${aip}`,
+      linterDocs: `https://linter.aip.dev/${aip}`,
+    };
+
     return {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify(
-            {
-              aip: `AIP-${aip}`,
-              title: info.title,
-              summary: info.summary,
-              category: info.category,
-              url: `https://google.aip.dev/${aip}`,
-              linterDocs: `https://linter.aip.dev/${aip}`,
-            },
-            null,
-            2
-          ),
+          text: JSON.stringify(output, null, 2),
         },
       ],
+      structuredContent: output,
     };
   },
 };

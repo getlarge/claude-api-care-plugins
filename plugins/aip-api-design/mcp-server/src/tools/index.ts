@@ -5,14 +5,26 @@
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createReviewTool, ReviewInputSchema } from './review.js';
+import {
+  createReviewTool,
+  ReviewInputSchema,
+  ReviewResultSchema,
+} from './review.js';
 import {
   listRulesTool,
   ListRulesInputSchema,
   ListRulesOutputSchema,
 } from './list-rules.js';
-import { getInfoTool, GetInfoInputSchema } from './get-info.js';
-import { createApplyFixesTool, ApplyFixesInputSchema } from './apply-fixes.js';
+import {
+  getInfoTool,
+  GetInfoInputSchema,
+  GetInfoOutputSchema,
+} from './get-info.js';
+import {
+  createApplyFixesTool,
+  ApplyFixesInputSchema,
+  ApplyFixesOutputSchema,
+} from './apply-fixes.js';
 import type { ToolContext } from './types.js';
 
 /**
@@ -32,7 +44,7 @@ export function registerTools(server: McpServer, context: ToolContext) {
     {
       description: reviewTool.description,
       inputSchema: ReviewInputSchema,
-      // TODO: outputSchema
+      outputSchema: ReviewResultSchema,
     },
     async (args) => reviewTool.execute(args)
   );
@@ -54,7 +66,7 @@ export function registerTools(server: McpServer, context: ToolContext) {
     {
       description: getInfoTool.description,
       inputSchema: GetInfoInputSchema,
-      // TODO: outputSchema
+      outputSchema: GetInfoOutputSchema,
     },
     async (args) => getInfoTool.execute(args)
   );
@@ -65,7 +77,7 @@ export function registerTools(server: McpServer, context: ToolContext) {
     {
       description: applyFixesTool.description,
       inputSchema: ApplyFixesInputSchema,
-      // TODO: outputSchema
+      outputSchema: ApplyFixesOutputSchema,
     },
     async (args) => applyFixesTool.execute(args)
   );

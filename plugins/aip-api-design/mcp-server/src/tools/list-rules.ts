@@ -20,6 +20,22 @@ export const ListRulesInputSchema = z.object({
 
 export type ListRulesInput = z.infer<typeof ListRulesInputSchema>;
 
+export const ListRulesOutputSchema = z.object({
+  rules: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      aip: z.string().optional(),
+      severity: z.enum(['error', 'warning', 'suggestion']),
+      category: z.string(),
+      description: z.string(),
+    })
+  ),
+  count: z.number(),
+});
+
+export type ListRulesOutput = z.infer<typeof ListRulesOutputSchema>;
+
 export const listRulesTool = {
   name: 'aip-list-rules',
   description:
@@ -36,7 +52,7 @@ export const listRulesTool = {
       rules = defaultRegistry.getByCategory(category as RuleCategory);
     }
 
-    const ruleInfo = rules.map((r) => ({
+    const ruleInfo: ListRulesOutput['rules'] = rules.map((r) => ({
       id: r.id,
       name: r.name,
       aip: r.aip,
@@ -45,17 +61,16 @@ export const listRulesTool = {
       description: r.description,
     }));
 
+    const output: ListRulesOutput = { rules: ruleInfo, count: ruleInfo.length };
+
     return {
       content: [
         {
           type: 'text' as const,
-          text: JSON.stringify(
-            { rules: ruleInfo, count: ruleInfo.length },
-            null,
-            2
-          ),
+          text: JSON.stringify(output, null, 2),
         },
       ],
+      structuredContent: output,
     };
   },
 };
