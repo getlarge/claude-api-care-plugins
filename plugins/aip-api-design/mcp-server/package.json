@@ -15,7 +15,8 @@
     "start:stdio": "node dist/stdio.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "node --test src/**/*.test.ts"
+    "test": "npm run build && node --import tsx --test src/**/*.test.ts",
+    "test:e2e": "npm run build && node --import tsx --test src/e2e.test.ts"
   },
   "keywords": [
     "mcp",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.32.1"
   },
