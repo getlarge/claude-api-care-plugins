@@ -84,6 +84,8 @@ This plugin follows a **progressive disclosure** pattern. Each command produces 
 /api-validate thoughts/api/plans/2024-01-15-orders-api-plan.md
 ```
 
+For detailed flow diagrams and architecture, see [User Flows Documentation](docs/user-flows.md).
+
 ## The `thoughts/` Directory
 
 All documents are stored in `thoughts/api/`:
