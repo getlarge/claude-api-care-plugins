@@ -132,20 +132,26 @@ claude-aip-plugins/                    # Marketplace root
         │       ├── batch.md           # AIP-231+ (batch operations)
         │       └── rest-mapping.md    # Proto concepts → REST/OpenAPI
         │
-        └── scripts/                   # Standalone JS reviewer (optional)
+        ├── openapi-reviewer/          # Standalone JS reviewer
+        │   ├── package.json
+        │   └── src/
+        │       ├── index.js           # Library entry point
+        │       ├── rules/             # AIP rules organized by AIP number
+        │       ├── reviewer.js        # OpenAPIReviewer class
+        │       ├── fixer.js           # OpenAPIFixer class
+        │       ├── discover.js        # Spec discovery
+        │       ├── formatters.js      # Console, Markdown, JSON, SARIF output
+        │       └── cli.js             # Command-line interface
+        │
+        └── mcp-server/                # MCP server for Claude integration
             ├── package.json
             └── src/
-                ├── index.js           # Library entry point
-                ├── rules.js           # 11 default AIP rules
-                ├── reviewer.js        # OpenAPIReviewer class
-                ├── formatters.js      # Console, Markdown, JSON, SARIF output
-                ├── cli.js             # Command-line interface
-                └── types.ts           # TypeScript definitions (JSDoc compatible)
+                └── ...                # MCP tools wrapping the reviewer
 ```
 
 ---
 
-## AIP Rules Implemented (in scripts/)
+## AIP Rules Implemented (in openapi-reviewer/)
 
 The standalone reviewer includes these rules:
 

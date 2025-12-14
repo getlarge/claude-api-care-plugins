@@ -31,13 +31,13 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
    REVIEW_JSON=$(mktemp)
 
    # Step 1: Run review once, save JSON (this is the expensive operation)
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/src/cli.js" {spec-path} --format json > "$REVIEW_JSON"
+   node "${CLAUDE_PLUGIN_ROOT}/openapi-reviewer/src/cli.js" {spec-path} --format json > "$REVIEW_JSON"
 
    # Step 2: Convert JSON to full markdown and save to file
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/src/cli.js" --from-json "$REVIEW_JSON" --format markdown > thoughts/api/reviews/{YYYY-MM-DD}-{spec-name}-review.md
+   node "${CLAUDE_PLUGIN_ROOT}/openapi-reviewer/src/cli.js" --from-json "$REVIEW_JSON" --format markdown > thoughts/api/reviews/{YYYY-MM-DD}-{spec-name}-review.md
 
    # Step 3: Convert JSON to summary for display (context-efficient)
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/src/cli.js" --from-json "$REVIEW_JSON" --format summary
+   node "${CLAUDE_PLUGIN_ROOT}/openapi-reviewer/src/cli.js" --from-json "$REVIEW_JSON" --format summary
 
    # Step 4: Clean up temp file
    rm "$REVIEW_JSON"
@@ -68,7 +68,7 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
 
 ## Supported Rules
 
-The reviewer checks 17 rules across 6 categories. See `scripts/RULES.md` for full documentation.
+The reviewer checks 17 rules across 6 categories. See `openapi-reviewer/RULES.md` for full documentation.
 
 | Category         | Rules | AIPs               |
 | ---------------- | ----- | ------------------ |

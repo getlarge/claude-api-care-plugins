@@ -20,7 +20,7 @@ Find all OpenAPI specifications in this codebase using the deterministic discove
    The plugin scripts are located relative to `CLAUDE_PLUGIN_ROOT`. When running as an installed plugin, this environment variable is available. You can find the discover script at:
 
    ```
-   ${CLAUDE_PLUGIN_ROOT}/scripts/src/discover.js
+   ${CLAUDE_PLUGIN_ROOT}/openapi-reviewer/src/discover.js
    ```
 
    To find the actual path, check the session start hook output or locate the plugin installation (typically `~/.claude/plugins/aip-api-design@*/`).
@@ -28,14 +28,14 @@ Find all OpenAPI specifications in this codebase using the deterministic discove
 2. **Run the discover script**:
 
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/src/discover.js" {directory} --format markdown
+   node "${CLAUDE_PLUGIN_ROOT}/openapi-reviewer/src/discover.js" {directory} --format markdown
    ```
 
    If `CLAUDE_PLUGIN_ROOT` is not set, find the plugin directory first:
 
    ```bash
    PLUGIN_DIR=$(find ~/.claude/plugins -name "aip-api-design@*" -type d 2>/dev/null | head -1)
-   node "${PLUGIN_DIR}/scripts/src/discover.js" {directory} --format markdown
+   node "${PLUGIN_DIR}/openapi-reviewer/src/discover.js" {directory} --format markdown
    ```
 
    The script will:
@@ -102,7 +102,7 @@ User: /api-discover
 
 Claude: Running discovery script...
 
-[Runs: node scripts/src/discover.js . --format markdown]
+[Runs: node openapi-reviewer/src/discover.js . --format markdown]
 
 Found 2 OpenAPI specifications:
 

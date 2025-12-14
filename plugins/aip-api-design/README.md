@@ -195,17 +195,18 @@ aip-api-design/
 │       ├── field-masks.md    # AIP-134
 │       ├── batch.md          # AIP-231+
 │       └── rest-mapping.md   # Proto → REST
-└── scripts/                  # Standalone reviewer
-    ├── package.json
-    ├── RULES.md              # Rule documentation
-    └── src/
-        ├── cli.js            # Review CLI
-        ├── discover.js       # Discovery CLI
-        ├── rules.js          # 17 AIP rules
-        ├── rules.test.js     # 50 tests
-        ├── reviewer.js
-        ├── formatters.js
-        └── types.ts
+├── openapi-reviewer/         # Standalone reviewer
+│   ├── package.json
+│   ├── RULES.md              # Rule documentation
+│   └── src/
+│       ├── cli.js            # Review CLI
+│       ├── discover.js       # Discovery CLI
+│       ├── rules/            # AIP rules organized by number
+│       ├── reviewer.js
+│       ├── fixer.js
+│       └── formatters.js
+└── mcp-server/               # MCP server for Claude
+    └── src/                  # Tools wrapping the reviewer
 ```
 
 ## Contributing
