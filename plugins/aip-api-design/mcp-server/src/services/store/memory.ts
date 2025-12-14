@@ -20,6 +20,8 @@ import {
 export interface MemoryStoreOptions extends StoreOptions {
   /** Write to file system for STDIO transport (returns paths instead of URLs) */
   useFileSystem?: boolean;
+  /** Custom temp directory name (default: 'aip-mcp-specs') */
+  tempDirName?: string;
 }
 
 /**
@@ -29,17 +31,19 @@ export interface MemoryStoreOptions extends StoreOptions {
 export class MemoryStore extends BaseStore {
   private storage = new Map<string, StoredSpec>();
   private useFileSystem: boolean;
+  private tempDirName: string;
   private tempDir?: string;
   private cleanupInterval?: NodeJS.Timeout;
 
   constructor(options: MemoryStoreOptions = {}) {
     super(options);
     this.useFileSystem = options.useFileSystem ?? false;
+    this.tempDirName = options.tempDirName ?? 'aip-mcp-specs';
   }
 
   async initialize(): Promise<void> {
     if (this.useFileSystem) {
-      this.tempDir = join(tmpdir(), 'aip-mcp-specs');
+      this.tempDir = join(tmpdir(), this.tempDirName);
       await mkdir(this.tempDir, { recursive: true });
     }
 

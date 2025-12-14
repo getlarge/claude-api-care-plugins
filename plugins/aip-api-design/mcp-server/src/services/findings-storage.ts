@@ -10,7 +10,12 @@
 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BaseStore, createStore, CreateStoreOptions } from './store/index.js';
+import {
+  BaseStore,
+  createStore,
+  CreateStoreOptions,
+  StoreResult,
+} from './store/index.js';
 
 // Default TTL: 1 day (findings are useful across sessions)
 const DEFAULT_FINDINGS_TTL_MS = 24 * 60 * 60 * 1000;
@@ -51,6 +56,7 @@ export async function initFindingsStorage(
     // Use separate paths for findings
     memory: {
       useFileSystem: options?.memory?.useFileSystem ?? true,
+      tempDirName: options?.memory?.tempDirName ?? 'aip-mcp-findings',
       ...options?.memory,
     },
     sqlite: {
@@ -82,19 +88,20 @@ export async function shutdownFindingsStorage(): Promise<void> {
  * @param reviewId - Spec content hash (use generateReviewId())
  * @param findings - The findings data to store
  * @param contentType - Format: 'json' or 'yaml'
+ * @returns StoreResult with id, expiresAt, and url or path depending on transport
  */
 export async function storeFindings(
   reviewId: string,
   findings: Record<string, unknown>,
   contentType: 'json' | 'yaml' = 'json'
-): Promise<{ id: string; expiresAt: number }> {
+): Promise<StoreResult> {
   const store = getFindingsStorage();
-  const result = await store.store(findings, {
+  // Don't pass custom filename - let the store use default ${id}.${ext}
+  // This ensures get() can find the file
+  return store.store(findings, {
     id: reviewId,
     contentType,
-    filename: `findings-${reviewId}.${contentType === 'yaml' ? 'yaml' : 'json'}`,
   });
-  return { id: result.id, expiresAt: result.expiresAt };
 }
 
 /**

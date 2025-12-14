@@ -102,6 +102,36 @@ export const ReviewResultSchema = z.object({
 
 export type ReviewResult = z.infer<typeof ReviewResultSchema>;
 
+// Schema for compact review output (returned to caller for token efficiency)
+export const ReviewCompactOutputSchema = z.object({
+  reviewId: z
+    .string()
+    .describe('Hash of spec content, use to retrieve cached findings'),
+  specPath: z.string().describe('Path or URL of the reviewed spec'),
+  specTitle: z.string().optional(),
+  specVersion: z.string().optional(),
+  summary: z.object({
+    total: z.number(),
+    errors: z.number(),
+    warnings: z.number(),
+    suggestions: z.number(),
+  }),
+  findingsUrl: z
+    .string()
+    .optional()
+    .describe('Signed URL to download full findings (HTTP transport)'),
+  findingsPath: z
+    .string()
+    .optional()
+    .describe('File path to full findings (STDIO transport)'),
+  expiresAt: z
+    .string()
+    .optional()
+    .describe('ISO timestamp when URL/path expires'),
+});
+
+export type ReviewCompactOutput = z.infer<typeof ReviewCompactOutputSchema>;
+
 /**
  * Create a review tool with the given context (worker pool).
  */
@@ -109,7 +139,7 @@ export function createReviewTool(context: ToolContext) {
   return {
     name: 'aip-review',
     description:
-      'Analyze an OpenAPI spec against Google AIP guidelines. Provide spec via: specPath (local file) or specUrl (HTTP URL). Returns findings with severity, rule ID, path, message, and fix suggestions.',
+      'Analyze an OpenAPI spec against Google AIP guidelines. Returns a compact summary with reviewId and a link to full findings. Use findingsPath/findingsUrl to access detailed findings, or pass reviewId to aip-apply-fixes.',
     inputSchema: ReviewInputSchema,
 
     async execute(input: ReviewInput) {
@@ -162,24 +192,94 @@ export function createReviewTool(context: ToolContext) {
 
       // TODO: validate result.data against ReviewResultSchema
       // Worker returns structured data with reviewId
-      const resultData = result.data as ReviewResult;
-      const { reviewId, findings, summary, specSource } = resultData;
+      // Note: Library returns specPath, summary without total
+      const resultData = result.data as {
+        reviewId: string;
+        specPath: string;
+        specTitle?: string;
+        specVersion?: string;
+        findings: ReviewResult['findings'];
+        summary: { errors: number; warnings: number; suggestions: number };
+      };
+      const {
+        reviewId,
+        findings,
+        summary,
+        specPath: reviewedSpecPath,
+      } = resultData;
+
+      // Calculate total from summary components
+      const total = summary.errors + summary.warnings + summary.suggestions;
 
       // Cache findings for later use (e.g., by apply-fixes with reviewId)
+      // Also returns storage info for compact response
+      let stored: {
+        id: string;
+        url?: string;
+        path?: string;
+        expiresAt: number;
+      };
       try {
-        await storeFindings(reviewId, { findings, summary, specSource });
+        stored = await storeFindings(reviewId, {
+          findings,
+          summary: { ...summary, total },
+          specSource: reviewedSpecPath,
+        });
       } catch {
-        // Caching failure is non-fatal, continue with response
+        // Caching failure is non-fatal, use fallback
+        stored = { id: reviewId, expiresAt: Date.now() + 24 * 60 * 60 * 1000 };
+      }
+
+      // Build compact output (token-efficient response)
+      const compactOutput: ReviewCompactOutput = {
+        reviewId,
+        specPath: reviewedSpecPath,
+        ...(resultData.specTitle && { specTitle: resultData.specTitle }),
+        ...(resultData.specVersion && { specVersion: resultData.specVersion }),
+        summary: {
+          total,
+          errors: summary.errors,
+          warnings: summary.warnings,
+          suggestions: summary.suggestions,
+        },
+        ...(stored.url && { findingsUrl: stored.url }),
+        ...(stored.path && { findingsPath: stored.path }),
+        expiresAt: new Date(stored.expiresAt).toISOString(),
+      };
+
+      // Build content with optional resource link
+      const textContent = {
+        type: 'text' as const,
+        text: JSON.stringify(compactOutput, null, 2),
+      };
+
+      // Determine resource link URI
+      let resourceUri: string | undefined;
+      if (stored.url) {
+        resourceUri = stored.url;
+      } else if (stored.path) {
+        resourceUri = `file://${stored.path}`;
+      }
+
+      if (resourceUri) {
+        return {
+          content: [
+            textContent,
+            {
+              type: 'resource_link' as const,
+              uri: resourceUri,
+              name: `findings-${reviewId}.json`,
+              description: 'Full AIP review findings',
+              mimeType: 'application/json',
+            },
+          ],
+          structuredContent: compactOutput,
+        };
       }
 
       return {
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify(resultData, null, 2),
-          },
-        ],
-        structuredContent: resultData,
+        content: [textContent],
+        structuredContent: compactOutput,
       };
     },
   };

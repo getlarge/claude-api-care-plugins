@@ -8,7 +8,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import {
   createReviewTool,
   ReviewInputSchema,
-  ReviewResultSchema,
+  ReviewCompactOutputSchema,
 } from './review.js';
 import {
   listRulesTool,
@@ -44,7 +44,7 @@ export function registerTools(server: McpServer, context: ToolContext) {
     {
       description: reviewTool.description,
       inputSchema: ReviewInputSchema,
-      outputSchema: ReviewResultSchema,
+      outputSchema: ReviewCompactOutputSchema,
       annotations: {
         title: 'AIP OpenAPI Reviewer',
         readOnlyHint: true,
