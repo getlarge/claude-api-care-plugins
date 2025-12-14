@@ -13,6 +13,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "build": "npm run build -w @getlarge/aip-openapi-reviewer && npm run build -w @getlarge/aip-openapi-reviewer-mcp",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test:e2e --workspaces --if-present",
     "prepare": "test \"$HUSKY\" = \"0\" || husky"
   },
   "devDependencies": {

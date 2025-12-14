@@ -43,7 +43,7 @@ jobs:
         run: npm run test:plugin -w @getlarge/aip-openapi-reviewer
 
   checks:
-    name: Lint & build && Type Check
+    name: Lint & Build & Type Check
     runs-on: ubuntu-latest
 
     steps:
@@ -68,8 +68,9 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-  cli-smoke-test:
-    name: CLI Smoke Tests
+  e2e-test:
+    needs: checks
+    name: E2E Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -85,68 +86,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Test JSON output format
-        run: |
-          # CLI exits non-zero when findings have errors, which is expected
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format json > /tmp/output.json || true
-          jq -e '.findings | length > 0' /tmp/output.json || (echo "Expected findings in JSON output" && exit 1)
-          echo "JSON format: OK"
+      - name: Build packages
+        run: npm run build
 
-      - name: Test markdown output format
-        run: |
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format markdown > /tmp/output.md || true
-          grep -q "## Summary" /tmp/output.md || (echo "Expected Summary section in markdown" && exit 1)
-          echo "Markdown format: OK"
-
-      - name: Test console output format
-        run: |
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format console > /tmp/output.txt || true
-          grep -q "findings" /tmp/output.txt || (echo "Expected findings in console output" && exit 1)
-          echo "Console format: OK"
-
-      - name: Test SARIF output format
-        run: |
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format sarif > /tmp/output.sarif || true
-          jq -e '.runs[0].results | length > 0' /tmp/output.sarif || (echo "Expected results in SARIF output" && exit 1)
-          echo "SARIF format: OK"
-
-      - name: Test category filtering
-        run: |
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format json -c naming > /tmp/output.json || true
-          categories=$(jq -r '.findings[].category' /tmp/output.json | sort -u)
-          if echo "$categories" | grep -qv "naming"; then
-            echo "Expected only naming category findings"
-            exit 1
-          fi
-          echo "Category filtering: OK"
-
-      - name: Test rule skipping
-        run: |
-          # Get count without skipping
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format json > /tmp/all.json || true
-          count_all=$(jq '.findings | length' /tmp/all.json)
-
-          # Get count with skipping a rule
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format json -x aip122/plural-resources > /tmp/skip.json || true
-          count_skip=$(jq '.findings | length' /tmp/skip.json)
-
-          if [ "$count_skip" -ge "$count_all" ]; then
-            echo "Expected fewer findings when skipping a rule"
-            exit 1
-          fi
-          echo "Rule skipping: OK (all=$count_all, skip=$count_skip)"
-
-      - name: Test strict mode
-        run: |
-          # In strict mode, warnings become errors
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format json > /tmp/normal.json || true
-          warnings=$(jq '[.findings[] | select(.severity == "warning")] | length' /tmp/normal.json)
-
-          node ${{ env.OPENAPI_REVIEWER_DIR }}/src/cli.js ${{ env.OPENAPI_REVIEWER_DIR }}/tests/fixtures/acme-commerce.yaml --format json --strict > /tmp/strict.json || true
-          errors_strict=$(jq '[.findings[] | select(.severity == "error")] | length' /tmp/strict.json)
-
-          if [ "$errors_strict" -lt "$warnings" ]; then
-            echo "Expected strict mode to promote warnings to errors"
-            exit 1
-          fi
-          echo "Strict mode: OK"
+      - name: Run e2e tests
+        run: npm run test:e2e
