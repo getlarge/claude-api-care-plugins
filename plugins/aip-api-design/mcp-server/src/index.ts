@@ -8,13 +8,11 @@ import { createServer } from './server.js';
 
 const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 const HOST = process.env['HOST'] ?? '0.0.0.0';
-const STATEFUL = process.env['STATEFUL'] !== 'false';
 
 async function main() {
   const server = await createServer({
     port: PORT,
     host: HOST,
-    stateful: STATEFUL,
     mcpEndpoint: '/mcp',
   });
 
