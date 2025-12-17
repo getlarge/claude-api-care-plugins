@@ -15,6 +15,8 @@ import {
   StoreOptions,
   StoreResult,
   StoreStats,
+  ListOptions,
+  ListResult,
 } from './base.js';
 
 export interface MemoryStoreOptions extends StoreOptions {
@@ -68,6 +70,9 @@ export class MemoryStore extends BaseStore {
     const now = Date.now();
     const expiresAt = this.calculateExpiry();
 
+    // Check if updating existing resource
+    const isUpdate = this.storage.has(id);
+
     const content =
       contentType === 'yaml'
         ? this.serializeYaml(spec)
@@ -92,10 +97,24 @@ export class MemoryStore extends BaseStore {
       // Store metadata only (content is on disk)
       this.storage.set(id, { ...stored, content: '' });
 
+      // Emit event
+      this.emit(isUpdate ? 'resource:updated' : 'resource:created', {
+        id,
+        type: this.getResourceType(id),
+        timestamp: now,
+      });
+
       return { id, path, expiresAt };
     } else {
       // Store in memory (HTTP transport)
       this.storage.set(id, stored);
+
+      // Emit event
+      this.emit(isUpdate ? 'resource:updated' : 'resource:created', {
+        id,
+        type: this.getResourceType(id),
+        timestamp: now,
+      });
 
       const url = this.generateSignedUrl(id, expiresAt);
       return { id, url, expiresAt };
@@ -137,6 +156,61 @@ export class MemoryStore extends BaseStore {
       }
     }
     this.storage.delete(id);
+
+    // Emit deletion event
+    if (stored) {
+      this.emit('resource:deleted', {
+        id,
+        type: this.getResourceType(id),
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  async listAll(options?: ListOptions): Promise<ListResult> {
+    const pageSize = options?.pageSize ?? 50;
+    const cursor = options?.cursor;
+
+    // Get all non-expired items
+    const now = Date.now();
+    const allItems = Array.from(this.storage.values()).filter(
+      (spec) => spec.expiresAt > now
+    );
+
+    // Sort by createdAt descending (newest first)
+    allItems.sort((a, b) => b.createdAt - a.createdAt);
+
+    // Parse cursor (format: "offset:{number}")
+    let offset = 0;
+    if (cursor) {
+      const match = cursor.match(/^offset:(\d+)$/);
+      if (match) {
+        offset = parseInt(match[1], 10);
+      }
+    }
+
+    // Paginate
+    const items = allItems.slice(offset, offset + pageSize);
+    const hasMore = allItems.length > offset + pageSize;
+
+    // Build next cursor
+    const nextCursor = hasMore ? `offset:${offset + pageSize}` : undefined;
+
+    // Load content from files if useFileSystem
+    if (this.useFileSystem) {
+      for (const item of items) {
+        if (!item.content) {
+          try {
+            const filePath = join(this.tempDir!, item.id + '.json');
+            item.content = await readFile(filePath, 'utf-8');
+          } catch {
+            // File missing, skip
+          }
+        }
+      }
+    }
+
+    return { items, nextCursor };
   }
 
   async cleanup(): Promise<number> {

@@ -3,8 +3,14 @@
  *
  * Base class for temporary spec storage implementations.
  * Provides shared functionality for URL signing and common types.
+ *
+ * Events emitted:
+ * - 'resource:created' - New resource stored, payload: { id, type, timestamp }
+ * - 'resource:updated' - Existing resource overwritten, payload: { id, type, timestamp }
+ * - 'resource:deleted' - Resource deleted/expired, payload: { id, type, timestamp }
  */
 
+import { EventEmitter } from 'node:events';
 import { randomBytes, createHmac } from 'node:crypto';
 
 export interface StoredSpec {
@@ -37,17 +43,61 @@ export interface StoreStats {
   type: string;
 }
 
+/**
+ * Options for listing stored items.
+ */
+export interface ListOptions {
+  /**
+   * Cursor for pagination (opaque token).
+   * Omit or pass undefined to get first page.
+   */
+  cursor?: string;
+
+  /**
+   * Maximum number of items to return per page.
+   * Default: 50
+   */
+  pageSize?: number;
+}
+
+/**
+ * Result of listing stored items.
+ */
+export interface ListResult {
+  /**
+   * Array of stored items (not expired).
+   */
+  items: StoredSpec[];
+
+  /**
+   * Cursor for next page, if more items exist.
+   * Undefined if this is the last page.
+   */
+  nextCursor?: string;
+}
+
+/**
+ * Event payload for resource lifecycle events.
+ */
+export interface ResourceEvent {
+  id: string;
+  type: string;
+  timestamp: number;
+}
+
 const DEFAULT_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Abstract base class for spec storage implementations.
+ * Extends EventEmitter to notify listeners of resource changes.
  */
-export abstract class BaseStore {
+export abstract class BaseStore extends EventEmitter {
   protected secret: string;
   protected ttlMs: number;
   protected baseUrl?: string;
 
   constructor(options: StoreOptions = {}) {
+    super();
     this.secret = options.secret ?? randomBytes(32).toString('hex');
     this.ttlMs = options.ttlMs ?? DEFAULT_TTL_MS;
     this.baseUrl = options.baseUrl;
@@ -81,6 +131,14 @@ export abstract class BaseStore {
    * Delete a stored spec.
    */
   abstract delete(id: string): Promise<void>;
+
+  /**
+   * List all stored items, with pagination.
+   *
+   * @param options - Pagination options
+   * @returns List result with items and optional next cursor
+   */
+  abstract listAll(options?: ListOptions): Promise<ListResult>;
 
   /**
    * Clean up expired entries.
@@ -154,5 +212,16 @@ export abstract class BaseStore {
    */
   protected calculateExpiry(): number {
     return Date.now() + this.ttlMs;
+  }
+
+  /**
+   * Determine resource type from ID.
+   * Findings use hash-based IDs, specs use UUID/timestamp-based IDs with 'fixed-' prefix.
+   */
+  protected getResourceType(id: string): string {
+    if (id.startsWith('fixed-')) {
+      return 'specs';
+    }
+    return 'findings';
   }
 }

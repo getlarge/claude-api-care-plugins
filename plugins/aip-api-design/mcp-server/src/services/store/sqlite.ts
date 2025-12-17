@@ -20,6 +20,8 @@ import {
   StoreOptions,
   StoreResult,
   StoreStats,
+  ListOptions,
+  ListResult,
 } from './base.js';
 import { FileBackend, LocalFileBackend } from './file-backend.js';
 
@@ -105,6 +107,10 @@ export class SqliteStore extends BaseStore {
     const now = Date.now();
     const expiresAt = this.calculateExpiry();
 
+    // Check if updating existing resource
+    const checkStmt = this.db.prepare('SELECT 1 FROM specs WHERE id = ?');
+    const isUpdate = !!checkStmt.get(id);
+
     const content =
       contentType === 'yaml'
         ? this.serializeYaml(spec)
@@ -128,6 +134,13 @@ export class SqliteStore extends BaseStore {
       expiresAt,
       options.sessionId ?? null
     );
+
+    // Emit event
+    this.emit(isUpdate ? 'resource:updated' : 'resource:created', {
+      id,
+      type: this.getResourceType(id),
+      timestamp: now,
+    });
 
     const url = this.generateSignedUrl(id, expiresAt);
     return { id, url, expiresAt };
@@ -189,6 +202,93 @@ export class SqliteStore extends BaseStore {
     // Delete metadata
     const deleteStmt = this.db.prepare('DELETE FROM specs WHERE id = ?');
     deleteStmt.run(id);
+
+    // Emit deletion event
+    if (row) {
+      this.emit('resource:deleted', {
+        id,
+        type: this.getResourceType(id),
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  async listAll(options?: ListOptions): Promise<ListResult> {
+    if (!this.db) {
+      throw new Error('SqliteStore not initialized');
+    }
+
+    const pageSize = options?.pageSize ?? 50;
+    const cursor = options?.cursor;
+
+    // Parse cursor (format: "createdAt:{timestamp}")
+    let createdAtBefore = Date.now();
+    if (cursor) {
+      const match = cursor.match(/^createdAt:(\d+)$/);
+      if (match) {
+        createdAtBefore = parseInt(match[1], 10);
+      }
+    }
+
+    const now = Date.now();
+
+    // Query with WHERE expires_at > ? AND created_at < ? ORDER BY created_at DESC LIMIT ?
+    const stmt = this.db.prepare(`
+      SELECT id, filename, content_type, created_at, expires_at, session_id
+      FROM specs
+      WHERE expires_at > ?
+        AND created_at < ?
+      ORDER BY created_at DESC
+      LIMIT ?
+    `);
+
+    const rows = stmt.all(now, createdAtBefore, pageSize + 1) as Array<{
+      id: string;
+      filename: string;
+      content_type: string;
+      created_at: number;
+      expires_at: number;
+      session_id: string | null;
+    }>;
+
+    // Check if there are more pages
+    const hasMore = rows.length > pageSize;
+    const items: StoredSpec[] = [];
+
+    // Process up to pageSize items
+    const rowsToProcess = hasMore ? rows.slice(0, pageSize) : rows;
+
+    for (const row of rowsToProcess) {
+      // Load content from file backend
+      let content: string;
+      try {
+        const contentResult = await this.fileBackend.read(row.filename);
+        if (!contentResult) {
+          // File missing, skip this item
+          continue;
+        }
+        content = contentResult;
+      } catch {
+        // Error reading, skip
+        continue;
+      }
+
+      items.push({
+        id: row.id,
+        content,
+        contentType: row.content_type as 'json' | 'yaml',
+        createdAt: row.created_at,
+        expiresAt: row.expires_at,
+        sessionId: row.session_id ?? undefined,
+      });
+    }
+
+    // Build next cursor from the last item's createdAt
+    const nextCursor = hasMore
+      ? `createdAt:${rowsToProcess[rowsToProcess.length - 1].created_at}`
+      : undefined;
+
+    return { items, nextCursor };
   }
 
   async cleanup(): Promise<number> {
