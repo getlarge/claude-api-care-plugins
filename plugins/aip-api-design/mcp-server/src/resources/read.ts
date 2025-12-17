@@ -10,6 +10,7 @@ import { ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { getFindingsStorage } from '../services/findings-storage.js';
 import { getTempStorage } from '../services/temp-storage.js';
 
+// TODO: use request context to filter resources per user/session
 export function registerResourcesRead(server: Server) {
   server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
     const { uri } = request.params;
@@ -36,7 +37,7 @@ export function registerResourcesRead(server: Server) {
       throw new Error('Resource not found');
     }
 
-    // Return resource content
+    // TODO: return a stream for large resources?
     return {
       contents: [
         {
@@ -46,6 +47,11 @@ export function registerResourcesRead(server: Server) {
               ? 'application/x-yaml'
               : 'application/json',
           text: resource.content,
+          annotations: {
+            audience: ['assistant', 'user'],
+            priority: 1.0,
+            lastModified: new Date(resource.createdAt).toISOString(),
+          },
         },
       ],
     };

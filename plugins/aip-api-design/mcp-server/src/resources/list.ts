@@ -10,6 +10,7 @@ import { ListResourcesRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { getFindingsStorage } from '../services/findings-storage.js';
 import { getTempStorage } from '../services/temp-storage.js';
 
+// TODO: use request context to filter resources per user/session
 export function registerResourcesList(server: Server) {
   server.setRequestHandler(ListResourcesRequestSchema, async (request) => {
     const params = request.params ?? {};

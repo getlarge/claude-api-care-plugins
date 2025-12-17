@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { loadSpecRaw } from './spec-loader.js';
 import { storeFindings } from '../services/findings-storage.js';
 import { BaseFindingSchema } from '../types/extended-finding.js';
-import type { ToolContext } from './types.js';
+import type { ExtendedToolContext } from './types.js';
 import type { WorkerTask } from './worker-pool.js';
 
 // Zod schema for MCP SDK
@@ -104,7 +104,7 @@ export type ReviewCompactOutput = z.infer<typeof ReviewCompactOutputSchema>;
 /**
  * Create a review tool with the given context (worker pool).
  */
-export function createReviewTool(context: ToolContext) {
+export function createReviewTool(context: ExtendedToolContext) {
   return {
     name: 'aip-review',
     description:

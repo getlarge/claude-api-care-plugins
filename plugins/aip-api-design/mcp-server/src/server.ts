@@ -7,7 +7,6 @@
  */
 
 import Fastify from 'fastify';
-import { Type } from '@sinclair/typebox';
 import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
@@ -40,12 +39,14 @@ export interface ServerConfig {
   port?: number;
   host?: string;
   mcpEndpoint?: string;
+  baseUrl?: string;
 }
 
 const DEFAULT_CONFIG: Required<ServerConfig> = {
   port: 4000,
   host: '0.0.0.0',
   mcpEndpoint: '/mcp',
+  baseUrl: 'http://localhost:4000',
 };
 
 // ============================================================================
@@ -53,7 +54,7 @@ const DEFAULT_CONFIG: Required<ServerConfig> = {
 // ============================================================================
 
 export async function createServer(config: ServerConfig = {}) {
-  const { port, host, mcpEndpoint } = {
+  const { port, host, mcpEndpoint, baseUrl } = {
     ...DEFAULT_CONFIG,
     ...config,
   };
@@ -64,17 +65,14 @@ export async function createServer(config: ServerConfig = {}) {
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
-  // Register plugins
   await fastify.register(securityPlugin);
   await fastify.register(rateLimitPlugin);
+  // TODO: add authentication plugin and store user info in request context (AsyncLocalStorage)
   // await fastify.register(authPlugin);
 
   // Session storage for stateful mode
   const sessions = new Sessions<StreamableHTTPServerTransport>();
-
   // Initialize temp storage for storing modified specs
-  // HTTP transport uses SQLite for multi-worker shared state
-  const baseUrl = `http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`;
   await initTempStorage({
     type: 'sqlite',
     baseUrl,
@@ -85,10 +83,10 @@ export async function createServer(config: ServerConfig = {}) {
   // Uses longer TTL (1 day) since findings are useful across sessions
   await initFindingsStorage({
     type: 'sqlite',
-    ttlMs: 24 * 60 * 60 * 1000, // 1 day
+    baseUrl,
+    ttlMs: 24 * 60 * 60 * 1000,
   });
 
-  // Initialize worker pool for CPU-intensive operations
   const workerPool = new WorkerPool();
   await workerPool.initialize();
   fastify.log.info(
@@ -98,7 +96,6 @@ export async function createServer(config: ServerConfig = {}) {
 
   const toolContext: ToolContext = { workerPool };
 
-  // Log session events
   sessions.on('connected', (id) => {
     fastify.log.info({ sessionId: id }, 'MCP session connected');
   });
@@ -106,7 +103,6 @@ export async function createServer(config: ServerConfig = {}) {
     fastify.log.info({ sessionId: id }, 'MCP session terminated');
   });
 
-  // Health check endpoint
   fastify.get('/health', async () => {
     const tempStorage = getTempStorage();
     return {
@@ -117,54 +113,6 @@ export async function createServer(config: ServerConfig = {}) {
       workerPool: workerPool.stats,
     };
   });
-
-  // Schema for spec download endpoint
-  const SpecDownloadSchema = {
-    params: Type.Object({
-      id: Type.String({ minLength: 32, maxLength: 32, pattern: '^[a-f0-9]+$' }),
-    }),
-    querystring: Type.Object({
-      expires: Type.String({ pattern: '^[0-9]+$' }),
-      sig: Type.String({
-        minLength: 32,
-        maxLength: 32,
-        pattern: '^[a-f0-9]+$',
-      }),
-    }),
-  };
-
-  // Serve stored specs via signed URLs
-  // @deprecated: use resource handlers instead
-  fastify.get(
-    '/specs/:id',
-    {
-      schema: SpecDownloadSchema,
-    },
-    async (req, reply) => {
-      const { id } = req.params as { id: string };
-      const { expires, sig } = req.query as { expires: string; sig: string };
-
-      const tempStorage = getTempStorage();
-      const stored = await tempStorage.getBySignedUrl(id, sig, expires);
-
-      if (!stored) {
-        return reply.status(404).send({ error: 'Spec not found or expired' });
-      }
-
-      const contentType =
-        stored.contentType === 'yaml'
-          ? 'application/x-yaml'
-          : 'application/json';
-
-      return reply
-        .header('Content-Type', contentType)
-        .header(
-          'Content-Disposition',
-          `attachment; filename="spec.${stored.contentType === 'yaml' ? 'yaml' : 'json'}"`
-        )
-        .send(stored.content);
-    }
-  );
 
   // MCP routes (stateful session management)
   fastify.post(mcpEndpoint, async (req, reply) => {
