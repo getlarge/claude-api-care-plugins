@@ -7,6 +7,7 @@
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTools } from './tools/index.js';
+import { registerPrompts } from './prompts/register.js';
 import { registerResourcesList } from './resources/list.js';
 import { registerResourcesRead } from './resources/read.js';
 import { registerResourcesTemplates } from './resources/templates.js';
@@ -31,6 +32,9 @@ export function createMcpServer(context: ToolContext) {
     },
     {
       capabilities: {
+        prompts: {
+          listChanged: true,
+        },
         resources: {
           listChanged: true,
           subscribe: true,
@@ -49,8 +53,7 @@ export function createMcpServer(context: ToolContext) {
   };
 
   registerTools(mcpServer, extendedContext);
-
-  // Register resource handlers (capabilities exposed automatically)
+  registerPrompts(mcpServer.server);
   registerResourcesList(mcpServer.server);
   registerResourcesRead(mcpServer.server);
   registerResourcesTemplates(mcpServer.server);
