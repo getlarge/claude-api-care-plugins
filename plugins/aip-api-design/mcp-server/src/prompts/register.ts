@@ -27,13 +27,14 @@ import {
   type GetPromptRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import { zodToPromptArguments, type PromptDefinition } from './types.js';
-import { codeLocatorPrompt } from './handlers/index.js';
+import { codeLocatorPrompt, aipLookupPrompt } from './handlers/index.js';
 
 /**
  * Registry of all available prompts.
  */
 const PROMPTS: PromptDefinition[] = [
   codeLocatorPrompt,
+  aipLookupPrompt,
   // Future prompts added here
 ];
 
