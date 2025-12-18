@@ -21,9 +21,30 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
    - If no argument, check for recent discovery doc in `thoughts/api/discovery/`
    - If multiple specs in discovery, ask user which to review
 
-2. **Run the AIP reviewer once, generate all outputs efficiently**:
+2. **Choose review method** (prioritize MCP tools when available):
 
-   The plugin scripts are located at `${CLAUDE_PLUGIN_ROOT}`. Run the review once, save JSON, then convert to other formats:
+   **Option A: MCP Tool (Recommended)**
+
+   If the `mcp__aip-reviewer__aip-review` tool is available, use it:
+
+   ```
+   Use mcp__aip-reviewer__aip-review with:
+   - specPath: {absolute-path-to-spec}
+   - categories (optional): ["naming", "pagination", "errors", ...]
+   - skipRules (optional): ["rule-id-to-skip"]
+   - strict (optional): false
+   ```
+
+   The MCP tool will:
+   - Review the spec and return a reviewId
+   - Cache findings for use with other tools (apply-fixes, correlate)
+   - Provide findingsPath and findingsUrl for detailed results
+
+   Save the review document to `thoughts/api/reviews/{YYYY-MM-DD}-{spec-name}-review.md`
+
+   **Option B: Node.js CLI (Fallback)**
+
+   If MCP tools are not available, use the plugin scripts at `${CLAUDE_PLUGIN_ROOT}`:
 
    ```bash
    # Create output directory and unique temp file

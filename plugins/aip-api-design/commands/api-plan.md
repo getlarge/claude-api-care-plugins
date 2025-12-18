@@ -29,7 +29,31 @@ Create a prioritized implementation plan from API review findings with code loca
 
 ### Step 2: Correlate Findings to Code (if needed)
 
-If no correlation file exists, use the `aip-code-correlator` skill:
+If no correlation file exists, choose a correlation method:
+
+**Option A: MCP Correlate Tool (Recommended)**
+
+If the `mcp__aip-reviewer__aip-correlate` tool is available:
+
+```
+Use mcp__aip-reviewer__aip-correlate with:
+- reviewId: {review-id-from-review-document}
+- projectRoot: {absolute-path-to-project-root}
+- specPath: {absolute-path-to-spec} (optional)
+- framework: "nestjs" | "fastify" | "express" (optional hint)
+- correlationLevel: "moderate" (optional, can be "minimal", "moderate", or "thorough")
+```
+
+The tool will automatically:
+
+- Detect framework from package.json
+- Extract unique operations from findings
+- Batch process code location for all endpoints
+- Save correlation to `thoughts/api/correlations/{date}-{spec-name}.json`
+
+**Option B: Manual Correlation (Fallback)**
+
+If MCP tools are not available, use the `aip-code-correlator` skill:
 
 1. **Detect framework** from `package.json`:
    - `@nestjs/core` → NestJS

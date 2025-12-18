@@ -21,7 +21,25 @@ Re-run API review and validate against the fix plan.
    - Parse current phase/task status
 
 2. **Re-run the review**:
-   - Run same AIP checks as `/api-review`
+
+   **Option A: MCP Tool (Recommended)**
+
+   If the `mcp__aip-reviewer__aip-review` tool is available:
+
+   ```
+   Use mcp__aip-reviewer__aip-review with:
+   - specPath: {spec-path-from-plan}
+   - Same categories/rules as original review
+   ```
+
+   **Option B: Node.js CLI (Fallback)**
+
+   Run same AIP checks as `/api-review`:
+
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/openapi-reviewer/src/cli.js" {spec-path} --format json
+   ```
+
    - Generate new findings list
    - Don't create a new review document (just in-memory)
 

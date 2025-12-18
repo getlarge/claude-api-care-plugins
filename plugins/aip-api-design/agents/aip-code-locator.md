@@ -9,6 +9,19 @@ model: sonnet
 
 Find code that implements a **single** API operation (e.g., `GET /users/{id}`).
 
+**IMPORTANT**: This agent is primarily for standalone use. When working within the MCP server context, prefer using the `mcp__aip-reviewer__aip-correlate` tool which provides batch code correlation for all findings from a review.
+
+## Alternative: MCP Prompt
+
+For integrated workflows, the MCP server provides a `aip-code-locator` prompt that:
+
+- Uses MCP sampling for improved accuracy
+- Returns structured JSON output
+- Integrates with review findings via the correlate tool
+- Leverages cached framework detection
+
+Use the MCP prompt when you have access to the `aip-reviewer` MCP server.
+
 ## Input (passed via prompt)
 
 You will receive:

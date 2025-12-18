@@ -8,7 +8,28 @@ allowed-tools: Read, Grep, Glob, Task
 
 Map AIP review findings to code locations for code-first API projects.
 
-## When to Use
+## Preferred Approach: MCP Correlate Tool
+
+**IMPORTANT**: If the `mcp__aip-reviewer__aip-correlate` tool is available, use it instead of manual correlation. The MCP tool:
+
+- Takes a reviewId from `aip-review`
+- Automatically detects framework from package.json
+- Uses MCP sampling for accurate code location
+- Batch processes all findings efficiently
+- Returns ExtendedFinding[] with file:line references
+
+```
+Use mcp__aip-reviewer__aip-correlate with:
+- reviewId: {review-id-from-aip-review}
+- projectRoot: {absolute-path-to-project}
+- specPath: {absolute-path-to-spec} (optional, for context extraction)
+- framework: "nestjs" | "fastify" | "express" | "unknown" (optional hint)
+- correlationLevel: "minimal" | "moderate" | "thorough" (optional, default: "moderate")
+```
+
+The manual process below is a fallback for when MCP tools are not available.
+
+## When to Use (Manual Fallback)
 
 Activate this skill when:
 
@@ -16,6 +37,7 @@ Activate this skill when:
 - User asks "where is this endpoint implemented?"
 - User wants to fix API issues and needs to know which files to modify
 - Mapping OpenAPI spec paths to source code
+- MCP correlate tool is not available
 
 ## Prerequisites
 
@@ -166,11 +188,23 @@ Correlation saved to: thoughts/api/correlations/2024-01-15-orders-api.json
 **aip-review**: Analyze OpenAPI spec against AIP rules. Returns findings with reviewId.
 
 ```
-Call: aip-review with specPath or specUrl
-Returns: { reviewId, findings[], summary }
+Call: mcp__aip-reviewer__aip-review with specPath or specUrl
+Returns: { reviewId, findings[], summary, findingsPath, findingsUrl }
+```
+
+**aip-correlate**: Correlate AIP review findings with code locations.
+
+```
+Call: mcp__aip-reviewer__aip-correlate with reviewId, projectRoot, specPath, framework
+Returns: { extendedFindings[], framework, summary, correlationPath }
 ```
 
 **aip-apply-fixes**: Apply suggested fixes to spec (after correlation, to fix spec issues).
+
+```
+Call: mcp__aip-reviewer__aip-apply-fixes with reviewId, specPath/specUrl, writeBack, dryRun
+Returns: { summary, downloadUrl, modifiedSpec }
+```
 
 ## Agent Reference
 

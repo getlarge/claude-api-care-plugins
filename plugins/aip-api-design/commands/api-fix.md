@@ -11,6 +11,28 @@ Apply fixes to OpenAPI specs. Two modes available:
 
 ## Automated Fixing (Recommended for Spec-Only Changes)
 
+**Option A: MCP Tool (Recommended)**
+
+If the `mcp__aip-reviewer__aip-apply-fixes` tool is available, use it:
+
+```
+Use mcp__aip-reviewer__aip-apply-fixes with:
+- reviewId: {review-id-from-aip-review}
+- specPath: {absolute-path-to-spec} (for local files)
+- OR specUrl: {http-url-to-spec} (for remote specs)
+- writeBack: true (to save changes to specPath)
+- dryRun: false (set true to preview changes)
+```
+
+The MCP tool will:
+
+- Apply suggested fixes from the review findings
+- Return a signed download URL for the modified spec (valid for 5 minutes)
+- Optionally write back to the original file if writeBack=true and specPath is used
+- Show summary of applied/failed fixes
+
+**Option B: CLI Fixer (Fallback)**
+
 Use the CLI fixer for quick, automated spec corrections:
 
 ```bash
