@@ -7,21 +7,24 @@
 
 export {
   BaseStore,
+  MemoryStore,
+  SqliteStore,
+  LocalFileBackend,
+  createStore,
+  detectStoreType,
+} from './store/index.js';
+export type {
   StoredSpec,
   StoreOptions,
   StoreResult,
   StoreStats,
-  MemoryStore,
-  SqliteStore,
   FileBackend,
-  LocalFileBackend,
-  createStore,
-  detectStoreType,
   StoreType,
   CreateStoreOptions,
 } from './store/index.js';
 
-import { BaseStore, createStore, CreateStoreOptions } from './store/index.js';
+import { BaseStore, createStore } from './store/index.js';
+import type { CreateStoreOptions } from './store/index.js';
 
 // Singleton storage instance
 let storage: BaseStore | null = null;

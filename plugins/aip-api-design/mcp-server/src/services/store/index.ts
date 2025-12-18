@@ -4,29 +4,35 @@
  * Exports storage implementations and factory for creating stores.
  */
 
-export {
-  BaseStore,
+export { BaseStore } from './base.js';
+export type {
   StoredSpec,
   StoreOptions,
   StoreResult,
   StoreStats,
 } from './base.js';
 
-export { MemoryStore, MemoryStoreOptions } from './memory.js';
-export { SqliteStore, SqliteStoreOptions } from './sqlite.js';
-export { FileBackend, LocalFileBackend } from './file-backend.js';
+export { MemoryStore } from './memory.js';
+export type { MemoryStoreOptions } from './memory.js';
+export { SqliteStore } from './sqlite.js';
+export type { SqliteStoreOptions } from './sqlite.js';
+export type { FileBackend } from './file-backend.js';
+export { LocalFileBackend } from './file-backend.js';
 
-import { BaseStore, StoreOptions } from './base.js';
-import { MemoryStore, MemoryStoreOptions } from './memory.js';
-import { SqliteStore, SqliteStoreOptions } from './sqlite.js';
+import { BaseStore } from './base.js';
+import type { StoreOptions } from './base.js';
+import { MemoryStore } from './memory.js';
+import type { MemoryStoreOptions } from './memory.js';
+import { SqliteStore } from './sqlite.js';
+import type { SqliteStoreOptions } from './sqlite.js';
 
 export type StoreType = 'memory' | 'sqlite';
 
-export interface CreateStoreOptions extends StoreOptions {
+export type CreateStoreOptions = StoreOptions & {
   type?: StoreType;
   memory?: Omit<MemoryStoreOptions, keyof StoreOptions>;
   sqlite?: Omit<SqliteStoreOptions, keyof StoreOptions>;
-}
+};
 
 /**
  * Create a store based on configuration.
