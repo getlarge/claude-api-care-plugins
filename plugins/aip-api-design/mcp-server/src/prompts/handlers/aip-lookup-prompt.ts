@@ -6,16 +6,7 @@ import type { PromptDefinition } from '../types.js';
  * Zod schema for AIP lookup prompt arguments.
  */
 export const AipLookupArgsSchema = z.object({
-  aip: z
-    .union([z.number(), z.string()])
-    .transform((val) => {
-      const num = typeof val === 'string' ? parseInt(val, 10) : val;
-      if (isNaN(num)) {
-        throw new Error('Invalid AIP number');
-      }
-      return num;
-    })
-    .describe('AIP number to look up (e.g., 122, 158, 193)'),
+  aip: z.string().describe('AIP number to look up (e.g., 122, 158, 193)'),
   context: z
     .string()
     .optional()
@@ -32,7 +23,12 @@ export type AipLookupArgs = z.infer<typeof AipLookupArgsSchema>;
  * Build the AIP lookup prompt text based on the agent definition.
  */
 function buildAipLookupPrompt(args: AipLookupArgs): string {
-  const { aip, context, finding } = args;
+  const { context, finding } = args;
+  const aip = parseInt(args.aip, 10);
+
+  if (isNaN(aip)) {
+    throw new Error(`Invalid AIP number: ${args.aip}`);
+  }
 
   let prompt = `# AIP Lookup Agent
 
@@ -147,6 +143,7 @@ export const aipLookupPrompt: PromptDefinition<typeof AipLookupArgsSchema> = {
     async execute(args: AipLookupArgs) {
       const validated = AipLookupArgsSchema.parse(args);
       const promptText = buildAipLookupPrompt(validated);
+      const aipNum = parseInt(validated.aip, 10);
 
       const messages: PromptMessage[] = [
         {
@@ -159,7 +156,7 @@ export const aipLookupPrompt: PromptDefinition<typeof AipLookupArgsSchema> = {
       ];
 
       return {
-        description: `Fetch and explain AIP-${validated.aip}`,
+        description: `Fetch and explain AIP-${aipNum}`,
         messages,
       };
     },

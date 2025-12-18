@@ -4,21 +4,21 @@ import { aipLookupPrompt, AipLookupArgsSchema } from './aip-lookup-prompt.js';
 
 describe('aip-lookup-prompt', () => {
   describe('schema validation', () => {
-    it('should validate AIP number as number', () => {
-      const args = { aip: 158 };
+    it('should validate AIP number as string', () => {
+      const args = { aip: '158' };
       const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(result.aip, 158);
+      assert.strictEqual(result.aip, '158');
     });
 
-    it('should validate AIP number as string', () => {
+    it('should accept numeric string', () => {
       const args = { aip: '193' };
       const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(result.aip, 193);
+      assert.strictEqual(result.aip, '193');
     });
 
     it('should accept optional context', () => {
       const args = {
-        aip: 122,
+        aip: '122',
         context: 'Why do I need plural resource names?',
       };
       const result = AipLookupArgsSchema.parse(args);
@@ -30,7 +30,7 @@ describe('aip-lookup-prompt', () => {
 
     it('should accept optional finding', () => {
       const args = {
-        aip: 158,
+        aip: '158',
         finding: 'GET /users is missing pagination parameters',
       };
       const result = AipLookupArgsSchema.parse(args);
@@ -40,9 +40,10 @@ describe('aip-lookup-prompt', () => {
       );
     });
 
-    it('should reject non-numeric string', () => {
+    it('should accept any string (validation happens in handler)', () => {
       const args = { aip: 'invalid' };
-      assert.throws(() => AipLookupArgsSchema.parse(args));
+      const result = AipLookupArgsSchema.parse(args);
+      assert.strictEqual(result.aip, 'invalid');
     });
 
     it('should require aip parameter', () => {
@@ -53,7 +54,7 @@ describe('aip-lookup-prompt', () => {
 
   describe('handler execution', () => {
     it('should generate prompt messages for basic AIP lookup', async () => {
-      const result = await aipLookupPrompt.handler.execute({ aip: 122 });
+      const result = await aipLookupPrompt.handler.execute({ aip: '122' });
 
       assert.ok(result.messages);
       assert.strictEqual(result.messages.length, 1);
@@ -71,7 +72,7 @@ describe('aip-lookup-prompt', () => {
 
     it('should include context when provided', async () => {
       const result = await aipLookupPrompt.handler.execute({
-        aip: 158,
+        aip: '158',
         context: 'How should I implement pagination?',
       });
 
@@ -86,7 +87,7 @@ describe('aip-lookup-prompt', () => {
 
     it('should include finding when provided', async () => {
       const result = await aipLookupPrompt.handler.execute({
-        aip: 193,
+        aip: '193',
         finding: 'Error responses should use standard error schema',
       });
 
@@ -105,7 +106,7 @@ describe('aip-lookup-prompt', () => {
 
     it('should include both context and finding', async () => {
       const result = await aipLookupPrompt.handler.execute({
-        aip: 134,
+        aip: '134',
         context: 'What are field masks?',
         finding: 'PATCH operation should support field masks',
       });
@@ -122,14 +123,14 @@ describe('aip-lookup-prompt', () => {
     });
 
     it('should include description in result', async () => {
-      const result = await aipLookupPrompt.handler.execute({ aip: 158 });
+      const result = await aipLookupPrompt.handler.execute({ aip: '158' });
 
       assert.ok(result.description);
       assert.ok(result.description.includes('AIP-158'));
     });
 
     it('should include specific guidance for known AIPs', async () => {
-      const knownAips = [122, 158, 193, 231];
+      const knownAips = ['122', '158', '193', '231'];
 
       for (const aip of knownAips) {
         const result = await aipLookupPrompt.handler.execute({ aip });
@@ -144,6 +145,15 @@ describe('aip-lookup-prompt', () => {
           assert.fail('Expected text content');
         }
       }
+    });
+
+    it('should reject invalid AIP number in handler', async () => {
+      await assert.rejects(
+        async () => {
+          await aipLookupPrompt.handler.execute({ aip: 'not-a-number' });
+        },
+        { message: /Invalid AIP number/ }
+      );
     });
   });
 
