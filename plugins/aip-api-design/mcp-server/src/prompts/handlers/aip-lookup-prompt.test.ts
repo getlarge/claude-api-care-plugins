@@ -40,10 +40,11 @@ describe('aip-lookup-prompt', () => {
       );
     });
 
-    it('should accept any string (validation happens in handler)', () => {
+    it('should reject non-numeric string during validation', () => {
       const args = { aip: 'invalid' };
-      const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(result.aip, 'invalid');
+      assert.throws(() => AipLookupArgsSchema.parse(args), {
+        message: /AIP must be a valid number/,
+      });
     });
 
     it('should require aip parameter', () => {
@@ -145,15 +146,6 @@ describe('aip-lookup-prompt', () => {
           assert.fail('Expected text content');
         }
       }
-    });
-
-    it('should reject invalid AIP number in handler', async () => {
-      await assert.rejects(
-        async () => {
-          await aipLookupPrompt.handler.execute({ aip: 'not-a-number' });
-        },
-        { message: /Invalid AIP number/ }
-      );
     });
   });
 

@@ -63,6 +63,22 @@ describe('MCP Prompts E2E', () => {
         requiredArgs.length >= 3,
         'Should have at least 3 required arguments (method, path, projectRoot)'
       );
+
+      const aipLookupPrompt = response.result.prompts.find(
+        (p: { name: string }) => p.name === 'aip-lookup'
+      );
+      assert.ok(aipLookupPrompt, 'Should include aip-lookup prompt');
+      assert.strictEqual(
+        aipLookupPrompt.title,
+        'Fetch and Explain AIP',
+        'Should have correct title'
+      );
+      assert.ok(aipLookupPrompt.description, 'Should have description');
+      assert.ok(aipLookupPrompt.arguments, 'Should have arguments definition');
+      assert.ok(
+        Array.isArray(aipLookupPrompt.arguments),
+        'Arguments should be an array'
+      );
     });
   });
 
@@ -246,6 +262,161 @@ describe('MCP Prompts E2E', () => {
         response.error.code,
         -32602,
         'Should return invalid params error'
+      );
+    });
+  });
+
+  describe('aip-lookup prompt', () => {
+    it('should generate AIP lookup prompt with string AIP', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {
+          aip: '158',
+        },
+      });
+
+      assert.ok(!response.error, 'Should not have error');
+      assert.ok(response.result?.messages, 'Response should contain messages');
+      assert.strictEqual(
+        response.result.messages.length,
+        1,
+        'Should have one message'
+      );
+
+      const message = response.result.messages[0];
+      assert.strictEqual(message.role, 'user', 'Message should have user role');
+      assert.strictEqual(
+        message.content.type,
+        'text',
+        'Content should be text type'
+      );
+
+      const promptText = message.content.text;
+      assert.ok(promptText, 'Should have prompt text');
+      assert.ok(promptText.includes('158'), 'Prompt should include AIP number');
+      assert.ok(
+        promptText.includes('google.aip.dev/158'),
+        'Prompt should include AIP URL'
+      );
+      assert.ok(
+        promptText.includes('Pagination'),
+        'Prompt should include AIP-158 specific guidance'
+      );
+    });
+
+    it('should accept AIP as string and convert to number', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {
+          aip: '193',
+        },
+      });
+
+      assert.ok(!response.error, 'Should not have error');
+      const promptText = response.result?.messages?.[0]?.content?.text;
+      assert.ok(promptText, 'Should have prompt text');
+      assert.ok(promptText.includes('193'), 'Prompt should include AIP 193');
+      assert.ok(
+        promptText.includes('Errors'),
+        'Prompt should include AIP-193 specific guidance'
+      );
+    });
+
+    it('should include context in prompt when provided', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {
+          aip: '122',
+          context: 'Why do I need plural resource names?',
+        },
+      });
+
+      assert.ok(!response.error, 'Should not have error');
+      const promptText = response.result?.messages?.[0]?.content?.text;
+      assert.ok(promptText, 'Should have prompt text');
+      assert.ok(
+        promptText.includes('Why do I need plural resource names?'),
+        'Prompt should include user context'
+      );
+      assert.ok(
+        promptText.includes("User's question or context:"),
+        'Prompt should have context section'
+      );
+    });
+
+    it('should include finding in prompt when provided', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {
+          aip: '158',
+          finding: 'GET /users is missing pagination parameters',
+        },
+      });
+
+      assert.ok(!response.error, 'Should not have error');
+      const promptText = response.result?.messages?.[0]?.content?.text;
+      assert.ok(promptText, 'Should have prompt text');
+      assert.ok(
+        promptText.includes('GET /users is missing pagination parameters'),
+        'Prompt should include finding'
+      );
+      assert.ok(
+        promptText.includes('A review finding referenced'),
+        'Prompt should have finding section'
+      );
+    });
+
+    it('should reject invalid AIP number', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {
+          aip: 'not-a-number',
+        },
+      });
+
+      assert.ok(response.error, 'Should have error');
+      assert.strictEqual(
+        response.error.code,
+        -32602,
+        'Should return invalid params error'
+      );
+      assert.ok(
+        response.error.message.includes('Invalid arguments'),
+        'Error message should mention invalid arguments'
+      );
+    });
+
+    it('should require aip parameter', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {},
+      });
+
+      assert.ok(response.error, 'Should have error');
+      assert.strictEqual(
+        response.error.code,
+        -32602,
+        'Should return invalid params error'
+      );
+    });
+
+    it('should have correct description in result', async () => {
+      const response = await client.send('prompts/get', {
+        name: 'aip-lookup',
+        arguments: {
+          aip: '231',
+        },
+      });
+
+      assert.ok(!response.error, 'Should not have error');
+      assert.ok(response.result, 'Should have result');
+      assert.ok(
+        response.result.description,
+        'Response should have description'
+      );
+      assert.ok(
+        response.result.description.includes('AIP-231'),
+        'Description should include AIP number'
       );
     });
   });

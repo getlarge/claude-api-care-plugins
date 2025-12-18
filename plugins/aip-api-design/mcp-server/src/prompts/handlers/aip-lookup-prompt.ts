@@ -6,7 +6,12 @@ import type { PromptDefinition } from '../types.js';
  * Zod schema for AIP lookup prompt arguments.
  */
 export const AipLookupArgsSchema = z.object({
-  aip: z.string().describe('AIP number to look up (e.g., 122, 158, 193)'),
+  aip: z
+    .string()
+    .refine((val) => !isNaN(parseInt(val, 10)), {
+      message: 'AIP must be a valid number',
+    })
+    .describe('AIP number to look up (e.g., 122, 158, 193)'),
   context: z
     .string()
     .optional()
@@ -24,11 +29,8 @@ export type AipLookupArgs = z.infer<typeof AipLookupArgsSchema>;
  */
 function buildAipLookupPrompt(args: AipLookupArgs): string {
   const { context, finding } = args;
+  // Safe to parse since schema validation ensures it's a valid number
   const aip = parseInt(args.aip, 10);
-
-  if (isNaN(aip)) {
-    throw new Error(`Invalid AIP number: ${args.aip}`);
-  }
 
   let prompt = `# AIP Lookup Agent
 
