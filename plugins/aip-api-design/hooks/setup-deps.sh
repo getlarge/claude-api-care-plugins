@@ -17,6 +17,7 @@ fi
 setup_package() {
     local dir="$1"
     local name="$2"
+    local npm_flags="${3:-}"  # Optional npm flags (e.g., --legacy-peer-deps)
 
     if [ ! -d "$dir" ]; then
         return 0
@@ -27,20 +28,29 @@ setup_package() {
     if [ ! -f "$dir/node_modules/.package-lock.json" ]; then
         echo "[aip-api-design] Installing $name dependencies..."
         cd "$dir"
-        npm install --silent --no-progress --no-audit --no-fund 2>/dev/null || {
+        # Capture output and check npm's actual exit code
+        output=$(npm install --silent --no-progress --no-audit --no-fund $npm_flags 2>&1)
+        status=$?
+        if [ $status -ne 0 ]; then
             echo "[aip-api-design] Failed to install $name dependencies."
+            echo "$output" | grep -E "(error|Error|ERROR)" | head -5
+            echo "[aip-api-design] Try manually: cd '$dir' && npm install $npm_flags"
             return 1
-        }
+        fi
     fi
 
     # Build if dist missing
     if [ ! -d "$dir/dist" ]; then
         echo "[aip-api-design] Building $name..."
         cd "$dir"
-        npm run build --silent 2>/dev/null || {
+        output=$(npm run build --silent 2>&1)
+        status=$?
+        if [ $status -ne 0 ]; then
             echo "[aip-api-design] Failed to build $name."
+            echo "$output" | grep -E "(error|Error|ERROR)" | head -5
+            echo "[aip-api-design] Try manually: cd '$dir' && npm run build"
             return 1
-        }
+        fi
     fi
 
     return 0
@@ -78,11 +88,12 @@ link_local_dependency() {
 # Setup openapi-reviewer first (mcp-server depends on it)
 setup_package "$OPENAPI_REVIEWER_DIR" "reviewer"
 
-# Link openapi-reviewer into mcp-server's node_modules BEFORE npm install
-# This satisfies the peer dependency without needing the package on npm registry
-link_local_dependency "$MCP_SERVER_DIR" "$OPENAPI_REVIEWER_DIR" "@getlarge/aip-openapi-reviewer"
+# Setup MCP server with --legacy-peer-deps to ignore peer dependency conflicts
+# (Anthropic SDK and our package have different zod versions)
+setup_package "$MCP_SERVER_DIR" "MCP server" "--legacy-peer-deps"
 
-# Setup MCP server (npm install will see peer dep already satisfied via symlink)
-setup_package "$MCP_SERVER_DIR" "MCP server"
+# Link openapi-reviewer into mcp-server's node_modules AFTER npm install
+# This satisfies the peer dependency locally without needing the package on npm registry
+link_local_dependency "$MCP_SERVER_DIR" "$OPENAPI_REVIEWER_DIR" "@getlarge/aip-openapi-reviewer"
 
 echo "[aip-api-design] Setup complete."

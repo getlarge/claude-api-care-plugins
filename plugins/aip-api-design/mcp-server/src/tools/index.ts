@@ -25,6 +25,11 @@ import {
   ApplyFixesInputSchema,
   ApplyFixesOutputSchema,
 } from './apply-fixes.js';
+import {
+  createCorrelateTool,
+  CorrelateInputSchema,
+  CorrelateOutputSchema,
+} from './correlate.js';
 import type { ExtendedToolContext } from './types.js';
 
 /**
@@ -37,6 +42,7 @@ export function registerTools(server: McpServer, context: ExtendedToolContext) {
   // Create tools with context (worker pool)
   const reviewTool = createReviewTool(context);
   const applyFixesTool = createApplyFixesTool(context);
+  const correlateTool = createCorrelateTool(context);
 
   // aip-review: Analyze an OpenAPI spec against AIP guidelines
   server.registerTool(
@@ -102,7 +108,23 @@ export function registerTools(server: McpServer, context: ExtendedToolContext) {
     },
     async (args) => applyFixesTool.execute(args)
   );
+
+  // aip-correlate: Correlate findings with code locations using LLM reasoning
+  server.registerTool(
+    correlateTool.name,
+    {
+      description: correlateTool.description,
+      inputSchema: CorrelateInputSchema,
+      outputSchema: CorrelateOutputSchema,
+      annotations: {
+        title: 'AIP OpenAPI Reviewer - Correlate Code',
+        readOnlyHint: true,
+        idempotentHint: false, // Uses LLM reasoning, may produce different results
+      },
+    },
+    async (args, extra) => correlateTool.execute(args, extra)
+  );
 }
 
 // Re-export for testing
-export { listRulesTool, getInfoTool };
+export { listRulesTool, getInfoTool, createCorrelateTool };
