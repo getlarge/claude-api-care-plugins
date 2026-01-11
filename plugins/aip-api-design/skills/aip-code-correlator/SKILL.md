@@ -1,7 +1,6 @@
 ---
 name: aip-code-correlator
 description: Correlate AIP review findings with code locations in code-first API projects. Use when creating fix plans for code-generated OpenAPI specs, mapping spec paths to source code, or when user asks to find where an API endpoint is implemented. Works with NestJS, Fastify, and Express projects.
-allowed-tools: Read, Grep, Glob, Task
 ---
 
 # AIP Code Correlator

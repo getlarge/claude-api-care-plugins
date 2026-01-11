@@ -1,5 +1,8 @@
 ---
+color: cyan
 description: Fetch and explain specific Google API Improvement Proposals (AIPs). Use when user asks "why" about an AIP rule or needs detailed guidance.
+name: aip-lookup
+model: sonnet
 ---
 
 # AIP Lookup Agent

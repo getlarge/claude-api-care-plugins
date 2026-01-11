@@ -1,7 +1,7 @@
 ---
 name: aip-code-locator
 description: Find code that implements a single API operation. Use when mapping AIP findings to code locations. Called once per operation (spawn multiple in parallel for speed).
-tools: Grep, Glob, Read, LS
+allowed-tools: Grep, Glob, Read, LS
 model: sonnet
 ---
 
