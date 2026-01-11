@@ -27,13 +27,10 @@ const stripShebangPlugin = {
 };
 
 // Banner to provide require() in ESM context for CommonJS dependencies
+// Only provides `require` - __filename/__dirname are handled by source code that needs them
 const requireBanner = `
-import { createRequire as __createRequire } from 'node:module';
-import { fileURLToPath as __fileURLToPath } from 'node:url';
-import { dirname as __pathDirname } from 'node:path';
-const require = __createRequire(import.meta.url);
-const __filename = __fileURLToPath(import.meta.url);
-const __dirname = __pathDirname(__filename);
+import { createRequire as __bundleCreateRequire } from 'node:module';
+const require = __bundleCreateRequire(import.meta.url);
 `.trim();
 
 // Common build options
@@ -48,12 +45,14 @@ const commonOptions = {
 };
 
 // Bundle the library for use as a module (includes all dependencies)
+// Note: No requireBanner here - this bundle doesn't need require() and may be
+// re-bundled by consumers (like mcp-server) which add their own require() shim
 await esbuild.build({
   ...commonOptions,
   entryPoints: ['src/index.js'],
   outfile: 'dist/reviewer.bundle.js',
   banner: {
-    js: `// @getlarge/aip-openapi-reviewer v${pkg.version}\n// Bundled with esbuild\n${requireBanner}`,
+    js: `// @getlarge/aip-openapi-reviewer v${pkg.version}\n// Bundled with esbuild`,
   },
 });
 

@@ -9,6 +9,8 @@ await rm('dist/stdio.bundle.js', { force: true });
 await rm('dist/stdio.bundle.js.map', { force: true });
 await rm('dist/server.bundle.js', { force: true });
 await rm('dist/server.bundle.js.map', { force: true });
+await rm('dist/worker.bundle.js', { force: true });
+await rm('dist/worker.bundle.js.map', { force: true });
 
 // Plugin to strip shebang from source files (esbuild will add it back via banner)
 const stripShebangPlugin = {
@@ -25,13 +27,10 @@ const stripShebangPlugin = {
 };
 
 // Banner to provide require() in ESM context for CommonJS dependencies
+// Only provides `require` - __filename/__dirname are handled by source code that needs them
 const requireBanner = `
-import { createRequire as __createRequire } from 'node:module';
-import { fileURLToPath as __fileURLToPath } from 'node:url';
-import { dirname as __pathDirname } from 'node:path';
-const require = __createRequire(import.meta.url);
-const __filename = __fileURLToPath(import.meta.url);
-const __dirname = __pathDirname(__filename);
+import { createRequire as __bundleCreateRequire } from 'node:module';
+const require = __bundleCreateRequire(import.meta.url);
 `.trim();
 
 // Common build options
@@ -65,6 +64,16 @@ await esbuild.build({
   plugins: [stripShebangPlugin],
   banner: {
     js: `// @getlarge/aip-openapi-reviewer-mcp v${pkg.version}\n// Bundled with esbuild\n${requireBanner}`,
+  },
+});
+
+// Bundle the worker (used by worker-pool.ts)
+await esbuild.build({
+  ...commonOptions,
+  entryPoints: ['src/tools/worker.ts'],
+  outfile: 'dist/worker.bundle.js',
+  banner: {
+    js: `// @getlarge/aip-openapi-reviewer-mcp worker v${pkg.version}\n// Bundled with esbuild\n${requireBanner}`,
   },
 });
 

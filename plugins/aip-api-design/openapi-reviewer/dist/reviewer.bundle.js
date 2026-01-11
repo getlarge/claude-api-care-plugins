@@ -1,11 +1,5 @@
 // @getlarge/aip-openapi-reviewer v1.0.0
 // Bundled with esbuild
-import { createRequire as __createRequire } from 'node:module';
-import { fileURLToPath as __fileURLToPath } from 'node:url';
-import { dirname as __pathDirname } from 'node:path';
-const require = __createRequire(import.meta.url);
-const __filename = __fileURLToPath(import.meta.url);
-const __dirname = __pathDirname(__filename);
 
 // src/rules/base.js
 var AIP_CATEGORIES = {
@@ -5415,16 +5409,16 @@ var e = function(e2) {
 var t2 = /^ *(#|\/\/)/;
 var n = function(t3) {
   let n3 = t3.trim().split(/->/), r2 = [];
-  n3.forEach(((t4) => {
-    r2 = r2.concat((function(t5) {
+  n3.forEach((t4) => {
+    r2 = r2.concat(function(t5) {
       if (!(t5 = t5.trim())) return null;
       if (/^\[/.test(t5) && /\]$/.test(t5)) {
         let n4 = (t5 = (t5 = t5.replace(/^\[/, "")).replace(/\]$/, "")).split(/,/);
-        return n4 = n4.map(((e2) => e2.trim())).filter(((e2) => e2)), n4 = n4.map(((t6) => e({ id: t6 }))), n4;
+        return n4 = n4.map((e2) => e2.trim()).filter((e2) => e2), n4 = n4.map((t6) => e({ id: t6 })), n4;
       }
       return [e({ id: t5 })];
-    })(t4));
-  })), r2 = r2.filter(((e2) => e2));
+    }(t4));
+  }), r2 = r2.filter((e2) => e2);
   let i3 = r2[0];
   for (let e2 = 1; e2 < r2.length; e2 += 1) i3.children.push(r2[e2]), i3 = r2[e2];
   return r2[0];
@@ -5433,18 +5427,18 @@ var r = (e2, t3) => {
   let n3 = [], r2 = [e2];
   for (; r2.length > 0; ) {
     let e3 = r2.pop();
-    n3.push(e3), e3.children && e3.children.forEach(((n4) => {
+    n3.push(e3), e3.children && e3.children.forEach((n4) => {
       t3 && t3(e3, n4), r2.push(n4);
-    }));
+    });
   }
   return n3;
 };
 var i2 = (e2) => "[object Array]" === Object.prototype.toString.call(e2);
 var c = (e2) => (e2 = e2 || "").trim();
 var s = function(c2 = []) {
-  return "string" == typeof c2 ? (function(r2) {
+  return "string" == typeof c2 ? function(r2) {
     let i3 = r2.split(/\r?\n/), c3 = [];
-    i3.forEach(((e2) => {
+    i3.forEach((e2) => {
       if (!e2.trim() || t2.test(e2)) return;
       let r3 = ((e3) => {
         const t3 = /^( {2}|\t)/;
@@ -5453,32 +5447,32 @@ var s = function(c2 = []) {
         return n3;
       })(e2);
       c3.push({ indent: r3, node: n(e2) });
-    }));
-    let s4 = (function(e2) {
+    });
+    let s4 = function(e2) {
       let t3 = { children: [] };
-      return e2.forEach(((n3, r3) => {
-        0 === n3.indent ? t3.children = t3.children.concat(n3.node) : e2[r3 - 1] && (function(e3, t4) {
+      return e2.forEach((n3, r3) => {
+        0 === n3.indent ? t3.children = t3.children.concat(n3.node) : e2[r3 - 1] && function(e3, t4) {
           let n4 = e3[t4].indent;
           for (; t4 >= 0; t4 -= 1) if (e3[t4].indent < n4) return e3[t4];
           return e3[0];
-        })(e2, r3).node.children.push(n3.node);
-      })), t3;
-    })(c3);
+        }(e2, r3).node.children.push(n3.node);
+      }), t3;
+    }(c3);
     return s4 = e(s4), s4;
-  })(c2) : i2(c2) ? (function(t3) {
+  }(c2) : i2(c2) ? function(t3) {
     let n3 = {};
-    t3.forEach(((e2) => {
+    t3.forEach((e2) => {
       n3[e2.id] = e2;
-    }));
+    });
     let r2 = e({});
-    return t3.forEach(((t4) => {
+    return t3.forEach((t4) => {
       if ((t4 = e(t4)).parent) if (n3.hasOwnProperty(t4.parent)) {
         let e2 = n3[t4.parent];
         delete t4.parent, e2.children.push(t4);
       } else console.warn(`[Grad] - missing node '${t4.parent}'`);
       else r2.children.push(t4);
-    })), r2;
-  })(c2) : (r(s3 = c2).forEach(e), s3);
+    }), r2;
+  }(c2) : (r(s3 = c2).forEach(e), s3);
   var s3;
 };
 var h = (e2) => "\x1B[31m" + e2 + "\x1B[0m";
@@ -5487,18 +5481,18 @@ var l = function(e2, t3) {
   let n3 = "-> ";
   t3 && (n3 = o("\u2192 "));
   let i3 = "";
-  return r(e2).forEach(((e3, r2) => {
+  return r(e2).forEach((e3, r2) => {
     let c2 = e3.id || "";
     if (t3 && (c2 = h(c2)), 0 === r2 && !e3.id) return;
     let s3 = e3._cache.parents.length;
     i3 += "    ".repeat(s3) + n3 + c2 + "\n";
-  })), i3;
+  }), i3;
 };
 var a = function(e2) {
   let t3 = r(e2);
-  t3.forEach(((e3) => {
+  t3.forEach((e3) => {
     delete (e3 = Object.assign({}, e3)).children;
-  }));
+  });
   let n3 = t3[0];
   return n3 && !n3.id && 0 === Object.keys(n3.props).length && t3.shift(), t3;
 };
@@ -5507,11 +5501,11 @@ var d = function(e2, t3) {
   return "nested" === t3 || "json" === t3 ? e2 : "debug" === t3 ? (console.log(l(e2, true)), null) : p.hasOwnProperty(t3) ? p[t3](e2) : e2;
 };
 var u = (e2) => {
-  r(e2, ((e3, t3) => {
+  r(e2, (e3, t3) => {
     e3.id && (e3._cache.parents = e3._cache.parents || [], t3._cache.parents = e3._cache.parents.concat([e3.id]));
-  }));
+  });
 };
-var f = (e2, t3) => (Object.keys(t3).forEach(((n3) => {
+var f = (e2, t3) => (Object.keys(t3).forEach((n3) => {
   if (t3[n3] instanceof Set) {
     let r2 = e2[n3] || /* @__PURE__ */ new Set();
     e2[n3] = /* @__PURE__ */ new Set([...r2, ...t3[n3]]);
@@ -5521,7 +5515,7 @@ var f = (e2, t3) => (Object.keys(t3).forEach(((n3) => {
       e2[n3] = Object.assign({}, t3[n3], r2);
     } else i2(t3[n3]) ? e2[n3] = t3[n3].concat(e2[n3] || []) : void 0 === e2[n3] && (e2[n3] = t3[n3]);
   }
-})), e2);
+}), e2);
 var j = /\//;
 var g = class _g {
   constructor(e2 = {}) {
@@ -5542,13 +5536,13 @@ var g = class _g {
   }
   get(t3) {
     if (t3 = c(t3), !j.test(t3)) {
-      let e2 = this.json.children.find(((e3) => e3.id === t3));
+      let e2 = this.json.children.find((e3) => e3.id === t3);
       return new _g(e2);
     }
     let n3 = ((e2, t4) => {
       let n4 = ((e3) => "string" != typeof e3 ? e3 : (e3 = e3.replace(/^\//, "")).split(/\//))(t4 = t4 || "");
       for (let t5 = 0; t5 < n4.length; t5 += 1) {
-        let r2 = e2.children.find(((e3) => e3.id === n4[t5]));
+        let r2 = e2.children.find((e3) => e3.id === n4[t5]);
         if (!r2) return null;
         e2 = r2;
       }
@@ -5557,29 +5551,29 @@ var g = class _g {
     return new _g(n3);
   }
   add(t3, n3 = {}) {
-    if (i2(t3)) return t3.forEach(((e2) => this.add(c(e2), n3))), this;
+    if (i2(t3)) return t3.forEach((e2) => this.add(c(e2), n3)), this;
     t3 = c(t3);
     let r2 = e({ id: t3, props: n3 });
     return this.json.children.push(r2), new _g(r2);
   }
   remove(e2) {
-    return e2 = c(e2), this.json.children = this.json.children.filter(((t3) => t3.id !== e2)), this;
+    return e2 = c(e2), this.json.children = this.json.children.filter((t3) => t3.id !== e2), this;
   }
   nodes() {
-    return r(this.json).map(((e2) => (delete (e2 = Object.assign({}, e2)).children, e2)));
+    return r(this.json).map((e2) => (delete (e2 = Object.assign({}, e2)).children, e2));
   }
   cache() {
     return ((e2) => {
-      let t3 = r(e2, ((e3, t4) => {
+      let t3 = r(e2, (e3, t4) => {
         e3.id && (e3._cache.parents = e3._cache.parents || [], e3._cache.children = e3._cache.children || [], t4._cache.parents = e3._cache.parents.concat([e3.id]));
-      })), n3 = {};
-      t3.forEach(((e3) => {
+      }), n3 = {};
+      t3.forEach((e3) => {
         e3.id && (n3[e3.id] = e3);
-      })), t3.forEach(((e3) => {
-        e3._cache.parents.forEach(((t4) => {
+      }), t3.forEach((e3) => {
+        e3._cache.parents.forEach((t4) => {
           n3.hasOwnProperty(t4) && n3[t4]._cache.children.push(e3.id);
-        }));
-      })), e2._cache.children = Object.keys(n3);
+        });
+      }), e2._cache.children = Object.keys(n3);
     })(this.json), this;
   }
   list() {
@@ -5587,18 +5581,18 @@ var g = class _g {
   }
   fillDown() {
     var e2;
-    return e2 = this.json, r(e2, ((e3, t3) => {
+    return e2 = this.json, r(e2, (e3, t3) => {
       t3.props = f(t3.props, e3.props);
-    })), this;
+    }), this;
   }
   depth() {
     u(this.json);
     let e2 = r(this.json), t3 = e2.length > 1 ? 1 : 0;
-    return e2.forEach(((e3) => {
+    return e2.forEach((e3) => {
       if (0 === e3._cache.parents.length) return;
       let n3 = e3._cache.parents.length + 1;
       n3 > t3 && (t3 = n3);
-    })), t3;
+    }), t3;
   }
   out(e2) {
     return u(this.json), d(this.json, e2);

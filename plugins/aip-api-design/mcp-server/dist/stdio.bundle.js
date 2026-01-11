@@ -1,12 +1,8 @@
 #!/usr/bin/env node
 // @getlarge/aip-openapi-reviewer-mcp v1.0.0
 // Bundled with esbuild
-import { createRequire as __createRequire } from 'node:module';
-import { fileURLToPath as __fileURLToPath } from 'node:url';
-import { dirname as __pathDirname } from 'node:path';
-const require = __createRequire(import.meta.url);
-const __filename = __fileURLToPath(import.meta.url);
-const __dirname = __pathDirname(__filename);
+import { createRequire as __bundleCreateRequire } from 'node:module';
+const require = __bundleCreateRequire(import.meta.url);
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -6807,13 +6803,13 @@ var require_dist = __commonJS({
 var require_identity = __commonJS({
   "../../../node_modules/yaml/dist/nodes/identity.js"(exports) {
     "use strict";
-    var ALIAS = /* @__PURE__ */ Symbol.for("yaml.alias");
-    var DOC = /* @__PURE__ */ Symbol.for("yaml.document");
-    var MAP = /* @__PURE__ */ Symbol.for("yaml.map");
-    var PAIR = /* @__PURE__ */ Symbol.for("yaml.pair");
-    var SCALAR = /* @__PURE__ */ Symbol.for("yaml.scalar");
-    var SEQ = /* @__PURE__ */ Symbol.for("yaml.seq");
-    var NODE_TYPE = /* @__PURE__ */ Symbol.for("yaml.node.type");
+    var ALIAS = Symbol.for("yaml.alias");
+    var DOC = Symbol.for("yaml.document");
+    var MAP = Symbol.for("yaml.map");
+    var PAIR = Symbol.for("yaml.pair");
+    var SCALAR = Symbol.for("yaml.scalar");
+    var SEQ = Symbol.for("yaml.seq");
+    var NODE_TYPE = Symbol.for("yaml.node.type");
     var isAlias = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === ALIAS;
     var isDocument = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === DOC;
     var isMap = (node) => !!node && typeof node === "object" && node[NODE_TYPE] === MAP;
@@ -6865,9 +6861,9 @@ var require_visit = __commonJS({
   "../../../node_modules/yaml/dist/visit.js"(exports) {
     "use strict";
     var identity = require_identity();
-    var BREAK = /* @__PURE__ */ Symbol("break visit");
-    var SKIP = /* @__PURE__ */ Symbol("skip children");
-    var REMOVE = /* @__PURE__ */ Symbol("remove node");
+    var BREAK = Symbol("break visit");
+    var SKIP = Symbol("skip children");
+    var REMOVE = Symbol("remove node");
     function visit(node, visitor) {
       const visitor_ = initVisitor(visitor);
       if (identity.isDocument(node)) {
@@ -12306,9 +12302,9 @@ var require_cst_stringify = __commonJS({
 var require_cst_visit = __commonJS({
   "../../../node_modules/yaml/dist/parse/cst-visit.js"(exports) {
     "use strict";
-    var BREAK = /* @__PURE__ */ Symbol("break visit");
-    var SKIP = /* @__PURE__ */ Symbol("skip children");
-    var REMOVE = /* @__PURE__ */ Symbol("remove item");
+    var BREAK = Symbol("break visit");
+    var SKIP = Symbol("skip children");
+    var REMOVE = Symbol("remove item");
     function visit(cst, visitor) {
       if ("type" in cst && cst.type === "document")
         cst = { start: cst.start, value: cst.value };
@@ -14092,6 +14088,10 @@ var require_dist2 = __commonJS({
   }
 });
 
+// src/stdio.ts
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { dirname as dirname5, join as join8 } from "node:path";
+
 // ../../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/stdio.js
 import process2 from "node:process";
 
@@ -14655,7 +14655,7 @@ function $constructor(name, initializer3, params) {
   Object.defineProperty(_2, "name", { value: name });
   return _2;
 }
-var $brand = /* @__PURE__ */ Symbol("zod_brand");
+var $brand = Symbol("zod_brand");
 var $ZodAsyncError = class extends Error {
   constructor() {
     super(`Encountered Promise during synchronous parse. Use .parseAsync() instead.`);
@@ -14801,7 +14801,7 @@ function floatSafeRemainder(val, step) {
   const stepInt = Number.parseInt(step.toFixed(decCount).replace(".", ""));
   return valInt % stepInt / 10 ** decCount;
 }
-var EVALUATING = /* @__PURE__ */ Symbol("evaluating");
+var EVALUATING = Symbol("evaluating");
 function defineLazy(object3, key, getter) {
   let value = void 0;
   Object.defineProperty(object3, key, {
@@ -23884,8 +23884,8 @@ function yo_default() {
 
 // ../../../node_modules/zod/v4/core/registries.js
 var _a;
-var $output = /* @__PURE__ */ Symbol("ZodOutput");
-var $input = /* @__PURE__ */ Symbol("ZodInput");
+var $output = Symbol("ZodOutput");
+var $input = Symbol("ZodInput");
 var $ZodRegistry = class {
   constructor() {
     this._map = /* @__PURE__ */ new WeakMap();
@@ -24805,7 +24805,7 @@ function _stringbool(Classes, _params) {
     type: "pipe",
     in: stringSchema,
     out: booleanSchema,
-    transform: ((input, payload) => {
+    transform: (input, payload) => {
       let data = input;
       if (params.case !== "sensitive")
         data = data.toLowerCase();
@@ -24824,14 +24824,14 @@ function _stringbool(Classes, _params) {
         });
         return {};
       }
-    }),
-    reverseTransform: ((input, _payload) => {
+    },
+    reverseTransform: (input, _payload) => {
       if (input === true) {
         return truthyArray[0] || "true";
       } else {
         return falsyArray[0] || "false";
       }
-    }),
+    },
     error: params.error
   });
   return codec2;
@@ -25741,10 +25741,10 @@ var ZodType = /* @__PURE__ */ $constructor("ZodType", (inst, def) => {
   };
   inst.clone = (def2, params) => clone(inst, def2, params);
   inst.brand = () => inst;
-  inst.register = ((reg, meta3) => {
+  inst.register = (reg, meta3) => {
     reg.add(inst, meta3);
     return inst;
-  });
+  };
   inst.parse = (data, params) => parse2(inst, data, params, { callee: inst.parse });
   inst.safeParse = (data, params) => safeParse2(inst, data, params);
   inst.parseAsync = async (data, params) => parseAsync2(inst, data, params, { callee: inst.parseAsync });
@@ -28074,13 +28074,11 @@ function assertCompleteRequestPrompt(request) {
   if (request.params.ref.type !== "ref/prompt") {
     throw new TypeError(`Expected CompleteRequestPrompt, but got ${request.params.ref.type}`);
   }
-  void request;
 }
 function assertCompleteRequestResourceTemplate(request) {
   if (request.params.ref.type !== "ref/resource") {
     throw new TypeError(`Expected CompleteRequestResourceTemplate, but got ${request.params.ref.type}`);
   }
-  void request;
 }
 var CompleteResultSchema = ResultSchema.extend({
   completion: looseObject({
@@ -32024,6 +32022,7 @@ ZodNaN2.create = (params) => {
     ...processCreateParams(params)
   });
 };
+var BRAND = Symbol("zod_brand");
 var ZodBranded = class extends ZodType2 {
   _parse(input) {
     const { ctx } = this._processInputParams(input);
@@ -32217,10 +32216,10 @@ var ZodMiniType = /* @__PURE__ */ $constructor("ZodMiniType", (inst, def) => {
   };
   inst.clone = (_def, params) => clone(inst, _def, params);
   inst.brand = () => inst;
-  inst.register = ((reg, meta3) => {
+  inst.register = (reg, meta3) => {
     reg.add(inst, meta3);
     return inst;
-  });
+  };
 });
 var ZodMiniObject = /* @__PURE__ */ $constructor("ZodMiniObject", (inst, def) => {
   $ZodObject.init(inst, def);
@@ -32396,7 +32395,7 @@ function isTerminal(status) {
 }
 
 // ../../../node_modules/zod-to-json-schema/dist/esm/Options.js
-var ignoreOverride = /* @__PURE__ */ Symbol("Let zodToJsonSchema decide on which parser to use");
+var ignoreOverride = Symbol("Let zodToJsonSchema decide on which parser to use");
 var defaultOptions = {
   name: void 0,
   $refStrategy: "root",
@@ -35246,7 +35245,7 @@ var Server = class extends Protocol {
 };
 
 // ../../../node_modules/@modelcontextprotocol/sdk/dist/esm/server/completable.js
-var COMPLETABLE_SYMBOL = /* @__PURE__ */ Symbol.for("mcp.completable");
+var COMPLETABLE_SYMBOL = Symbol.for("mcp.completable");
 function isCompletable(schema) {
   return !!schema && typeof schema === "object" && COMPLETABLE_SYMBOL in schema;
 }
@@ -36984,12 +36983,6 @@ function createReviewTool(context) {
 }
 
 // ../openapi-reviewer/dist/reviewer.bundle.js
-import { createRequire as __createRequire } from "node:module";
-import { fileURLToPath as __fileURLToPath } from "node:url";
-import { dirname as __pathDirname } from "node:path";
-var require2 = __createRequire(import.meta.url);
-var __filename = __fileURLToPath(import.meta.url);
-var __dirname = __pathDirname(__filename);
 var AIP_CATEGORIES = {
   122: "naming",
   123: "naming",
@@ -42127,16 +42120,16 @@ var e = function(e2) {
 var t2 = /^ *(#|\/\/)/;
 var n = function(t3) {
   let n3 = t3.trim().split(/->/), r2 = [];
-  n3.forEach(((t4) => {
-    r2 = r2.concat((function(t5) {
+  n3.forEach((t4) => {
+    r2 = r2.concat(function(t5) {
       if (!(t5 = t5.trim())) return null;
       if (/^\[/.test(t5) && /\]$/.test(t5)) {
         let n4 = (t5 = (t5 = t5.replace(/^\[/, "")).replace(/\]$/, "")).split(/,/);
-        return n4 = n4.map(((e2) => e2.trim())).filter(((e2) => e2)), n4 = n4.map(((t6) => e({ id: t6 }))), n4;
+        return n4 = n4.map((e2) => e2.trim()).filter((e2) => e2), n4 = n4.map((t6) => e({ id: t6 })), n4;
       }
       return [e({ id: t5 })];
-    })(t4));
-  })), r2 = r2.filter(((e2) => e2));
+    }(t4));
+  }), r2 = r2.filter((e2) => e2);
   let i3 = r2[0];
   for (let e2 = 1; e2 < r2.length; e2 += 1) i3.children.push(r2[e2]), i3 = r2[e2];
   return r2[0];
@@ -42145,18 +42138,18 @@ var r = (e2, t3) => {
   let n3 = [], r2 = [e2];
   for (; r2.length > 0; ) {
     let e3 = r2.pop();
-    n3.push(e3), e3.children && e3.children.forEach(((n4) => {
+    n3.push(e3), e3.children && e3.children.forEach((n4) => {
       t3 && t3(e3, n4), r2.push(n4);
-    }));
+    });
   }
   return n3;
 };
 var i2 = (e2) => "[object Array]" === Object.prototype.toString.call(e2);
 var c = (e2) => (e2 = e2 || "").trim();
 var s = function(c2 = []) {
-  return "string" == typeof c2 ? (function(r2) {
+  return "string" == typeof c2 ? function(r2) {
     let i3 = r2.split(/\r?\n/), c3 = [];
-    i3.forEach(((e2) => {
+    i3.forEach((e2) => {
       if (!e2.trim() || t2.test(e2)) return;
       let r3 = ((e3) => {
         const t3 = /^( {2}|\t)/;
@@ -42165,32 +42158,32 @@ var s = function(c2 = []) {
         return n3;
       })(e2);
       c3.push({ indent: r3, node: n(e2) });
-    }));
-    let s4 = (function(e2) {
+    });
+    let s4 = function(e2) {
       let t3 = { children: [] };
-      return e2.forEach(((n3, r3) => {
-        0 === n3.indent ? t3.children = t3.children.concat(n3.node) : e2[r3 - 1] && (function(e3, t4) {
+      return e2.forEach((n3, r3) => {
+        0 === n3.indent ? t3.children = t3.children.concat(n3.node) : e2[r3 - 1] && function(e3, t4) {
           let n4 = e3[t4].indent;
           for (; t4 >= 0; t4 -= 1) if (e3[t4].indent < n4) return e3[t4];
           return e3[0];
-        })(e2, r3).node.children.push(n3.node);
-      })), t3;
-    })(c3);
+        }(e2, r3).node.children.push(n3.node);
+      }), t3;
+    }(c3);
     return s4 = e(s4), s4;
-  })(c2) : i2(c2) ? (function(t3) {
+  }(c2) : i2(c2) ? function(t3) {
     let n3 = {};
-    t3.forEach(((e2) => {
+    t3.forEach((e2) => {
       n3[e2.id] = e2;
-    }));
+    });
     let r2 = e({});
-    return t3.forEach(((t4) => {
+    return t3.forEach((t4) => {
       if ((t4 = e(t4)).parent) if (n3.hasOwnProperty(t4.parent)) {
         let e2 = n3[t4.parent];
         delete t4.parent, e2.children.push(t4);
       } else console.warn(`[Grad] - missing node '${t4.parent}'`);
       else r2.children.push(t4);
-    })), r2;
-  })(c2) : (r(s3 = c2).forEach(e), s3);
+    }), r2;
+  }(c2) : (r(s3 = c2).forEach(e), s3);
   var s3;
 };
 var h = (e2) => "\x1B[31m" + e2 + "\x1B[0m";
@@ -42199,18 +42192,18 @@ var l = function(e2, t3) {
   let n3 = "-> ";
   t3 && (n3 = o("\u2192 "));
   let i3 = "";
-  return r(e2).forEach(((e3, r2) => {
+  return r(e2).forEach((e3, r2) => {
     let c2 = e3.id || "";
     if (t3 && (c2 = h(c2)), 0 === r2 && !e3.id) return;
     let s3 = e3._cache.parents.length;
     i3 += "    ".repeat(s3) + n3 + c2 + "\n";
-  })), i3;
+  }), i3;
 };
 var a = function(e2) {
   let t3 = r(e2);
-  t3.forEach(((e3) => {
+  t3.forEach((e3) => {
     delete (e3 = Object.assign({}, e3)).children;
-  }));
+  });
   let n3 = t3[0];
   return n3 && !n3.id && 0 === Object.keys(n3.props).length && t3.shift(), t3;
 };
@@ -42219,11 +42212,11 @@ var d = function(e2, t3) {
   return "nested" === t3 || "json" === t3 ? e2 : "debug" === t3 ? (console.log(l(e2, true)), null) : p.hasOwnProperty(t3) ? p[t3](e2) : e2;
 };
 var u = (e2) => {
-  r(e2, ((e3, t3) => {
+  r(e2, (e3, t3) => {
     e3.id && (e3._cache.parents = e3._cache.parents || [], t3._cache.parents = e3._cache.parents.concat([e3.id]));
-  }));
+  });
 };
-var f = (e2, t3) => (Object.keys(t3).forEach(((n3) => {
+var f = (e2, t3) => (Object.keys(t3).forEach((n3) => {
   if (t3[n3] instanceof Set) {
     let r2 = e2[n3] || /* @__PURE__ */ new Set();
     e2[n3] = /* @__PURE__ */ new Set([...r2, ...t3[n3]]);
@@ -42233,7 +42226,7 @@ var f = (e2, t3) => (Object.keys(t3).forEach(((n3) => {
       e2[n3] = Object.assign({}, t3[n3], r2);
     } else i2(t3[n3]) ? e2[n3] = t3[n3].concat(e2[n3] || []) : void 0 === e2[n3] && (e2[n3] = t3[n3]);
   }
-})), e2);
+}), e2);
 var j = /\//;
 var g = class _g {
   constructor(e2 = {}) {
@@ -42254,13 +42247,13 @@ var g = class _g {
   }
   get(t3) {
     if (t3 = c(t3), !j.test(t3)) {
-      let e2 = this.json.children.find(((e3) => e3.id === t3));
+      let e2 = this.json.children.find((e3) => e3.id === t3);
       return new _g(e2);
     }
     let n3 = ((e2, t4) => {
       let n4 = ((e3) => "string" != typeof e3 ? e3 : (e3 = e3.replace(/^\//, "")).split(/\//))(t4 = t4 || "");
       for (let t5 = 0; t5 < n4.length; t5 += 1) {
-        let r2 = e2.children.find(((e3) => e3.id === n4[t5]));
+        let r2 = e2.children.find((e3) => e3.id === n4[t5]);
         if (!r2) return null;
         e2 = r2;
       }
@@ -42269,29 +42262,29 @@ var g = class _g {
     return new _g(n3);
   }
   add(t3, n3 = {}) {
-    if (i2(t3)) return t3.forEach(((e2) => this.add(c(e2), n3))), this;
+    if (i2(t3)) return t3.forEach((e2) => this.add(c(e2), n3)), this;
     t3 = c(t3);
     let r2 = e({ id: t3, props: n3 });
     return this.json.children.push(r2), new _g(r2);
   }
   remove(e2) {
-    return e2 = c(e2), this.json.children = this.json.children.filter(((t3) => t3.id !== e2)), this;
+    return e2 = c(e2), this.json.children = this.json.children.filter((t3) => t3.id !== e2), this;
   }
   nodes() {
-    return r(this.json).map(((e2) => (delete (e2 = Object.assign({}, e2)).children, e2)));
+    return r(this.json).map((e2) => (delete (e2 = Object.assign({}, e2)).children, e2));
   }
   cache() {
     return ((e2) => {
-      let t3 = r(e2, ((e3, t4) => {
+      let t3 = r(e2, (e3, t4) => {
         e3.id && (e3._cache.parents = e3._cache.parents || [], e3._cache.children = e3._cache.children || [], t4._cache.parents = e3._cache.parents.concat([e3.id]));
-      })), n3 = {};
-      t3.forEach(((e3) => {
+      }), n3 = {};
+      t3.forEach((e3) => {
         e3.id && (n3[e3.id] = e3);
-      })), t3.forEach(((e3) => {
-        e3._cache.parents.forEach(((t4) => {
+      }), t3.forEach((e3) => {
+        e3._cache.parents.forEach((t4) => {
           n3.hasOwnProperty(t4) && n3[t4]._cache.children.push(e3.id);
-        }));
-      })), e2._cache.children = Object.keys(n3);
+        });
+      }), e2._cache.children = Object.keys(n3);
     })(this.json), this;
   }
   list() {
@@ -42299,18 +42292,18 @@ var g = class _g {
   }
   fillDown() {
     var e2;
-    return e2 = this.json, r(e2, ((e3, t3) => {
+    return e2 = this.json, r(e2, (e3, t3) => {
       t3.props = f(t3.props, e3.props);
-    })), this;
+    }), this;
   }
   depth() {
     u(this.json);
     let e2 = r(this.json), t3 = e2.length > 1 ? 1 : 0;
-    return e2.forEach(((e3) => {
+    return e2.forEach((e3) => {
       if (0 === e3._cache.parents.length) return;
       let n3 = e3._cache.parents.length + 1;
       n3 > t3 && (t3 = n3);
-    })), t3;
+    }), t3;
   }
   out(e2) {
     return u(this.json), d(this.json, e2);
@@ -58569,7 +58562,7 @@ var require_uri_all = __commonJS2((exports, module) => {
     }
     var URI_PROTOCOL = buildExps(false);
     var IRI_PROTOCOL = buildExps(true);
-    var slicedToArray = /* @__PURE__ */ (function() {
+    var slicedToArray = /* @__PURE__ */ function() {
       function sliceIterator(arr, i3) {
         var _arr = [];
         var _n = true;
@@ -58604,7 +58597,7 @@ var require_uri_all = __commonJS2((exports, module) => {
           throw new TypeError("Invalid attempt to destructure non-iterable instance");
         }
       };
-    })();
+    }();
     var toConsumableArray = function(arr) {
       if (Array.isArray(arr)) {
         for (var i3 = 0, arr2 = Array(arr.length); i3 < arr.length; i3++)
@@ -60124,7 +60117,7 @@ var require_fast_json_stable_stringify = __commonJS2((exports, module) => {
     if (typeof opts2 === "function")
       opts2 = { cmp: opts2 };
     var cycles = typeof opts2.cycles === "boolean" ? opts2.cycles : false;
-    var cmp = opts2.cmp && /* @__PURE__ */ (function(f3) {
+    var cmp = opts2.cmp && /* @__PURE__ */ function(f3) {
       return function(node) {
         return function(a2, b) {
           var aobj = { key: a2, value: node[a2] };
@@ -60132,9 +60125,9 @@ var require_fast_json_stable_stringify = __commonJS2((exports, module) => {
           return f3(aobj, bobj);
         };
       };
-    })(opts2.cmp);
+    }(opts2.cmp);
     var seen = [];
-    return (function stringify(node) {
+    return function stringify(node) {
       if (node && node.toJSON && typeof node.toJSON === "function") {
         node = node.toJSON();
       }
@@ -60175,7 +60168,7 @@ var require_fast_json_stable_stringify = __commonJS2((exports, module) => {
       }
       seen.splice(seenIndex, 1);
       return "{" + out2 + "}";
-    })(data);
+    }(data);
   };
 });
 var require_validate2 = __commonJS2((exports, module) => {
@@ -64657,10 +64650,10 @@ function isFunction(value) {
 var isFunction_default = isFunction;
 var coreJsData = _root_default["__core-js_shared__"];
 var _coreJsData_default = coreJsData;
-var maskSrcKey = (function() {
+var maskSrcKey = function() {
   var uid = /[^.]+$/.exec(_coreJsData_default && _coreJsData_default.keys && _coreJsData_default.keys.IE_PROTO || "");
   return uid ? "Symbol(src)_1." + uid : "";
-})();
+}();
 function isMasked(func) {
   return !!maskSrcKey && maskSrcKey in func;
 }
@@ -66504,7 +66497,7 @@ __export2(exports_external, {
   INVALID: () => INVALID2,
   EMPTY_PATH: () => EMPTY_PATH,
   DIRTY: () => DIRTY2,
-  BRAND: () => BRAND
+  BRAND: () => BRAND2
 });
 var util2;
 (function(util22) {
@@ -70109,7 +70102,7 @@ ZodNaN3.create = (params) => {
     ...processCreateParams2(params)
   });
 };
-var BRAND = /* @__PURE__ */ Symbol("zod_brand");
+var BRAND2 = Symbol("zod_brand");
 var ZodBranded2 = class extends ZodType3 {
   _parse(input) {
     const { ctx } = this._processInputParams(input);
@@ -70850,6 +70843,7 @@ var ServerResultSchema2 = exports_external.union([
   ListToolsResultSchema2
 ]);
 var import_ajv2 = __toESM2(require_ajv2(), 1);
+var ignoreOverride2 = Symbol("Let zodToJsonSchema decide on which parser to use");
 var ALPHA_NUMERIC2 = new Set("ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789");
 var McpZodTypeKind2;
 (function(McpZodTypeKind22) {
@@ -72258,12 +72252,12 @@ parentPort?.on("message", (task) => {
 import { availableParallelism } from "node:os";
 import { fileURLToPath } from "node:url";
 import { dirname as dirname4, join as join7 } from "node:path";
-var __filename2 = fileURLToPath(import.meta.url);
-var __dirname2 = dirname4(__filename2);
+var __filename = fileURLToPath(import.meta.url);
+var __dirname = dirname4(__filename);
 var WorkerPool = class {
   constructor(poolSize = Math.max(1, availableParallelism() - 1), workerPath) {
     this.poolSize = poolSize;
-    this.workerPath = workerPath ?? join7(__dirname2, "worker.js");
+    this.workerPath = workerPath ?? join7(__dirname, "worker.js");
   }
   workers = [];
   availableWorkers = [];
@@ -72352,6 +72346,8 @@ var WorkerPool = class {
 };
 
 // src/stdio.ts
+var __filename2 = fileURLToPath3(import.meta.url);
+var __dirname2 = dirname5(__filename2);
 async function main() {
   await initTempStorage({
     type: "memory",
@@ -72365,7 +72361,8 @@ async function main() {
     ttlMs: 24 * 60 * 60 * 1e3
     // 1 day
   });
-  const workerPool = new WorkerPool();
+  const workerPath = join8(__dirname2, "worker.bundle.js");
+  const workerPool = new WorkerPool(void 0, workerPath);
   await workerPool.initialize();
   console.error(
     `Worker pool initialized with ${workerPool.stats.total} workers`
