@@ -1,5 +1,6 @@
 ---
 description: Create a prioritized fix plan from API review findings. Groups related issues, finds code locations, and suggests implementation order with both spec and code diffs.
+argument-hint: [review-path]
 ---
 
 # API Plan

@@ -1,7 +1,6 @@
 ---
 name: aip-code-correlator
-description: Correlate AIP review findings with code locations in code-first API projects. Use when creating fix plans for code-generated OpenAPI specs, mapping spec paths to source code, or when user asks to find where an API endpoint is implemented. Works with NestJS, Fastify, and Express projects.
-allowed-tools: Read, Grep, Glob, Task
+description: This skill should be used when the user asks "where is this API endpoint implemented", "find the code for this route", "which file handles this endpoint", "map API findings to code", or needs to correlate OpenAPI spec paths with source code locations. Also use when creating fix plans for code-first API projects (NestJS, Fastify, Express) after running aip-review, or when user mentions "find my NestJS controller", "locate Fastify route handler", "Express route definition".
 ---
 
 # AIP Code Correlator
@@ -31,7 +30,7 @@ The manual process below is a fallback for when MCP tools are not available.
 
 ## When to Use (Manual Fallback)
 
-Activate this skill when:
+This skill activates when:
 
 - Creating a fix plan after `aip-review` for a code-first project
 - User asks "where is this endpoint implemented?"

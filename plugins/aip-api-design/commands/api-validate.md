@@ -1,5 +1,6 @@
 ---
 description: Validate fixes by re-running review and comparing against the plan. Updates plan status and shows remaining issues.
+argument-hint: [plan-path]
 ---
 
 # API Validate

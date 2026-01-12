@@ -21,8 +21,7 @@
 import { glob, readFile } from 'node:fs/promises';
 import { resolve, relative, basename } from 'node:path';
 import { parseArgs } from 'node:util';
-import OASNormalize from 'oas-normalize';
-import Oas from 'oas';
+import SwaggerParser from '@apidevtools/swagger-parser';
 
 /**
  * @typedef {Object} SpecInfo
@@ -191,51 +190,52 @@ async function analyzeSpec(filePath, basePath) {
     info.generatorComment = generated.comment;
   }
 
-  // Parse with oas-normalize, then use Oas for rich metadata
+  // Parse and dereference (resolves $refs) - more lenient than validate()
   try {
-    const normalizer = new OASNormalize(filePath, { enablePaths: true });
-    // Validate first to catch errors, then bundle to get the parsed spec
-    await normalizer.validate();
-    const api = await normalizer.bundle();
+    // Cast to any - SwaggerParser returns OpenAPI/Swagger spec with expected properties
+    const api = /** @type {any} */ (await SwaggerParser.dereference(filePath));
 
-    // @ts-ignore - api shape varies
+    // Detect OpenAPI vs Swagger version
     if (api.openapi) {
-      // @ts-ignore
       info.version = api.openapi;
-      // @ts-ignore
       info.type = api.openapi.startsWith('3.1') ? 'openapi-3.1' : 'openapi-3.x';
-      // @ts-ignore
     } else if (api.swagger) {
-      // @ts-ignore
       info.version = api.swagger;
       info.type = 'swagger-2.x';
     }
 
-    // Use Oas class for richer metadata extraction
-    // @ts-ignore
-    const oas = new Oas(api);
+    // Extract metadata directly from API object
+    info.title = api.info?.title || 'Untitled';
+    info.apiVersion = api.info?.version || '';
+    info.description = api.info?.description;
 
-    info.title = oas.getDefinition().info?.title || 'Untitled';
-    info.apiVersion = oas.getDefinition().info?.version || '';
-    info.description = oas.getDefinition().info?.description;
+    // Count paths and operations
+    const paths = api.paths || {};
+    info.pathCount = Object.keys(paths).length;
 
-    // Get paths and operations using Oas API
-    const paths = oas.getPaths();
-    info.pathCount = Object.keys(oas.getDefinition().paths || {}).length;
-    info.operationCount = Object.values(paths).flat().length;
+    // Count total operations across all paths
+    info.operationCount = Object.values(paths).reduce((total, pathItem) => {
+      const operations = [
+        'get',
+        'post',
+        'put',
+        'patch',
+        'delete',
+        'options',
+        'head',
+        'trace',
+      ];
+      return total + operations.filter((op) => pathItem[op]).length;
+    }, 0);
 
-    // Get tags for additional context
-    const tags = oas.getTags();
-    if (tags.length > 0) {
-      info.tags = tags;
+    // Extract tags
+    if (api.tags && api.tags.length > 0) {
+      info.tags = api.tags.map((/** @type {any} */ t) => t.name);
     }
 
-    // Get servers
-    const definition = oas.getDefinition();
-    // @ts-ignore
-    if (definition.servers && definition.servers.length > 0) {
-      // @ts-ignore
-      info.servers = definition.servers.map((s) => s.url);
+    // Extract servers
+    if (api.servers && api.servers.length > 0) {
+      info.servers = api.servers.map((/** @type {any} */ s) => s.url);
     }
   } catch (err) {
     info.error = err instanceof Error ? err : new Error(String(err));

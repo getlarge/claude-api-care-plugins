@@ -1,8 +1,28 @@
 ---
 name: aip-code-locator
-description: Find code that implements a single API operation. Use when mapping AIP findings to code locations. Called once per operation (spawn multiple in parallel for speed).
-tools: Grep, Glob, Read, LS
+description: |
+  Find code that implements a single API operation. This agent should be used when mapping AIP findings to code locations, or when the user asks where an API endpoint is implemented. Spawn multiple instances in parallel for speed when locating multiple operations.
+
+  <example>
+  Context: User wants to fix an AIP finding and needs to know where the code is
+  user: "Where is the GET /users/{id} endpoint implemented?"
+  assistant: "I'll use the aip-code-locator agent to find the controller or route handler for that endpoint."
+  <commentary>
+  User needs to locate specific API implementation code - use aip-code-locator.
+  </commentary>
+  </example>
+
+  <example>
+  Context: Creating a fix plan that requires code changes
+  user: "Find all the code locations for the endpoints in this review"
+  assistant: "I'll spawn aip-code-locator agents in parallel for each operation to find all code locations."
+  <commentary>
+  Multiple endpoints need code location - spawn multiple aip-code-locator agents in parallel.
+  </commentary>
+  </example>
+allowed-tools: ['Grep', 'Glob', 'Read', 'LS']
 model: sonnet
+color: green
 ---
 
 # AIP Code Locator Agent

@@ -1,5 +1,6 @@
 ---
 description: Discover all OpenAPI specifications in the codebase. Outputs a discovery document listing all found specs with metadata.
+argument-hint: [directory]
 ---
 
 # API Discovery

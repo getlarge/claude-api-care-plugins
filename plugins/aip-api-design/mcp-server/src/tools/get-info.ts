@@ -34,7 +34,7 @@ export const getInfoTool = {
 
   async execute(input: GetInfoInput) {
     const { aip } = input;
-    const info = AIP_METADATA[aip];
+    const info = AIP_METADATA[aip as keyof typeof AIP_METADATA];
 
     if (!info) {
       return {

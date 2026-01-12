@@ -6,6 +6,8 @@
  * with Claude Code and Claude Desktop.
  */
 
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createMcpServer, SERVER_NAME, SERVER_VERSION } from './mcp.js';
 import {
@@ -18,6 +20,9 @@ import {
 } from './services/findings-storage.js';
 import { WorkerPool } from './tools/worker-pool.js';
 import type { ToolContext } from './tools/types.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function main() {
   // Initialize temp storage (memory store with FS for STDIO)
@@ -34,8 +39,10 @@ async function main() {
     ttlMs: 24 * 60 * 60 * 1000, // 1 day
   });
 
-  // Initialize worker pool for CPU-intensive operations
-  const workerPool = new WorkerPool();
+  // Initialize worker pool with bundled worker path
+  // In bundled deployment, worker.bundle.js is alongside stdio.bundle.js
+  const workerPath = join(__dirname, 'worker.bundle.js');
+  const workerPool = new WorkerPool(undefined, workerPath);
   await workerPool.initialize();
   console.error(
     `Worker pool initialized with ${workerPool.stats.total} workers`

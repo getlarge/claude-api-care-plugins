@@ -24,6 +24,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, extname, basename, dirname, join } from 'node:path';
 import { parseArgs as nodeParseArgs } from 'node:util';
+import SwaggerParser from '@apidevtools/swagger-parser';
 import { OpenAPIReviewer } from './reviewer.js';
 import {
   formatConsole,
@@ -173,7 +174,7 @@ EXIT CODES:
 }
 
 /**
- * Load and parse spec file
+ * Load, validate, and parse spec file using swagger-parser
  * @param {string} specPath
  * @returns {Promise<import('./types.js').OpenAPISpec>}
  */
@@ -184,46 +185,11 @@ async function loadSpec(specPath) {
     throw new Error(`File not found: ${specPath}`);
   }
 
-  const content = readFileSync(resolved, 'utf-8');
-  const ext = extname(specPath).toLowerCase();
-
-  if (ext === '.json') {
-    return JSON.parse(content);
-  }
-
-  // Assume YAML
-  // Dynamic import for yaml since it might not be installed
-  try {
-    // Try to parse as JSON first (some .yaml files are valid JSON)
-    return JSON.parse(content);
-  } catch {
-    // Fall back to yaml parsing
-    return await parseSimpleYAML(content);
-  }
-}
-
-/**
- * Very simple YAML parser for basic OpenAPI specs
- * For production, use 'yaml' or 'js-yaml' package
- * @param {string} content
- * @returns {Promise<any>}
- */
-async function parseSimpleYAML(content) {
-  // Try dynamic import for ES modules
-  try {
-    const yaml = await import('yaml');
-    return yaml.parse(content);
-  } catch {
-    try {
-      // @ts-expect-error - js-yaml doesn't have type declarations
-      const jsYaml = await import('js-yaml');
-      return jsYaml.default.load(content);
-    } catch {
-      throw new Error(
-        'YAML parsing requires "yaml" or "js-yaml" package. Install with: npm install yaml'
-      );
-    }
-  }
+  // Use SwaggerParser.validate() for strict validation
+  // This catches spec errors early before review
+  // Cast to any to work around complex union types
+  const spec = /** @type {any} */ (await SwaggerParser.validate(resolved));
+  return spec;
 }
 
 /**

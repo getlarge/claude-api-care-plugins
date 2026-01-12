@@ -2,8 +2,7 @@
 node_modules/
 .pnpm-store/
 
-# Build outputs
-dist/
+# Build outputs (exclude plugin dist/ - we ship bundled artifacts)
 *.tgz
 
 # IDE

@@ -1,5 +1,6 @@
 ---
 description: Apply AIP rule fixes to OpenAPI specs. Supports automated fixing via CLI or manual phase-by-phase implementation from a plan.
+argument-hint: [plan-path] [--phase N] [--task N.N]
 ---
 
 # API Fix

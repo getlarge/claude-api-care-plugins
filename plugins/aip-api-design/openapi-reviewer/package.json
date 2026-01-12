@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Review OpenAPI specifications against Google's API Improvement Proposals (AIP)",
   "type": "module",
-  "main": "./src/index.js",
+  "main": "./dist/reviewer.bundle.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./src/index.js",
+      "import": "./dist/reviewer.bundle.js",
       "types": "./dist/index.d.ts"
     },
     "./types": {
@@ -21,12 +21,12 @@
     }
   },
   "bin": {
-    "aip-review": "./src/cli.js",
-    "aip-discover": "./src/discover.js"
+    "aip-review": "./dist/cli.bundle.js",
+    "aip-discover": "./dist/discover.bundle.js"
   },
   "scripts": {
-    "review": "node src/cli.js",
-    "discover": "node src/discover.js",
+    "review": "node dist/cli.bundle.js",
+    "discover": "node dist/discover.bundle.js",
     "test": "node --test src/**/*.test.js",
     "test:integration": "node --test tests/integration.test.js",
     "test:plugin": "node --test tests/plugin.test.js",
@@ -34,7 +34,9 @@
     "test:all": "node --test src/**/*.test.js tests/**/*.test.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "build": "tsc"
+    "build": "npm run build:types && npm run build:bundle",
+    "build:types": "tsc",
+    "build:bundle": "node build.mjs"
   },
   "keywords": [
     "openapi",
@@ -46,13 +48,16 @@
     "rest",
     "swagger"
   ],
+  "license": "Apache-2.0",
   "files": [
     "src/"
   ],
   "engines": {
     "node": ">=22.0.0"
   },
-  "optionalDependencies": {
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.0",
+    "compromise": "^14.14.4",
     "yaml": "^2.8.2"
   },
   "devDependencies": {
@@ -61,15 +66,5 @@
     "eslint": "^9.39.1",
     "globals": "^16.5.0",
     "typescript": "^5.0.0"
-  },
-  "peerDependencies": {
-    "compromise": "^14.14.4",
-    "oas": "^28.5.0",
-    "oas-normalize": "^15.4.0"
-  },
-  "peerDependenciesMeta": {
-    "yaml": {
-      "optional": true
-    }
   }
 }

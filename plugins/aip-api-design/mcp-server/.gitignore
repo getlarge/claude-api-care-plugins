@@ -1,0 +1,7 @@
+# Intermediate build artifacts
+*.tsbuildinfo
+node_modules/
+
+# Only commit *.bundle.js files, ignore everything else in dist/
+dist/*
+!dist/*.bundle.js

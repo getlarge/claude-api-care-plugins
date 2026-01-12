@@ -459,10 +459,11 @@ describe('analyzeSpec', () => {
     const specPath = join(FIXTURES_DIR, 'invalid-spec.yaml');
     const info = await analyzeSpec(specPath, FIXTURES_DIR);
 
-    // Should have parsed but may have validation error
+    // Should have parsed even with missing title (dereference is lenient)
     assert.equal(info.filename, 'invalid-spec.yaml');
-    // The spec is invalid (missing title), so should have an error
-    assert.ok(info.error);
+    assert.equal(info.type, 'openapi-3.x');
+    // Title defaults to 'Untitled' when missing
+    assert.equal(info.title, 'Untitled');
   });
 
   it('sets relative path correctly', async () => {

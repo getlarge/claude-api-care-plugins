@@ -6,6 +6,11 @@
   "workspaces": [
     "plugins/*/*"
   ],
+  "overrides": {
+    "@anthropic-ai/claude-agent-sdk": {
+      "zod": "^4.1.13"
+    }
+  },
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -18,21 +23,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "esbuild": "^0.24.0",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.4.2",
     "prettier-plugin-sort-json": "^4.0.0"
-  },
-  "lint-staged": {
-    "*.{js,ts,json,md,yaml,yml}": "prettier --write",
-    "plugins/aip-api-design/openapi-reviewer/src/**/*.js": [
-      "eslint --fix --config plugins/aip-api-design/openapi-reviewer/eslint.config.js",
-      "prettier --write"
-    ],
-    "plugins/aip-api-design/mcp-server/src/**/*.ts": [
-      "eslint --fix --config plugins/aip-api-design/mcp-server/eslint.config.js",
-      "prettier --write"
-    ]
   }
 }

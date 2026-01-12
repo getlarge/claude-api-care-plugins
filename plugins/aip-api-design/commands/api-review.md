@@ -1,5 +1,6 @@
 ---
 description: Review an OpenAPI specification against AIP (API Improvement Proposals) principles. Outputs a structured findings document.
+argument-hint: [spec-path] [--categories naming,pagination]
 ---
 
 # API Review

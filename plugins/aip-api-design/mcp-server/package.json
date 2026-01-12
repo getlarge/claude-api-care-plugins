@@ -3,20 +3,22 @@
   "version": "1.0.0",
   "description": "MCP server exposing AIP OpenAPI reviewer as tools for AI agents",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/server.bundle.js",
   "bin": {
-    "aip-mcp-server": "dist/stdio.js"
+    "aip-mcp-server": "dist/stdio.bundle.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:types && npm run build:bundle",
+    "build:types": "tsc",
+    "build:bundle": "node build.mjs",
     "dev": "tsc --watch --preserveWatchOutput & sleep 2 && node --watch dist/index.js",
     "dev:stdio": "tsc --watch --preserveWatchOutput & sleep 2 && node --watch dist/stdio.js",
-    "start": "node dist/index.js",
-    "start:stdio": "node dist/stdio.js",
+    "start": "node dist/server.bundle.js",
+    "start:stdio": "node dist/stdio.bundle.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node --import tsx --test 'src/**/*.test.ts'",
-    "test:e2e": "npm run build && node --import tsx --test 'src/**/*.e2e-test.ts'"
+    "test": "npm run build:types && node --import tsx --test 'src/**/*.test.ts'",
+    "test:e2e": "npm run build:types && node --import tsx --test 'src/**/*.e2e-test.ts'"
   },
   "keywords": [
     "mcp",
@@ -26,8 +28,9 @@
     "linter"
   ],
   "author": "getlarge",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.69",
     "@modelcontextprotocol/sdk": "^1.24.0",
     "@sinclair/typebox": "^0.34.0",
     "@fastify/type-provider-typebox": "^5.0.0",
