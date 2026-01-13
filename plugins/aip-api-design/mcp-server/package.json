@@ -8,6 +8,7 @@
     "aip-mcp-server": "dist/stdio.bundle.js"
   },
   "scripts": {
+    "postinstall": "patch-package",
     "build": "npm run build:types && npm run build:bundle",
     "build:types": "tsc",
     "build:bundle": "node build.mjs",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "patch-package": "^8.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.32.1"
