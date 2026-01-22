@@ -1,6 +1,52 @@
-# getlarge Claude Plugins
+# Claude AIP Plugins
 
-A collection of Claude Code plugins for API design, security consulting, and development productivity.
+**API hygiene tooling for Claude Code.**
+
+---
+
+## Why API Hygiene?
+
+APIs rarely fail because of a single bad decision.
+They fail because of small inconsistencies that compound over time.
+
+One endpoint paginates differently.
+Another returns errors in a custom format.
+A third behaves slightly differently on retries.
+
+Individually acceptable. Collectively expensive.
+
+This plugin helps you catch hygiene issues before they become legacy problems.
+
+### Hygiene vs Style
+
+| Hygiene (enforce) | Style (choose) |
+|-------------------|----------------|
+| Pagination exists | Cursor vs offset |
+| Errors are structured | Error code taxonomy |
+| Idempotency on POST | Key header naming |
+| No request body on GET | camelCase vs snake_case |
+
+Style expresses your team's identity.
+Hygiene protects your consumers.
+
+This plugin focuses on hygiene—the baseline that makes APIs safe and predictable to use.
+
+---
+
+## The Foundation: Google's AIPs
+
+This plugin uses [Google's API Improvement Proposals](https://google.aip.dev) as a starting point—200+ battle-tested patterns from billions of API calls.
+
+But AIPs are one interpretation. The plugin is designed so you can:
+
+- Use AIP rules as-is
+- Adapt them to your context
+- Add your own conventions
+- Skip what doesn't apply
+
+The goal isn't compliance. It's consistency.
+
+---
 
 ## Installation
 
@@ -11,7 +57,7 @@ A collection of Claude Code plugins for API design, security consulting, and dev
 /plugin marketplace add getlarge/claude-aip-plugins
 ```
 
-### Install Plugins
+### Install the Plugin
 
 ```bash
 # Browse available plugins
@@ -21,19 +67,23 @@ A collection of Claude Code plugins for API design, security consulting, and dev
 /plugin install aip-api-design@getlarge-aip-plugins
 ```
 
+---
+
 ## Available Plugins
 
 ### aip-api-design
 
-Review and improve REST APIs following Google's [API Improvement Proposals (AIP)](https://google.aip.dev).
+Review and improve REST APIs against hygiene rules derived from Google's AIPs.
 
 **Commands:**
 
-- `/api-discover` — Find all OpenAPI specs in your project
-- `/api-review` — Run AIP rules against a spec
-- `/api-plan` — Create prioritized fix plan from review
-- `/api-fix` — Implement fixes phase by phase
-- `/api-validate` — Verify fixes and track progress
+| Command | Purpose |
+|---------|---------|
+| `/api-discover` | Find all OpenAPI specs in your project |
+| `/api-review` | Run hygiene rules against a spec |
+| `/api-plan` | Create prioritized fix plan from review |
+| `/api-fix` | Implement fixes phase by phase |
+| `/api-validate` | Verify fixes and track progress |
 
 **Workflow:**
 
@@ -43,9 +93,47 @@ Review and improve REST APIs following Google's [API Improvement Proposals (AIP)
                                               └────────────┘
 ```
 
-All artifacts are stored in `thoughts/api/` for persistence and human review.
+Each step produces a document you can review, edit, and use as input for the next.
 
 [Full documentation →](./plugins/aip-api-design/README.md)
+
+---
+
+## What It Catches
+
+The reviewer checks for common hygiene issues:
+
+**Consistency**
+- Mixed naming conventions in paths
+- Inconsistent pagination across list endpoints
+- Non-standard error response formats
+
+**Safety**
+- Missing idempotency support on POST
+- Unbounded list endpoints (no pagination)
+- GET requests with body
+
+**Predictability**
+- Verbs in resource paths
+- Non-standard HTTP status codes
+- Missing error documentation
+
+See [RULES.md](./plugins/aip-api-design/openapi-reviewer/RULES.md) for the full rule set.
+
+---
+
+## Philosophy
+
+Read the [API Hygiene Manifesto](./docs/api-hygiene-manifesto.md) for the full rationale.
+
+The short version:
+
+> APIs are shared surfaces.
+> Shared surfaces require hygiene.
+> Not to impress. Not to show taste.
+> But to be safe to use.
+
+---
 
 ## Development
 
@@ -85,13 +173,24 @@ plugins/my-plugin/
 └── README.md
 ```
 
+---
+
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Add or improve plugins
-4. Test with local marketplace
-5. Submit a PR
+1. Try the plugin on your real API projects
+2. Annotate findings with feedback
+3. Share patterns of false positives or missing rules
+4. Submit PRs
+
+---
+
+## Further Reading
+
+- [API Hygiene Manifesto](./docs/api-hygiene-manifesto.md) — The philosophy
+- [API Hygiene Framework](./docs/api-hygiene-framework.md) — Practical reference with examples
+- [Google AIPs](https://google.aip.dev) — The source material
+
+---
 
 ## License
 
