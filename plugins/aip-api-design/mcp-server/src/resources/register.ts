@@ -4,7 +4,7 @@
  * Registers AIP resources with @platformatic/mcp using:
  * 1. mcpAddResource with uriSchema for query-param based resource access
  * 2. Native resources/list returns registered resource definitions
- * 3. Custom subscription handlers using ResourceSubscriptionBroker
+ * 3. Custom subscription handlers using SubscriptionStore
  *
  * Resources exposed (query param format):
  * - aip://findings?id={reviewId} - AIP review findings
@@ -21,6 +21,7 @@ import type {
 
 import { getFindingsStorage } from '../services/findings-storage.js';
 import { getTempStorage } from '../services/temp-storage.js';
+import { getSubscriptionStore } from '../services/subscription-store/index.js';
 
 /**
  * Parse AIP resource URI to extract type and ID from query params.
@@ -184,13 +185,19 @@ export function registerAipResources(fastify: FastifyInstance) {
     }
   );
 
-  // Register subscription handlers using the broker
+  // Register subscription handlers using the subscription store
+  const subscriptionStore = getSubscriptionStore();
+
   fastify.mcpSetResourcesSubscribeHandler(async (params, context) => {
     const sessionId = context.sessionId;
     if (!sessionId) {
       throw new Error('Session ID required for subscriptions');
     }
-    // TODO: Handle subscription logic
+    await subscriptionStore.subscribe(sessionId, params.uri);
+    fastify.log.info(
+      { sessionId, uri: params.uri },
+      'Session subscribed to resource'
+    );
     return {};
   });
 
@@ -199,7 +206,11 @@ export function registerAipResources(fastify: FastifyInstance) {
     if (!sessionId) {
       throw new Error('Session ID required for subscriptions');
     }
-    // TODO: Handle unsubscription logic
+    await subscriptionStore.unsubscribe(sessionId, params.uri);
+    fastify.log.info(
+      { sessionId, uri: params.uri },
+      'Session unsubscribed from resource'
+    );
     return {};
   });
 

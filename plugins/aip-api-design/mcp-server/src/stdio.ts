@@ -23,6 +23,10 @@ import {
   initFindingsStorage,
   shutdownFindingsStorage,
 } from './services/findings-storage.js';
+import {
+  initSubscriptionStore,
+  shutdownSubscriptionStore,
+} from './services/subscription-store/index.js';
 import { WorkerPool } from './tools/worker-pool.js';
 import { registerAipTools } from './tools/register.js';
 import { registerAipResources } from './resources/register.js';
@@ -85,6 +89,9 @@ async function main() {
       'AIP OpenAPI Reviewer - Analyze OpenAPI specs against Google API Improvement Proposals',
   });
 
+  // Initialize subscription store for resource subscriptions
+  initSubscriptionStore();
+
   // Register AIP tools, resources, and prompts
   registerAipTools(fastify, { workerPool });
   registerAipResources(fastify);
@@ -95,6 +102,7 @@ async function main() {
 
   const cleanup = async () => {
     await workerPool.shutdown();
+    await shutdownSubscriptionStore();
     await shutdownFindingsStorage();
     await shutdownTempStorage();
     await fastify.close();

@@ -180,8 +180,8 @@ describe('aip-apply-fixes E2E', () => {
       assert.ok(resourceLink, 'Should have resource_link to modified spec');
       assert.ok(resourceLink.uri, 'resource_link should have uri');
       assert.ok(
-        resourceLink.uri?.startsWith('aip://specs/'),
-        'uri should be aip://specs/{specId}'
+        resourceLink.uri?.startsWith('aip://specs?id='),
+        'uri should be aip://specs?id={specId}'
       );
     });
   });

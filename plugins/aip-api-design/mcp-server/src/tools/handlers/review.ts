@@ -12,6 +12,7 @@
  * zero-copy transfer. Parsing happens in the worker thread.
  */
 
+import type { FastifyInstance } from 'fastify';
 import type {
   HandlerContext,
   CallToolResult,
@@ -19,6 +20,7 @@ import type {
 
 import { loadSpecRaw } from '../spec-loader.js';
 import { storeFindings } from '../../services/findings-storage.js';
+import { getSubscriptionStore } from '../../services/subscription-store/index.js';
 import type { WorkerPool, WorkerTask } from '../worker-pool.js';
 import type {
   ReviewInput,
@@ -28,6 +30,7 @@ import type {
 
 interface ReviewHandlerDeps {
   workerPool: WorkerPool;
+  fastify: FastifyInstance;
   context: HandlerContext;
 }
 
@@ -47,7 +50,7 @@ export async function executeReview(
   params: ReviewInput,
   deps: ReviewHandlerDeps
 ): Promise<CallToolResult> {
-  const { workerPool } = deps;
+  const { workerPool, fastify } = deps;
   const { specPath, specUrl, strict, categories, skipRules } = params;
 
   // Validate input: either specPath or specUrl must be provided
@@ -136,12 +139,17 @@ export async function executeReview(
       summary: { ...summary, total },
       specSource: reviewedSpecPath,
     });
-    // TODO: Notify subscribers of updated findings resource
-    // await fastify.mcpSendToSession(sessionId, {
-    //   jsonrpc: '2.0',
-    //   method: 'notifications/resources/updated',
-    //   params: { uri: resourceUri },
-    // });
+
+    // Notify subscribers of updated findings resource
+    const subscriptionStore = getSubscriptionStore();
+    const subscribers = await subscriptionStore.getSubscribers(resourceUri);
+    for (const sessionId of subscribers) {
+      fastify.mcpSendToSession(sessionId, {
+        jsonrpc: '2.0',
+        method: 'notifications/resources/updated',
+        params: { uri: resourceUri },
+      });
+    }
   } catch {
     return {
       content: [

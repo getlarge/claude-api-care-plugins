@@ -3093,14 +3093,14 @@ var require_wrap_thenable = __commonJS({
     } = require_symbols2();
     var diagnostics = __require("node:diagnostics_channel");
     var channels = diagnostics.tracingChannel("fastify.request.handler");
-    function wrapThenable(thenable, reply, store) {
-      if (store) store.async = true;
+    function wrapThenable(thenable, reply, store2) {
+      if (store2) store2.async = true;
       thenable.then(function(payload) {
         if (reply[kReplyHijacked] === true) {
           return;
         }
-        if (store) {
-          channels.asyncStart.publish(store);
+        if (store2) {
+          channels.asyncStart.publish(store2);
         }
         try {
           if (payload !== void 0 || //
@@ -3114,15 +3114,15 @@ var require_wrap_thenable = __commonJS({
             }
           }
         } finally {
-          if (store) {
-            channels.asyncEnd.publish(store);
+          if (store2) {
+            channels.asyncEnd.publish(store2);
           }
         }
       }, function(err) {
-        if (store) {
-          store.error = err;
-          channels.error.publish(store);
-          channels.asyncStart.publish(store);
+        if (store2) {
+          store2.error = err;
+          channels.error.publish(store2);
+          channels.asyncStart.publish(store2);
         }
         try {
           if (reply.sent === true) {
@@ -3134,8 +3134,8 @@ var require_wrap_thenable = __commonJS({
         } catch (err2) {
           reply.send(err2);
         } finally {
-          if (store) {
-            channels.asyncEnd.publish(store);
+          if (store2) {
+            channels.asyncEnd.publish(store2);
           }
         }
       });
@@ -3247,7 +3247,7 @@ var require_handle_request = __commonJS({
       if (!channels.hasSubscribers || context[kFourOhFourContext] === null) {
         preHandlerCallbackInner(err, request, reply);
       } else {
-        const store = {
+        const store2 = {
           request,
           reply,
           async: false,
@@ -3256,18 +3256,18 @@ var require_handle_request = __commonJS({
             method: context.config.method
           }
         };
-        channels.start.runStores(store, preHandlerCallbackInner, void 0, err, request, reply, store);
+        channels.start.runStores(store2, preHandlerCallbackInner, void 0, err, request, reply, store2);
       }
     }
-    function preHandlerCallbackInner(err, request, reply, store) {
+    function preHandlerCallbackInner(err, request, reply, store2) {
       const context = request[kRouteContext];
       try {
         if (err != null) {
           reply[kReplyIsError] = true;
           reply.send(err);
-          if (store) {
-            store.error = err;
-            channels.error.publish(store);
+          if (store2) {
+            store2.error = err;
+            channels.error.publish(store2);
           }
           return;
         }
@@ -3275,9 +3275,9 @@ var require_handle_request = __commonJS({
         try {
           result = context.handler(request, reply);
         } catch (err2) {
-          if (store) {
-            store.error = err2;
-            channels.error.publish(store);
+          if (store2) {
+            store2.error = err2;
+            channels.error.publish(store2);
           }
           reply[kReplyIsError] = true;
           reply.send(err2);
@@ -3285,13 +3285,13 @@ var require_handle_request = __commonJS({
         }
         if (result !== void 0) {
           if (result !== null && typeof result.then === "function") {
-            wrapThenable(result, reply, store);
+            wrapThenable(result, reply, store2);
           } else {
             reply.send(result);
           }
         }
       } finally {
-        if (store) channels.end.publish(store);
+        if (store2) channels.end.publish(store2);
       }
     }
     module.exports = handleRequest2;
@@ -5944,8 +5944,8 @@ var require_tools = __commonJS({
       if (asJsonChan.hasSubscribers === false) {
         return _asJson.call(this, obj, msg, num, time);
       }
-      const store = { instance: this, arguments };
-      return asJsonChan.traceSync(_asJson, store, this, obj, msg, num, time);
+      const store2 = { instance: this, arguments };
+      return asJsonChan.traceSync(_asJson, store2, this, obj, msg, num, time);
     }
     function _asJson(obj, msg, num, time) {
       const stringify3 = this[stringifySym];
@@ -27300,8 +27300,8 @@ var require_http_method = __commonJS({
           get: (type) => {
             return handlers.get(type) || null;
           },
-          set: (type, store) => {
-            handlers.set(type, store);
+          set: (type, store2) => {
+            handlers.set(type, store2);
           }
         };
       },
@@ -27533,14 +27533,14 @@ var require_handler_storage = __commonJS({
       // Builds a store object that maps from constraint values to a bitmap of handler indexes which pass the constraint for a value
       // So for a host constraint, this might look like { "fastify.io": 0b0010, "google.ca": 0b0101 }, meaning the 3rd handler is constrainted to fastify.io, and the 2nd and 4th handlers are constrained to google.ca.
       // The store's implementation comes from the strategies provided to the Router.
-      _buildConstraintStore(store, constraint) {
+      _buildConstraintStore(store2, constraint) {
         for (let i3 = 0; i3 < this.handlers.length; i3++) {
           const handler = this.handlers[i3];
           const constraintValue = handler.constraints[constraint];
           if (constraintValue !== void 0) {
-            let indexes = store.get(constraintValue) || 0;
+            let indexes = store2.get(constraintValue) || 0;
             indexes |= 1 << i3;
-            store.set(constraintValue, indexes);
+            store2.set(constraintValue, indexes);
           }
         }
       }
@@ -27565,9 +27565,9 @@ var require_handler_storage = __commonJS({
       _compileGetHandlerMatchingConstraints(constrainer) {
         this.constrainedHandlerStores = {};
         for (const constraint of this.constraints) {
-          const store = constrainer.newStoreForConstraint(constraint);
-          this.constrainedHandlerStores[constraint] = store;
-          this._buildConstraintStore(store, constraint);
+          const store2 = constrainer.newStoreForConstraint(constraint);
+          this.constrainedHandlerStores[constraint] = store2;
+          this._buildConstraintStore(store2, constraint);
         }
         const lines = [];
         lines.push(`
@@ -27810,7 +27810,7 @@ var require_accept_version = __commonJS({
       this.maxMinors = {};
       this.maxPatches = {};
     }
-    SemVerStore.prototype.set = function(version2, store) {
+    SemVerStore.prototype.set = function(version2, store2) {
       if (typeof version2 !== "string") {
         throw new TypeError("Version should be a string");
       }
@@ -27823,21 +27823,21 @@ var require_accept_version = __commonJS({
       patch = Number(patch) || 0;
       if (major >= this.maxMajor) {
         this.maxMajor = major;
-        this.store.set("x", store);
-        this.store.set("*", store);
-        this.store.set("x.x", store);
-        this.store.set("x.x.x", store);
+        this.store.set("x", store2);
+        this.store.set("*", store2);
+        this.store.set("x.x", store2);
+        this.store.set("x.x.x", store2);
       }
       if (minor >= (this.maxMinors[major] || 0)) {
         this.maxMinors[major] = minor;
-        this.store.set(`${major}.x`, store);
-        this.store.set(`${major}.x.x`, store);
+        this.store.set(`${major}.x`, store2);
+        this.store.set(`${major}.x.x`, store2);
       }
       if (patch >= (this.maxPatches[`${major}.${minor}`] || 0)) {
         this.maxPatches[`${major}.${minor}`] = patch;
-        this.store.set(`${major}.${minor}.x`, store);
+        this.store.set(`${major}.${minor}.x`, store2);
       }
-      this.store.set(`${major}.${minor}.${patch}`, store);
+      this.store.set(`${major}.${minor}.${patch}`, store2);
       return this;
     };
     SemVerStore.prototype.get = function(version2) {
@@ -28235,10 +28235,10 @@ var require_find_my_way = __commonJS({
       this.routes = [];
       this.trees = {};
     }
-    Router.prototype.on = function on(method, path, opts2, handler, store) {
+    Router.prototype.on = function on(method, path, opts2, handler, store2) {
       if (typeof opts2 === "function") {
         if (handler !== void 0) {
-          store = handler;
+          store2 = handler;
         }
         handler = opts2;
         opts2 = {};
@@ -28252,8 +28252,8 @@ var require_find_my_way = __commonJS({
         assert(path.length === optionalParamMatch.index + optionalParamMatch[0].length, "Optional Parameter needs to be the last parameter of the path");
         const pathFull = path.replace(OPTIONAL_PARAM_REGEXP, "$1$2");
         const pathOptional = path.replace(OPTIONAL_PARAM_REGEXP, "$2") || "/";
-        this.on(method, pathFull, opts2, handler, store);
-        this.on(method, pathOptional, opts2, handler, store);
+        this.on(method, pathFull, opts2, handler, store2);
+        this.on(method, pathOptional, opts2, handler, store2);
         return;
       }
       const route = path;
@@ -28267,10 +28267,10 @@ var require_find_my_way = __commonJS({
       for (const method2 of methods17) {
         assert(typeof method2 === "string", "Method should be a string");
         assert(httpMethods.includes(method2), `Method '${method2}' is not an http method.`);
-        this._on(method2, path, opts2, handler, store, route);
+        this._on(method2, path, opts2, handler, store2, route);
       }
     };
-    Router.prototype._on = function _on(method, path, opts2, handler, store) {
+    Router.prototype._on = function _on(method, path, opts2, handler, store2) {
       let constraints = {};
       if (opts2.constraints !== void 0) {
         assert(typeof opts2.constraints === "object" && opts2.constraints !== null, "Constraints should be an object");
@@ -28386,7 +28386,7 @@ var require_find_my_way = __commonJS({
           throw new Error(`Method '${method}' already declared for route '${pattern}' with constraints '${JSON.stringify(constraints)}'`);
         }
       }
-      const route = { method, path, pattern, params, opts: opts2, handler, store };
+      const route = { method, path, pattern, params, opts: opts2, handler, store: store2 };
       this.routes.push(route);
       currentNode.addRoute(route, this.constrainer);
     };
@@ -28683,8 +28683,8 @@ var require_find_my_way = __commonJS({
     Router.prototype._rebuild = function(routes) {
       this.reset();
       for (const route of routes) {
-        const { method, path, opts: opts2, handler, store } = route;
-        this._on(method, path, opts2, handler, store);
+        const { method, path, opts: opts2, handler, store: store2 } = route;
+        this._on(method, path, opts2, handler, store2);
       }
     };
     Router.prototype._defaultRoute = function(req, res, ctx) {
@@ -28733,12 +28733,12 @@ var require_find_my_way = __commonJS({
       if (!httpMethods.hasOwnProperty(i3)) continue;
       const m3 = httpMethods[i3];
       const methodName = m3.toLowerCase();
-      Router.prototype[methodName] = function(path, handler, store) {
-        return this.on(m3, path, handler, store);
+      Router.prototype[methodName] = function(path, handler, store2) {
+        return this.on(m3, path, handler, store2);
       };
     }
-    Router.prototype.all = function(path, handler, store) {
-      this.on(httpMethods, path, handler, store);
+    Router.prototype.all = function(path, handler, store2) {
+      this.on(httpMethods, path, handler, store2);
     };
     module.exports = Router;
     function escapeRegExp(string) {
@@ -77231,38 +77231,75 @@ function validatePropertySchema(name, schema) {
   return errors;
 }
 
-// ../../../node_modules/@platformatic/mcp/dist/handlers.js
-var customResourcesListHandler = null;
-var customResourcesReadHandler = null;
-var customResourcesTemplatesListHandler = null;
-function setResourcesListHandler(handler) {
-  customResourcesListHandler = handler;
-}
-function setResourcesReadHandler(handler) {
-  customResourcesReadHandler = handler;
-}
-function setResourcesTemplatesListHandler(handler) {
-  customResourcesTemplatesListHandler = handler;
-}
-var resourceSubscriptions = /* @__PURE__ */ new Map();
-function getResourceSubscriptions() {
-  return resourceSubscriptions;
-}
-function uriPatternToRegex(pattern) {
-  const escaped = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const withParams = escaped.replace(/\\{([^}]+)\\}/g, "([^/]+)");
-  return new RegExp(`^${withParams}$`);
-}
-function findResourceByUri(resources, uri) {
-  const exact = resources.get(uri);
-  if (exact) return exact;
-  for (const [pattern, resource] of resources) {
-    if (pattern.includes("{") && uriPatternToRegex(pattern).test(uri)) {
-      return resource;
+// ../../../node_modules/@platformatic/mcp/dist/decorators/meta.js
+var mcpDecoratorsPlugin = async (app, options) => {
+  const { tools, resources, prompts, resourceHandlers } = options;
+  app.decorate("mcpAddTool", (definition, handler) => {
+    const name = definition.name;
+    if (!name) {
+      throw new Error("Tool definition must have a name");
     }
-  }
-  return void 0;
-}
+    if (definition.inputSchema) {
+      const schemaErrors = validateToolSchema(definition.inputSchema);
+      if (schemaErrors.length > 0) {
+        throw new Error(`Invalid tool schema for '${name}': ${schemaErrors.join(", ")}`);
+      }
+    }
+    const toolDefinition = definition;
+    tools.set(name, {
+      definition: {
+        ...toolDefinition,
+        // Store the original schema for validation (TypeBox or JSON Schema)
+        inputSchema: definition.inputSchema || toolDefinition.inputSchema
+      },
+      handler
+    });
+  });
+  app.decorate("mcpAddResource", (definition, handler) => {
+    const uriPattern = definition.uriPattern || definition.uri;
+    if (!uriPattern) {
+      throw new Error("Resource definition must have a uri or uriPattern");
+    }
+    const resourceDefinition = {
+      ...definition,
+      uri: uriPattern
+    };
+    resources.set(uriPattern, { definition: resourceDefinition, handler });
+  });
+  app.decorate("mcpAddPrompt", (definition, handler) => {
+    const name = definition.name;
+    if (!name) {
+      throw new Error("Prompt definition must have a name");
+    }
+    const promptDefinition = definition.argumentSchema ? {
+      ...definition,
+      arguments: schemaToArguments(definition.argumentSchema)
+    } : definition;
+    prompts.set(name, {
+      definition: {
+        ...promptDefinition,
+        // Store the original TypeBox schema for validation
+        argumentSchema: definition.argumentSchema
+      },
+      handler
+    });
+  });
+  app.decorate("mcpSetResourcesSubscribeHandler", (handler) => {
+    resourceHandlers.subscribe = handler;
+  });
+  app.decorate("mcpSetResourcesUnsubscribeHandler", (handler) => {
+    resourceHandlers.unsubscribe = handler;
+  });
+};
+var meta_default = (0, import_fastify_plugin2.default)(mcpDecoratorsPlugin, {
+  name: "mcp-decorators"
+});
+
+// ../../../node_modules/@platformatic/mcp/dist/routes/mcp.js
+var import_fastify_plugin3 = __toESM(require_plugin2(), 1);
+import { randomUUID } from "crypto";
+
+// ../../../node_modules/@platformatic/mcp/dist/handlers.js
 function createResponse(id, result) {
   return {
     jsonrpc: JSONRPC_VERSION,
@@ -77308,85 +77345,13 @@ function handleToolsList(request, dependencies) {
   };
   return createResponse(request.id, result);
 }
-async function handleResourcesList(request, sessionId, dependencies) {
-  const { resources, request: fastifyRequest, reply, authContext, app } = dependencies;
-  if (customResourcesListHandler) {
-    try {
-      const params = request.params || {};
-      const result2 = await customResourcesListHandler(
-        { cursor: params.cursor },
-        { sessionId, request: fastifyRequest, reply, authContext }
-      );
-      if (result2) {
-        return createResponse(request.id, result2);
-      }
-    } catch (error) {
-      app.log.error({ error: error.message }, "Custom resources list handler failed");
-    }
-  }
+function handleResourcesList(request, dependencies) {
+  const { resources } = dependencies;
   const result = {
     resources: Array.from(resources.values()).map((r2) => r2.definition),
     nextCursor: void 0
   };
   return createResponse(request.id, result);
-}
-async function handleResourceTemplatesList(request, sessionId, dependencies) {
-  const { resources, request: fastifyRequest, reply, authContext, app } = dependencies;
-  if (customResourcesTemplatesListHandler) {
-    try {
-      const params = request.params || {};
-      const result = await customResourcesTemplatesListHandler(
-        { cursor: params.cursor },
-        { sessionId, request: fastifyRequest, reply, authContext }
-      );
-      if (result) {
-        return createResponse(request.id, result);
-      }
-    } catch (error) {
-      app.log.error({ error: error.message }, "Custom templates list handler failed");
-    }
-  }
-  const resourceTemplates = Array.from(resources.values()).filter((r2) => r2.definition.uri && r2.definition.uri.includes("{")).map((r2) => ({
-    uriTemplate: r2.definition.uri,
-    name: r2.definition.name,
-    description: r2.definition.description,
-    mimeType: r2.definition.mimeType
-  }));
-  return createResponse(request.id, { resourceTemplates });
-}
-async function handleResourcesSubscribe(request, sessionId, dependencies) {
-  const { app } = dependencies;
-  const params = request.params;
-  if (!params?.uri) {
-    return createError(request.id, INVALID_PARAMS, "Missing uri parameter");
-  }
-  if (!sessionId) {
-    return createError(request.id, INVALID_PARAMS, "Session ID required for subscriptions");
-  }
-  const uri = params.uri;
-  if (!resourceSubscriptions.has(sessionId)) {
-    resourceSubscriptions.set(sessionId, /* @__PURE__ */ new Set());
-  }
-  resourceSubscriptions.get(sessionId).add(uri);
-  app.log.info({ sessionId, uri }, "Resource subscription added");
-  return createResponse(request.id, {});
-}
-async function handleResourcesUnsubscribe(request, sessionId, dependencies) {
-  const { app } = dependencies;
-  const params = request.params;
-  if (!params?.uri) {
-    return createError(request.id, INVALID_PARAMS, "Missing uri parameter");
-  }
-  const uri = params.uri;
-  const sessionSubs = resourceSubscriptions.get(sessionId);
-  if (sessionSubs) {
-    sessionSubs.delete(uri);
-    if (sessionSubs.size === 0) {
-      resourceSubscriptions.delete(sessionId);
-    }
-  }
-  app.log.info({ sessionId, uri }, "Resource subscription removed");
-  return createResponse(request.id, {});
 }
 function handlePromptsList(request, dependencies) {
   const { prompts } = dependencies;
@@ -77503,7 +77468,7 @@ async function handleToolsCall(request, sessionId, dependencies) {
   }
 }
 async function handleResourcesRead(request, sessionId, dependencies) {
-  const { resources, request: fastifyRequest, reply, authContext, app } = dependencies;
+  const { resources } = dependencies;
   const paramsValidation = validate2(ReadResourceRequestSchema, request.params);
   if (!paramsValidation.success) {
     return createError(request.id, INVALID_PARAMS, "Invalid resource read parameters", {
@@ -77512,20 +77477,14 @@ async function handleResourcesRead(request, sessionId, dependencies) {
   }
   const params = paramsValidation.data;
   const uri = params.uri;
-  if (customResourcesReadHandler) {
-    try {
-      const result = await customResourcesReadHandler(
-        uri,
-        { sessionId, request: fastifyRequest, reply, authContext }
-      );
-      if (result) {
-        return createResponse(request.id, result);
-      }
-    } catch (error) {
-      app.log.error({ error: error.message, uri }, "Custom resources read handler failed");
+  let resource = resources.get(uri);
+  if (!resource && uri.includes("?")) {
+    const baseUri = uri.split("?")[0];
+    const baseResource = resources.get(baseUri);
+    if (baseResource?.definition?.uriSchema) {
+      resource = baseResource;
     }
   }
-  const resource = findResourceByUri(resources, uri);
   if (!resource) {
     return createError(request.id, METHOD_NOT_FOUND, `Resource '${uri}' not found`);
   }
@@ -77573,6 +77532,40 @@ async function handleResourcesRead(request, sessionId, dependencies) {
     };
     return createResponse(request.id, result);
   }
+}
+async function handleResourcesSubscribe(request, sessionId, dependencies) {
+  const { resourceHandlers } = dependencies;
+  if (resourceHandlers?.subscribe) {
+    try {
+      const result = await resourceHandlers.subscribe(request.params, {
+        sessionId,
+        request: dependencies.request,
+        reply: dependencies.reply,
+        authContext: dependencies.authContext
+      });
+      return createResponse(request.id, result);
+    } catch (error) {
+      return createError(request.id, INTERNAL_ERROR, `Resource subscribe failed: ${error.message || error}`);
+    }
+  }
+  return createError(request.id, METHOD_NOT_FOUND, "resources/subscribe handler not configured");
+}
+async function handleResourcesUnsubscribe(request, sessionId, dependencies) {
+  const { resourceHandlers } = dependencies;
+  if (resourceHandlers?.unsubscribe) {
+    try {
+      const result = await resourceHandlers.unsubscribe(request.params, {
+        sessionId,
+        request: dependencies.request,
+        reply: dependencies.reply,
+        authContext: dependencies.authContext
+      });
+      return createResponse(request.id, result);
+    } catch (error) {
+      return createError(request.id, INTERNAL_ERROR, `Resource unsubscribe failed: ${error.message || error}`);
+    }
+  }
+  return createError(request.id, METHOD_NOT_FOUND, "resources/unsubscribe handler not configured");
 }
 async function handlePromptsGet(request, sessionId, dependencies) {
   const { prompts } = dependencies;
@@ -77698,9 +77691,7 @@ async function handleRequest(request, sessionId, dependencies) {
       case "tools/list":
         return handleToolsList(request, dependencies);
       case "resources/list":
-        return await handleResourcesList(request, sessionId, dependencies);
-      case "resources/templates/list":
-        return await handleResourceTemplatesList(request, sessionId, dependencies);
+        return handleResourcesList(request, dependencies);
       case "prompts/list":
         return handlePromptsList(request, dependencies);
       case "tools/call":
@@ -77743,84 +77734,9 @@ async function processMessage(message, sessionId, dependencies) {
   }
 }
 
-// ../../../node_modules/@platformatic/mcp/dist/decorators/meta.js
-var mcpDecoratorsPlugin = async (app, options) => {
-  const { tools, resources, prompts } = options;
-  app.decorate("mcpAddTool", (definition, handler) => {
-    const name = definition.name;
-    if (!name) {
-      throw new Error("Tool definition must have a name");
-    }
-    if (definition.inputSchema) {
-      const schemaErrors = validateToolSchema(definition.inputSchema);
-      if (schemaErrors.length > 0) {
-        throw new Error(`Invalid tool schema for '${name}': ${schemaErrors.join(", ")}`);
-      }
-    }
-    const toolDefinition = definition;
-    tools.set(name, {
-      definition: {
-        ...toolDefinition,
-        // Store the original schema for validation (TypeBox or JSON Schema)
-        inputSchema: definition.inputSchema || toolDefinition.inputSchema
-      },
-      handler
-    });
-  });
-  app.decorate("mcpAddResource", (definition, handler) => {
-    const uriPattern = definition.uriPattern || definition.uri;
-    if (!uriPattern) {
-      throw new Error("Resource definition must have a uri or uriPattern");
-    }
-    const resourceDefinition = {
-      ...definition,
-      uri: uriPattern
-    };
-    resources.set(uriPattern, { definition: resourceDefinition, handler });
-  });
-  app.decorate("mcpAddPrompt", (definition, handler) => {
-    const name = definition.name;
-    if (!name) {
-      throw new Error("Prompt definition must have a name");
-    }
-    const promptDefinition = definition.argumentSchema ? {
-      ...definition,
-      arguments: schemaToArguments(definition.argumentSchema)
-    } : definition;
-    prompts.set(name, {
-      definition: {
-        ...promptDefinition,
-        // Store the original TypeBox schema for validation
-        argumentSchema: definition.argumentSchema
-      },
-      handler
-    });
-  });
-  app.decorate("mcpSetResourcesListHandler", (handler) => {
-    setResourcesListHandler(handler);
-    app.log.debug("Custom resources list handler registered");
-  });
-  app.decorate("mcpSetResourcesReadHandler", (handler) => {
-    setResourcesReadHandler(handler);
-    app.log.debug("Custom resources read handler registered");
-  });
-  app.decorate("mcpSetResourcesTemplatesListHandler", (handler) => {
-    setResourcesTemplatesListHandler(handler);
-    app.log.debug("Custom resources templates list handler registered");
-  });
-  app.decorate("mcpGetResourceSubscriptions", () => {
-    return getResourceSubscriptions();
-  });
-};
-var meta_default = (0, import_fastify_plugin2.default)(mcpDecoratorsPlugin, {
-  name: "mcp-decorators"
-});
-
 // ../../../node_modules/@platformatic/mcp/dist/routes/mcp.js
-var import_fastify_plugin3 = __toESM(require_plugin2(), 1);
-import { randomUUID } from "crypto";
 var mcpPubSubRoutesPlugin = async (app, options) => {
-  const { enableSSE, opts: opts2, capabilities, serverInfo, tools, resources, prompts, sessionStore, messageBroker, localStreams } = options;
+  const { enableSSE, opts: opts2, capabilities, serverInfo, tools, resources, prompts, resourceHandlers, sessionStore, messageBroker, localStreams } = options;
   async function createSSESession() {
     const sessionId = randomUUID();
     const session = {
@@ -77959,6 +77875,7 @@ data: ${JSON.stringify(entry.message)}
         tools,
         resources,
         prompts,
+        resourceHandlers,
         request,
         reply,
         authContext
@@ -79007,6 +78924,10 @@ var mcpPlugin = (0, import_fastify_plugin7.default)(async function(app, opts2) {
   const tools = /* @__PURE__ */ new Map();
   const resources = /* @__PURE__ */ new Map();
   const prompts = /* @__PURE__ */ new Map();
+  const resourceHandlers = {
+    subscribe: null,
+    unsubscribe: null
+  };
   let sessionStore;
   let messageBroker;
   let redis = null;
@@ -79036,7 +78957,8 @@ var mcpPlugin = (0, import_fastify_plugin7.default)(async function(app, opts2) {
   app.register(meta_default, {
     tools,
     resources,
-    prompts
+    prompts,
+    resourceHandlers
   });
   app.register(pubsub_default, {
     enableSSE,
@@ -79052,6 +78974,7 @@ var mcpPlugin = (0, import_fastify_plugin7.default)(async function(app, opts2) {
     tools,
     resources,
     prompts,
+    resourceHandlers,
     sessionStore,
     messageBroker,
     localStreams
@@ -79719,20 +79642,193 @@ async function shutdownFindingsStorage() {
   }
 }
 async function storeFindings(reviewId, findings, contentType = "json") {
-  const store = getFindingsStorage();
-  return store.store(findings, {
+  const store2 = getFindingsStorage();
+  return store2.store(findings, {
     id: reviewId,
     contentType
   });
 }
 async function getFindings(reviewId) {
-  const store = getFindingsStorage();
-  const stored = await store.get(reviewId);
+  const store2 = getFindingsStorage();
+  const stored = await store2.get(reviewId);
   if (!stored) return null;
   try {
     return JSON.parse(stored.content);
   } catch {
     return null;
+  }
+}
+
+// src/services/subscription-store/base.ts
+var DEFAULT_SUBSCRIPTION_TTL_MS = 60 * 60 * 1e3;
+
+// src/services/subscription-store/memory.ts
+var MemorySubscriptionStore = class {
+  subscriptions = /* @__PURE__ */ new Map();
+  // uri -> Map<sessionId, entry>
+  ttlMs;
+  cleanupInterval;
+  constructor(options = {}) {
+    this.ttlMs = options.ttlMs ?? DEFAULT_SUBSCRIPTION_TTL_MS;
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanup().catch(() => {
+        });
+      },
+      5 * 60 * 1e3
+    );
+  }
+  async subscribe(sessionId, uri) {
+    let sessions = this.subscriptions.get(uri);
+    if (!sessions) {
+      sessions = /* @__PURE__ */ new Map();
+      this.subscriptions.set(uri, sessions);
+    }
+    sessions.set(sessionId, {
+      sessionId,
+      expiresAt: Date.now() + this.ttlMs
+    });
+  }
+  async unsubscribe(sessionId, uri) {
+    const sessions = this.subscriptions.get(uri);
+    if (sessions) {
+      sessions.delete(sessionId);
+      if (sessions.size === 0) {
+        this.subscriptions.delete(uri);
+      }
+    }
+  }
+  async getSubscribers(uri) {
+    const sessions = this.subscriptions.get(uri);
+    if (!sessions) return [];
+    const now = Date.now();
+    const validSessions = [];
+    for (const [sessionId, entry] of sessions) {
+      if (entry.expiresAt > now) {
+        validSessions.push(sessionId);
+      }
+    }
+    return validSessions;
+  }
+  async unsubscribeAll(sessionId) {
+    for (const [uri, sessions] of this.subscriptions) {
+      sessions.delete(sessionId);
+      if (sessions.size === 0) {
+        this.subscriptions.delete(uri);
+      }
+    }
+  }
+  async cleanup() {
+    const now = Date.now();
+    let cleanedCount = 0;
+    for (const [uri, sessions] of this.subscriptions) {
+      for (const [sessionId, entry] of sessions) {
+        if (entry.expiresAt <= now) {
+          sessions.delete(sessionId);
+          cleanedCount++;
+        }
+      }
+      if (sessions.size === 0) {
+        this.subscriptions.delete(uri);
+      }
+    }
+    return cleanedCount;
+  }
+  async close() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    this.subscriptions.clear();
+  }
+};
+
+// src/services/subscription-store/redis.ts
+var RedisSubscriptionStore = class {
+  redis;
+  keyPrefix;
+  ttlSeconds;
+  constructor(options) {
+    this.redis = options.redis;
+    this.keyPrefix = options.keyPrefix ?? "mcp";
+    this.ttlSeconds = Math.ceil(
+      (options.ttlMs ?? DEFAULT_SUBSCRIPTION_TTL_MS) / 1e3
+    );
+  }
+  uriKey(uri) {
+    return `${this.keyPrefix}:subscriptions:${encodeURIComponent(uri)}`;
+  }
+  sessionKey(sessionId) {
+    return `${this.keyPrefix}:sessions:${sessionId}:subscriptions`;
+  }
+  async subscribe(sessionId, uri) {
+    const uriK = this.uriKey(uri);
+    const sessionK = this.sessionKey(sessionId);
+    const pipeline = this.redis.pipeline();
+    pipeline.sadd(uriK, sessionId);
+    pipeline.sadd(sessionK, uri);
+    pipeline.expire(uriK, this.ttlSeconds);
+    pipeline.expire(sessionK, this.ttlSeconds);
+    await pipeline.exec();
+  }
+  async unsubscribe(sessionId, uri) {
+    const pipeline = this.redis.pipeline();
+    pipeline.srem(this.uriKey(uri), sessionId);
+    pipeline.srem(this.sessionKey(sessionId), uri);
+    await pipeline.exec();
+  }
+  async getSubscribers(uri) {
+    return this.redis.smembers(this.uriKey(uri));
+  }
+  async unsubscribeAll(sessionId) {
+    const sessionK = this.sessionKey(sessionId);
+    const uris = await this.redis.smembers(sessionK);
+    if (uris.length > 0) {
+      const pipeline = this.redis.pipeline();
+      for (const uri of uris) {
+        pipeline.srem(this.uriKey(uri), sessionId);
+      }
+      pipeline.del(sessionK);
+      await pipeline.exec();
+    }
+  }
+  async cleanup() {
+    return 0;
+  }
+  async close() {
+  }
+};
+
+// src/services/subscription-store/index.ts
+function createSubscriptionStore(options = {}) {
+  if (options.redis) {
+    return new RedisSubscriptionStore({
+      redis: options.redis,
+      ttlMs: options.ttlMs
+    });
+  }
+  return new MemorySubscriptionStore({ ttlMs: options.ttlMs });
+}
+var store = null;
+function initSubscriptionStore(options = {}) {
+  if (store) {
+    store.close().catch(() => {
+    });
+  }
+  store = createSubscriptionStore(options);
+  return store;
+}
+function getSubscriptionStore() {
+  if (!store) {
+    throw new Error(
+      "SubscriptionStore not initialized. Call initSubscriptionStore() first."
+    );
+  }
+  return store;
+}
+async function shutdownSubscriptionStore() {
+  if (store) {
+    await store.close();
+    store = null;
   }
 }
 
@@ -101509,7 +101605,7 @@ async function loadSpecRaw(options) {
 
 // src/tools/handlers/review.ts
 async function executeReview(params, deps) {
-  const { workerPool } = deps;
+  const { workerPool, fastify } = deps;
   const { specPath, specUrl, strict, categories, skipRules } = params;
   if (!specPath && !specUrl) {
     return {
@@ -101571,6 +101667,7 @@ async function executeReview(params, deps) {
     specPath: reviewedSpecPath
   } = resultData;
   const total = summary.errors + summary.warnings + summary.suggestions;
+  const resourceUri = `aip://findings?id=${reviewId}`;
   let stored;
   try {
     stored = await storeFindings(reviewId, {
@@ -101578,6 +101675,15 @@ async function executeReview(params, deps) {
       summary: { ...summary, total },
       specSource: reviewedSpecPath
     });
+    const subscriptionStore = getSubscriptionStore();
+    const subscribers = await subscriptionStore.getSubscribers(resourceUri);
+    for (const sessionId of subscribers) {
+      fastify.mcpSendToSession(sessionId, {
+        jsonrpc: "2.0",
+        method: "notifications/resources/updated",
+        params: { uri: resourceUri }
+      });
+    }
   } catch {
     return {
       content: [
@@ -101608,7 +101714,6 @@ async function executeReview(params, deps) {
     type: "text",
     text: JSON.stringify(compactOutput, null, 2)
   };
-  const resourceUri = `aip://findings/${reviewId}`;
   return {
     content: [
       textContent,
@@ -101795,7 +101900,7 @@ async function executeApplyFixes(params, deps) {
   };
   const mimeType = contentType === "yaml" ? "application/x-yaml" : "application/json";
   const filename = `fixed-spec.${contentType === "yaml" ? "yaml" : "json"}`;
-  const resourceUri = `aip://specs/${stored.id}`;
+  const resourceUri = `aip://specs?id=${stored.id}`;
   return {
     content: [
       {
@@ -114761,7 +114866,7 @@ async function correlateOne(finding, ctx) {
   };
 }
 async function executeCorrelate(params, deps) {
-  const { context } = deps;
+  const { fastify, context } = deps;
   const {
     reviewId,
     specPath,
@@ -114866,9 +114971,19 @@ async function executeCorrelate(params, deps) {
       }
     }
   };
+  const resourceUri = `aip://findings?id=${reviewId}`;
   let stored;
   try {
     stored = await storeFindings(reviewId, enrichedFindings);
+    const subscriptionStore = getSubscriptionStore();
+    const subscribers = await subscriptionStore.getSubscribers(resourceUri);
+    for (const sessionId of subscribers) {
+      fastify.mcpSendToSession(sessionId, {
+        jsonrpc: "2.0",
+        method: "notifications/resources/updated",
+        params: { uri: resourceUri }
+      });
+    }
   } catch (e2) {
     context.request.log.error(
       { error: String(e2) },
@@ -114902,7 +115017,6 @@ async function executeCorrelate(params, deps) {
     type: "text",
     text: JSON.stringify(compactOutput, null, 2)
   };
-  const resourceUri = `aip://findings/${reviewId}`;
   return {
     content: [
       textContent,
@@ -114921,6 +115035,7 @@ async function executeCorrelate(params, deps) {
 // src/tools/register.ts
 function registerAipTools(fastify, deps) {
   const { workerPool } = deps;
+  const toolDeps = { workerPool, fastify };
   fastify.mcpAddTool(
     {
       name: "aip-review",
@@ -114928,7 +115043,7 @@ function registerAipTools(fastify, deps) {
       inputSchema: ReviewInputSchema
     },
     async (params, context) => {
-      return executeReview(params, { workerPool, context });
+      return executeReview(params, { ...toolDeps, context });
     }
   );
   fastify.mcpAddTool(
@@ -114958,7 +115073,7 @@ function registerAipTools(fastify, deps) {
       inputSchema: ApplyFixesInputSchema
     },
     async (params, context) => {
-      return executeApplyFixes(params, { workerPool, context });
+      return executeApplyFixes(params, { ...toolDeps, context });
     }
   );
   fastify.mcpAddTool(
@@ -114968,27 +115083,20 @@ function registerAipTools(fastify, deps) {
       inputSchema: CorrelateInputSchema
     },
     async (params, context) => {
-      return executeCorrelate(params, { workerPool, context });
+      return executeCorrelate(params, { ...toolDeps, context });
     }
   );
 }
 
 // src/resources/register.ts
 function parseAipUri(uri) {
-  const pathMatch = uri.match(/^aip:\/\/(findings|specs)\/(.+)$/);
-  if (pathMatch) {
-    return {
-      type: pathMatch[1],
-      id: pathMatch[2]
-    };
-  }
   try {
     const url = new URL(uri);
-    const host = url.host || url.pathname.split("/")[0];
-    if (host === "findings" || host === "specs") {
+    const resourceType = url.host;
+    if (resourceType === "findings" || resourceType === "specs") {
       const id = url.searchParams.get("id");
       if (id) {
-        return { type: host, id };
+        return { type: resourceType, id };
       }
     }
   } catch {
@@ -114996,75 +115104,19 @@ function parseAipUri(uri) {
   return null;
 }
 var FindingsUriSchema = Type.String({
-  pattern: "^aip://findings/.+",
-  description: "URI for AIP review findings"
+  pattern: "^aip://findings\\?id=.+",
+  description: "URI for AIP review findings with id query parameter"
 });
 var SpecsUriSchema = Type.String({
-  pattern: "^aip://specs/.+",
-  description: "URI for modified OpenAPI specs"
+  pattern: "^aip://specs\\?id=.+",
+  description: "URI for modified OpenAPI specs with id query parameter"
 });
-var RESOURCE_TEMPLATES = [
-  {
-    uriTemplate: "aip://findings/{reviewId}",
-    name: "AIP Review Findings",
-    description: "Access cached AIP review findings by reviewId. May include code locations if correlated.",
-    mimeType: "application/json"
-  },
-  {
-    uriTemplate: "aip://specs/{specId}",
-    name: "Modified OpenAPI Specs",
-    description: "Access modified OpenAPI specs by specId.",
-    mimeType: "application/octet-stream"
-  }
-];
 function registerAipResources(fastify) {
-  fastify.mcpSetResourcesListHandler(
-    async (_params, _context) => {
-      const findingsStore2 = getFindingsStorage();
-      const tempStore = getTempStorage();
-      const [findingsResult, specsResult] = await Promise.all([
-        findingsStore2.listAll(),
-        tempStore.listAll()
-      ]);
-      const findingsList = findingsResult.items;
-      const specsList = specsResult.items;
-      const resources = [
-        // Map findings to resources
-        ...findingsList.map((f3) => ({
-          uri: `aip://findings/${f3.id}`,
-          name: `AIP Review ${f3.id.slice(0, 8)}`,
-          description: `AIP review findings (created ${new Date(f3.createdAt).toISOString()})`,
-          mimeType: "application/json",
-          annotations: {
-            audience: ["assistant"],
-            priority: 0.8
-          }
-        })),
-        // Map specs to resources
-        ...specsList.map((s3) => ({
-          uri: `aip://specs/${s3.id}`,
-          name: `Spec ${s3.id.slice(0, 8)}`,
-          description: `Modified OpenAPI spec (${s3.contentType})`,
-          mimeType: s3.contentType === "yaml" ? "application/x-yaml" : "application/json",
-          annotations: {
-            audience: ["assistant"],
-            priority: 0.6
-          }
-        }))
-      ];
-      return { resources, nextCursor: void 0 };
-    }
-  );
-  fastify.mcpSetResourcesTemplatesListHandler(
-    async (_params, _context) => {
-      return { resourceTemplates: RESOURCE_TEMPLATES, nextCursor: void 0 };
-    }
-  );
   fastify.mcpAddResource(
     {
-      uriPattern: "aip://findings/{reviewId}",
+      uriPattern: "aip://findings",
       name: "AIP Review Findings",
-      description: "Access cached AIP review findings by reviewId. May include code locations if correlated.",
+      description: "Access cached AIP review findings. Use ?id={reviewId} to read specific findings.",
       mimeType: "application/json",
       uriSchema: FindingsUriSchema
     },
@@ -115075,7 +115127,9 @@ function registerAipResources(fastify) {
           contents: [
             {
               uri,
-              text: JSON.stringify({ error: `Invalid findings URI: ${uri}` }),
+              text: JSON.stringify({
+                error: `Invalid findings URI: ${uri}. Use aip://findings?id={reviewId}`
+              }),
               mimeType: "application/json"
             }
           ]
@@ -115110,9 +115164,9 @@ function registerAipResources(fastify) {
   );
   fastify.mcpAddResource(
     {
-      uriPattern: "aip://specs/{specId}",
+      uriPattern: "aip://specs",
       name: "Modified OpenAPI Specs",
-      description: "Access modified OpenAPI specs by specId.",
+      description: "Access modified OpenAPI specs. Use ?id={specId} to read specific spec.",
       mimeType: "application/octet-stream",
       uriSchema: SpecsUriSchema
     },
@@ -115123,7 +115177,9 @@ function registerAipResources(fastify) {
           contents: [
             {
               uri,
-              text: JSON.stringify({ error: `Invalid specs URI: ${uri}` }),
+              text: JSON.stringify({
+                error: `Invalid specs URI: ${uri}. Use aip://specs?id={specId}`
+              }),
               mimeType: "application/json"
             }
           ]
@@ -115157,7 +115213,32 @@ function registerAipResources(fastify) {
       };
     }
   );
-  fastify.log.info("AIP resources registered with custom handlers");
+  const subscriptionStore = getSubscriptionStore();
+  fastify.mcpSetResourcesSubscribeHandler(async (params, context) => {
+    const sessionId = context.sessionId;
+    if (!sessionId) {
+      throw new Error("Session ID required for subscriptions");
+    }
+    await subscriptionStore.subscribe(sessionId, params.uri);
+    fastify.log.info(
+      { sessionId, uri: params.uri },
+      "Session subscribed to resource"
+    );
+    return {};
+  });
+  fastify.mcpSetResourcesUnsubscribeHandler(async (params, context) => {
+    const sessionId = context.sessionId;
+    if (!sessionId) {
+      throw new Error("Session ID required for subscriptions");
+    }
+    await subscriptionStore.unsubscribe(sessionId, params.uri);
+    fastify.log.info(
+      { sessionId, uri: params.uri },
+      "Session unsubscribed from resource"
+    );
+    return {};
+  });
+  fastify.log.info("AIP resources registered");
 }
 
 // src/prompts/handlers/code-locator-prompt.ts
@@ -115475,6 +115556,7 @@ async function createServer(config = {}, authConfig) {
     enableSSE: true,
     authorization
   });
+  initSubscriptionStore();
   registerAipTools(fastify, { workerPool });
   registerAipResources(fastify);
   registerAipPrompts(fastify);
@@ -115497,6 +115579,7 @@ async function createServer(config = {}, authConfig) {
     },
     async stop() {
       await workerPool.shutdown();
+      await shutdownSubscriptionStore();
       await shutdownFindingsStorage();
       await shutdownTempStorage();
       await fastify.close();

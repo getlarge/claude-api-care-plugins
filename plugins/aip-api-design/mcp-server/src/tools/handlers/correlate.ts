@@ -8,6 +8,7 @@
  * MCP sampling support could be added in the future if the client supports it.
  */
 
+import type { FastifyInstance } from 'fastify';
 import { query } from '@anthropic-ai/claude-agent-sdk';
 
 import type {
@@ -16,6 +17,7 @@ import type {
 } from '../../types/mcp-context.js';
 
 import { getFindings, storeFindings } from '../../services/findings-storage.js';
+import { getSubscriptionStore } from '../../services/subscription-store/index.js';
 import { resolveApiKey, withApiKey } from '../../services/api-key.js';
 import {
   parseJsonResponse,
@@ -44,6 +46,7 @@ import type {
 
 interface CorrelateHandlerDeps {
   workerPool: WorkerPool;
+  fastify: FastifyInstance;
   context: HandlerContext;
 }
 
@@ -259,7 +262,7 @@ export async function executeCorrelate(
   params: CorrelateInput,
   deps: CorrelateHandlerDeps
 ): Promise<CallToolResult> {
-  const { context } = deps;
+  const { fastify, context } = deps;
   const {
     reviewId,
     specPath,
@@ -399,12 +402,17 @@ export async function executeCorrelate(
   let stored: StoreResult;
   try {
     stored = await storeFindings(reviewId, enrichedFindings);
-    // TODO: Notify subscribers of updated findings resource
-    // await fastify.mcpSendToSession(sessionId, {
-    //   jsonrpc: '2.0',
-    //   method: 'notifications/resources/updated',
-    //   params: { uri: resourceUri },
-    // });
+
+    // Notify subscribers of updated findings resource
+    const subscriptionStore = getSubscriptionStore();
+    const subscribers = await subscriptionStore.getSubscribers(resourceUri);
+    for (const sessionId of subscribers) {
+      fastify.mcpSendToSession(sessionId, {
+        jsonrpc: '2.0',
+        method: 'notifications/resources/updated',
+        params: { uri: resourceUri },
+      });
+    }
   } catch (e) {
     context.request.log.error(
       { error: String(e) },

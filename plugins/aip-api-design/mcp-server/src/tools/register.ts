@@ -33,6 +33,7 @@ import type { WorkerPool } from './worker-pool.js';
  */
 export interface ToolDependencies {
   workerPool: WorkerPool;
+  fastify: FastifyInstance;
 }
 
 /**
@@ -40,9 +41,10 @@ export interface ToolDependencies {
  */
 export function registerAipTools(
   fastify: FastifyInstance,
-  deps: ToolDependencies
+  deps: Omit<ToolDependencies, 'fastify'>
 ) {
   const { workerPool } = deps;
+  const toolDeps: ToolDependencies = { workerPool, fastify };
 
   // aip-review: Analyze an OpenAPI spec against AIP guidelines
   fastify.mcpAddTool(
@@ -53,7 +55,7 @@ export function registerAipTools(
       inputSchema: ReviewInputSchema,
     },
     async (params: ReviewInput, context: HandlerContext) => {
-      return executeReview(params, { workerPool, context });
+      return executeReview(params, { ...toolDeps, context });
     }
   );
 
@@ -92,7 +94,7 @@ export function registerAipTools(
       inputSchema: ApplyFixesInputSchema,
     },
     async (params: ApplyFixesInput, context: HandlerContext) => {
-      return executeApplyFixes(params, { workerPool, context });
+      return executeApplyFixes(params, { ...toolDeps, context });
     }
   );
 
@@ -105,7 +107,7 @@ export function registerAipTools(
       inputSchema: CorrelateInputSchema,
     },
     async (params: CorrelateInput, context: HandlerContext) => {
-      return executeCorrelate(params, { workerPool, context });
+      return executeCorrelate(params, { ...toolDeps, context });
     }
   );
 }

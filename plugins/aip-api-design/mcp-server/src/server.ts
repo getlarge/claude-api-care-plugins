@@ -18,6 +18,10 @@ import {
   initFindingsStorage,
   shutdownFindingsStorage,
 } from './services/findings-storage.js';
+import {
+  initSubscriptionStore,
+  shutdownSubscriptionStore,
+} from './services/subscription-store/index.js';
 import { WorkerPool } from './tools/worker-pool.js';
 import { registerAipTools } from './tools/register.js';
 import { registerAipResources } from './resources/register.js';
@@ -159,6 +163,9 @@ export async function createServer(
     authorization,
   });
 
+  // Initialize subscription store (uses same redis config pattern as mcp plugin)
+  initSubscriptionStore();
+
   // Register AIP tools using mcpAddTool
   registerAipTools(fastify, { workerPool });
 
@@ -189,6 +196,7 @@ export async function createServer(
     },
     async stop() {
       await workerPool.shutdown();
+      await shutdownSubscriptionStore();
       await shutdownFindingsStorage();
       await shutdownTempStorage();
       await fastify.close();
