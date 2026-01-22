@@ -64,48 +64,33 @@ export interface ResourceTemplate {
 }
 
 /**
- * Custom handler for resources/list - allows dynamic resource enumeration.
- * Return null/undefined to fall back to default behavior.
+ * Handler function type for resources/subscribe.
+ * Uses SubscribeRequest['params'] from @platformatic/mcp/dist/schema.
  */
-export type ResourcesListHandler = (
-  params: { cursor?: string },
+export type ResourceSubscribeHandler = (
+  params: { uri: string },
   context: HandlerContext
-) => Promise<{ resources: Resource[]; nextCursor?: string } | null | undefined>;
+) => Promise<Record<string, never>>;
 
 /**
- * Custom handler for resources/read - allows dynamic resource resolution.
- * Return null/undefined to fall back to pattern matching + registered handlers.
+ * Handler function type for resources/unsubscribe.
+ * Uses UnsubscribeRequest['params'] from @platformatic/mcp/dist/schema.
  */
-export type ResourcesReadHandler = (
-  uri: string,
+export type ResourceUnsubscribeHandler = (
+  params: { uri: string },
   context: HandlerContext
-) => Promise<ReadResourceResult | null | undefined>;
+) => Promise<Record<string, never>>;
 
 /**
- * Custom handler for resources/templates/list.
- * Return null/undefined to fall back to default behavior.
- */
-export type ResourcesTemplatesListHandler = (
-  params: { cursor?: string },
-  context: HandlerContext
-) => Promise<
-  | { resourceTemplates: ResourceTemplate[]; nextCursor?: string }
-  | null
-  | undefined
->;
-
-/**
- * Fastify instance augmentation for custom resource handlers.
+ * Fastify instance augmentation for MCP resource subscription handlers.
  */
 declare module 'fastify' {
   interface FastifyInstance {
-    // Custom resource handler setters
-    mcpSetResourcesListHandler(handler: ResourcesListHandler): void;
-    mcpSetResourcesReadHandler(handler: ResourcesReadHandler): void;
-    mcpSetResourcesTemplatesListHandler(
-      handler: ResourcesTemplatesListHandler
-    ): void;
-    // Subscription store accessor for notification logic
-    mcpGetResourceSubscriptions(): Map<string, Set<string>>;
+    mcpSetResourcesSubscribeHandler: (
+      handler: ResourceSubscribeHandler
+    ) => void;
+    mcpSetResourcesUnsubscribeHandler: (
+      handler: ResourceUnsubscribeHandler
+    ) => void;
   }
 }

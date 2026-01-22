@@ -394,10 +394,17 @@ export async function executeCorrelate(
     },
   };
 
+  const resourceUri = `aip://findings?id=${reviewId}`;
   // Store enriched findings (UPDATE at same reviewId)
   let stored: StoreResult;
   try {
     stored = await storeFindings(reviewId, enrichedFindings);
+    // TODO: Notify subscribers of updated findings resource
+    // await fastify.mcpSendToSession(sessionId, {
+    //   jsonrpc: '2.0',
+    //   method: 'notifications/resources/updated',
+    //   params: { uri: resourceUri },
+    // });
   } catch (e) {
     context.request.log.error(
       { error: String(e) },
@@ -436,8 +443,6 @@ export async function executeCorrelate(
     type: 'text' as const,
     text: JSON.stringify(compactOutput, null, 2),
   };
-
-  const resourceUri = `aip://findings/${reviewId}`;
 
   return {
     content: [

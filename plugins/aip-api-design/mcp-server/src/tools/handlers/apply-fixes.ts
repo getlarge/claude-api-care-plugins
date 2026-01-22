@@ -180,7 +180,14 @@ export async function executeApplyFixes(
     contentType === 'yaml' ? 'application/x-yaml' : 'application/json';
   const filename = `fixed-spec.${contentType === 'yaml' ? 'yaml' : 'json'}`;
 
-  const resourceUri = `aip://specs/${stored.id}`;
+  const resourceUri = `aip://specs?id=${stored.id}`;
+
+  // TODO: Notify subscribers of updated findings resource
+  // await fastify.mcpSendToSession(sessionId, {
+  //   jsonrpc: '2.0',
+  //   method: 'notifications/resources/updated',
+  //   params: { uri: resourceUri },
+  // });
 
   return {
     content: [

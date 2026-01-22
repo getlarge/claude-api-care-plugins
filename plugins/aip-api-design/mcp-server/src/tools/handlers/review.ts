@@ -121,6 +121,8 @@ export async function executeReview(
   // Calculate total from summary components
   const total = summary.errors + summary.warnings + summary.suggestions;
 
+  const resourceUri = `aip://findings?id=${reviewId}`;
+
   // Cache findings for later use (e.g., by apply-fixes with reviewId)
   let stored: {
     id: string;
@@ -134,6 +136,12 @@ export async function executeReview(
       summary: { ...summary, total },
       specSource: reviewedSpecPath,
     });
+    // TODO: Notify subscribers of updated findings resource
+    // await fastify.mcpSendToSession(sessionId, {
+    //   jsonrpc: '2.0',
+    //   method: 'notifications/resources/updated',
+    //   params: { uri: resourceUri },
+    // });
   } catch {
     return {
       content: [
@@ -168,8 +176,6 @@ export async function executeReview(
     type: 'text' as const,
     text: JSON.stringify(compactOutput, null, 2),
   };
-
-  const resourceUri = `aip://findings/${reviewId}`;
 
   return {
     content: [
