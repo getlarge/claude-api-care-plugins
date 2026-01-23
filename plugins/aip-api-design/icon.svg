@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <!-- Background -->
+  <circle cx="64" cy="64" r="60" fill="#1a1a2e"/>
+
+  <!-- Toothbrush handle -->
+  <rect x="20" y="58" width="50" height="12" rx="3" fill="#4a9eff"/>
+
+  <!-- Toothbrush head -->
+  <rect x="70" y="54" width="38" height="20" rx="4" fill="#6366f1"/>
+
+  <!-- Bristles as API endpoint lines -->
+  <line x1="76" y1="58" x2="76" y2="70" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+  <line x1="84" y1="58" x2="84" y2="70" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+  <line x1="92" y1="58" x2="92" y2="70" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+  <line x1="100" y1="58" x2="100" y2="70" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Sparkles for "clean" effect -->
+  <path d="M50 38 L52 44 L58 46 L52 48 L50 54 L48 48 L42 46 L48 44 Z" fill="#fbbf24"/>
+  <path d="M85 30 L86 34 L90 35 L86 36 L85 40 L84 36 L80 35 L84 34 Z" fill="#fbbf24" opacity="0.8"/>
+  <path d="M38 78 L39 81 L42 82 L39 83 L38 86 L37 83 L34 82 L37 81 Z" fill="#fbbf24" opacity="0.6"/>
+
+  <!-- Tiny bubbles -->
+  <circle cx="62" cy="42" r="3" fill="#e0f2fe" opacity="0.7"/>
+  <circle cx="72" cy="85" r="2" fill="#e0f2fe" opacity="0.5"/>
+  <circle cx="95" cy="80" r="2.5" fill="#e0f2fe" opacity="0.6"/>
+</svg>
