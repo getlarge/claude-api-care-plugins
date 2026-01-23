@@ -77739,7 +77739,7 @@ async function processMessage(message, sessionId, dependencies) {
 
 // ../../../node_modules/@platformatic/mcp/dist/routes/mcp.js
 var mcpPubSubRoutesPlugin = async (app, options) => {
-  const { enableSSE, opts: opts2, capabilities, serverInfo, tools, resources, prompts, resourceHandlers, sessionStore, messageBroker, localStreams } = options;
+  const { enableSSE, opts: opts2, capabilities, serverInfo, tools, resources, prompts, sessionStore, messageBroker, localStreams, resourceHandlers } = options;
   async function createSSESession() {
     const sessionId = randomUUID();
     const session = {
@@ -77878,10 +77878,10 @@ data: ${JSON.stringify(entry.message)}
         tools,
         resources,
         prompts,
-        resourceHandlers,
         request,
         reply,
-        authContext
+        authContext,
+        resourceHandlers
       });
       if (response) {
         return response;
@@ -78345,7 +78345,12 @@ function createAuthPreHandler(config, tokenValidator) {
     if (request.url.startsWith("/.well-known/") || request.url.startsWith("/mcp/.well-known")) {
       return;
     }
-    if (request.url.startsWith("/oauth/authorize")) {
+    if (request.url.startsWith("/oauth/authorize") || request.url.startsWith("/oauth/callback")) {
+      return;
+    }
+    if (config.excludedPaths?.some(
+      (path) => typeof path === "string" ? request.url.startsWith(path) : path.test(request.url)
+    )) {
       return;
     }
     const authHeader = request.headers.authorization;
@@ -78457,7 +78462,46 @@ function validateClientRegistrationResponse(data) {
 }
 
 // ../../../node_modules/@platformatic/mcp/dist/auth/oauth-client.js
+var discoveryCache = null;
+var discoveryCacheTime = 0;
+var DISCOVERY_CACHE_TTL = 5 * 60 * 1e3;
+async function discoverOIDCEndpoints(authorizationServer, logger) {
+  const now = Date.now();
+  if (discoveryCache && now - discoveryCacheTime < DISCOVERY_CACHE_TTL) {
+    return discoveryCache;
+  }
+  try {
+    const discoveryUrl = `${authorizationServer}/.well-known/openid-configuration`;
+    logger?.info({ discoveryUrl }, "OAuth client: fetching OIDC discovery document");
+    const response = await fetch(discoveryUrl);
+    if (response.ok) {
+      const metadata = await response.json();
+      discoveryCache = {
+        authorizationEndpoint: metadata.authorization_endpoint,
+        tokenEndpoint: metadata.token_endpoint,
+        introspectionEndpoint: metadata.introspection_endpoint,
+        registrationEndpoint: metadata.registration_endpoint
+      };
+      discoveryCacheTime = now;
+      logger?.info({ endpoints: discoveryCache }, "OAuth client: OIDC endpoints discovered");
+      return discoveryCache;
+    }
+    logger?.warn({ status: response.status }, "OAuth client: OIDC discovery failed, using defaults");
+  } catch (error) {
+    logger?.warn({ error: error.message }, "OAuth client: OIDC discovery error, using defaults");
+  }
+  const defaults4 = {
+    authorizationEndpoint: `${authorizationServer}/oauth/authorize`,
+    tokenEndpoint: `${authorizationServer}/oauth/token`,
+    introspectionEndpoint: `${authorizationServer}/oauth/introspect`,
+    registrationEndpoint: `${authorizationServer}/oauth/register`
+  };
+  discoveryCache = defaults4;
+  discoveryCacheTime = now;
+  return defaults4;
+}
 var oauthClientPlugin = async (fastify, opts2) => {
+  const endpoints = await discoverOIDCEndpoints(opts2.authorizationServer, fastify.log);
   const oauthClientMethods = {
     generatePKCEChallenge() {
       const codeVerifier = randomBytes(32).toString("base64url");
@@ -78486,19 +78530,19 @@ var oauthClientPlugin = async (fastify, opts2) => {
       if (opts2.resourceUri) {
         params.set("resource", opts2.resourceUri);
       }
-      const authorizationUrl = `${opts2.authorizationServer}/oauth/authorize?${params.toString()}`;
+      const authorizationUrl = `${endpoints.authorizationEndpoint}?${params.toString()}`;
       return {
         authorizationUrl,
         state,
         pkce
       };
     },
-    async exchangeCodeForToken(code, pkce, state, receivedState) {
+    async exchangeCodeForToken(code, pkce, state, receivedState, redirectUri) {
       if (state !== receivedState) {
         throw new Error("Invalid state parameter - possible CSRF attack");
       }
       try {
-        const tokenResponse = await fetch(`${opts2.authorizationServer}/oauth/token`, {
+        const tokenResponse = await fetch(endpoints.tokenEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -78509,7 +78553,9 @@ var oauthClientPlugin = async (fastify, opts2) => {
             code,
             client_id: opts2.clientId || "",
             code_verifier: pkce.codeVerifier,
-            ...opts2.clientSecret && { client_secret: opts2.clientSecret }
+            ...opts2.clientSecret && { client_secret: opts2.clientSecret },
+            // redirect_uri must match the one used in authorization request (required for OIDC)
+            ...redirectUri && { redirect_uri: redirectUri }
           }).toString()
         });
         if (!tokenResponse.ok) {
@@ -78530,7 +78576,7 @@ var oauthClientPlugin = async (fastify, opts2) => {
         throw new Error("Refresh token is required");
       }
       try {
-        const tokenResponse = await fetch(`${opts2.authorizationServer}/oauth/token`, {
+        const tokenResponse = await fetch(endpoints.tokenEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -78558,7 +78604,7 @@ var oauthClientPlugin = async (fastify, opts2) => {
     },
     async validateToken(accessToken) {
       try {
-        const introspectionResponse = await fetch(`${opts2.authorizationServer}/oauth/introspect`, {
+        const introspectionResponse = await fetch(endpoints.introspectionEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -78587,7 +78633,7 @@ var oauthClientPlugin = async (fastify, opts2) => {
         throw new Error("Dynamic client registration not enabled");
       }
       try {
-        const registrationResponse = await fetch(`${opts2.authorizationServer}/oauth/register`, {
+        const registrationResponse = await fetch(endpoints.registrationEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -78684,15 +78730,19 @@ var authRoutesPlugin = async (fastify, opts2) => {
   }, async (request, reply) => {
     try {
       const { resource, redirect_uri } = request.query;
+      const callbackUrl = `${opts2.resourceUri || `${request.protocol}://${request.host}`}/oauth/callback`;
       const authRequest = await fastify.oauthClient.createAuthorizationRequest({
-        ...resource && { resource }
+        ...resource && { resource },
+        redirect_uri: callbackUrl
       });
       const sessionData = {
         state: authRequest.state,
         pkce: authRequest.pkce,
         resourceUri: resource,
         // eslint-disable-next-line camelcase
-        originalUrl: redirect_uri
+        originalUrl: redirect_uri,
+        // Store the callback URL for token exchange (must match exactly)
+        callbackUrl
       };
       const sessionMetadata = {
         id: authRequest.state,
@@ -78747,7 +78797,7 @@ var authRoutesPlugin = async (fastify, opts2) => {
       }
       const sessionData = sessionMetadata.authSession;
       await sessionStore.delete(state);
-      const tokens = await fastify.oauthClient.exchangeCodeForToken(code, sessionData.pkce, sessionData.state, state);
+      const tokens = await fastify.oauthClient.exchangeCodeForToken(code, sessionData.pkce, sessionData.state, state, sessionData.callbackUrl);
       if (sessionData.originalUrl) {
         const redirectUrl = new URL(sessionData.originalUrl);
         redirectUrl.searchParams.set("access_token", tokens.access_token);
@@ -79205,10 +79255,10 @@ var mcpPlugin = (0, import_fastify_plugin7.default)(async function(app, opts2) {
     tools,
     resources,
     prompts,
-    resourceHandlers,
     sessionStore,
     messageBroker,
-    localStreams
+    localStreams,
+    resourceHandlers
   });
   app.addHook("onClose", async () => {
     const unsubscribePromises = [];

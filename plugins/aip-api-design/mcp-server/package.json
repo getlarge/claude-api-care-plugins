@@ -11,14 +11,14 @@
     "build": "npm run build:types && npm run build:bundle",
     "build:types": "tsc",
     "build:bundle": "node build.mjs",
-    "dev": "tsc --watch --preserveWatchOutput & sleep 2 && node --watch dist/index.js",
+    "dev": "tsc --watch --preserveWatchOutput & sleep 2 && node --env-file-if-exists=.env --watch dist/index.js",
     "dev:stdio": "tsc --watch --preserveWatchOutput & sleep 2 && node --watch dist/stdio.js",
-    "start": "node dist/server.bundle.js",
+    "start": "node --env-file-if-exists=.env dist/server.bundle.js",
     "start:stdio": "node dist/stdio.bundle.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
     "test": "npm run build:types && node --import tsx --test 'src/**/*.test.ts'",
-    "test:e2e": "npm run build:types && node --import tsx --test 'src/**/*.e2e-test.ts'"
+    "test:e2e": "npm run build:types && node --env-file-if-exists=.env --import tsx --test 'src/**/*.e2e-test.ts'"
   },
   "keywords": [
     "mcp",

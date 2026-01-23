@@ -5302,7 +5302,7 @@ var require_thread_stream = __commonJS({
     var { version: version2 } = require_package();
     var { EventEmitter: EventEmitter2 } = __require("events");
     var { Worker: Worker2 } = __require("worker_threads");
-    var { join: join7 } = __require("path");
+    var { join: join8 } = __require("path");
     var { pathToFileURL } = __require("url");
     var { wait } = require_wait();
     var {
@@ -5338,7 +5338,7 @@ var require_thread_stream = __commonJS({
     function createWorker(stream, opts2) {
       const { filename, workerData } = opts2;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join7(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join8(__dirname, "lib", "worker.js");
       const worker = new Worker2(toExecute, {
         ...opts2.workerOpts,
         trackUnmanagedFds: false,
@@ -5724,7 +5724,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require("module");
     var getCallers = require_caller();
-    var { join: join7, isAbsolute, sep } = __require("node:path");
+    var { join: join8, isAbsolute, sep } = __require("node:path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -5787,7 +5787,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join7(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join8(__dirname, "worker.js");
         options.targets = targets.filter((dest) => dest.target).map((dest) => {
           return {
             ...dest,
@@ -5805,7 +5805,7 @@ var require_transport = __commonJS({
           });
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-worker"] || join7(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join8(__dirname, "worker.js");
         options.pipelines = [pipeline.map((dest) => {
           return {
             ...dest,
@@ -5827,7 +5827,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join7(__dirname, "..", "file.js");
+          return join8(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -6805,7 +6805,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join7 = ",";
+            let join8 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -6819,7 +6819,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join7 = `,
+                join8 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -6827,13 +6827,13 @@ ${indentation}`;
               for (; i3 < maximumValuesToStringify - 1; i3++) {
                 const tmp2 = stringifyFnReplacer(String(i3), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join7;
+                res += join8;
               }
               const tmp = stringifyFnReplacer(String(i3), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join7}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join8}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -6854,7 +6854,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join7 = `,
+              join8 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -6868,13 +6868,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join7;
+                separator = join8;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join7;
+              separator = join8;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -6915,7 +6915,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join7 = ",";
+            let join8 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -6928,7 +6928,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join7 = `,
+                join8 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -6936,13 +6936,13 @@ ${indentation}`;
               for (; i3 < maximumValuesToStringify - 1; i3++) {
                 const tmp2 = stringifyArrayReplacer(String(i3), value[i3], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join7;
+                res += join8;
               }
               const tmp = stringifyArrayReplacer(String(i3), value[i3], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join7}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join8}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -6955,7 +6955,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join7 = `,
+              join8 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -6964,7 +6964,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join7;
+                separator = join8;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -7022,20 +7022,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join8 = `,
+              const join9 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i3 = 0;
               for (; i3 < maximumValuesToStringify - 1; i3++) {
                 const tmp2 = stringifyIndent(String(i3), value[i3], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join8;
+                res2 += join9;
               }
               const tmp = stringifyIndent(String(i3), value[i3], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join8}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join9}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -7051,16 +7051,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join7 = `,
+            const join8 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join7, maximumBreadth);
+              res += stringifyTypedArray(value, join8, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join7;
+              separator = join8;
             }
             if (deterministic) {
               keys = sort2(keys, comparator);
@@ -7071,13 +7071,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join7;
+                separator = join8;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join7;
+              separator = join8;
             }
             if (separator !== "") {
               res = `
@@ -49153,7 +49153,7 @@ var require_codec_base = __commonJS({
         return b.apply(this, arguments);
       }
     }
-    function join7(filters) {
+    function join8(filters) {
       filters = filters.slice();
       return function(value) {
         return filters.reduce(iterator, value);
@@ -49163,7 +49163,7 @@ var require_codec_base = __commonJS({
       }
     }
     function filter2(filter3) {
-      return IS_ARRAY(filter3) ? join7(filter3) : filter3;
+      return IS_ARRAY(filter3) ? join8(filter3) : filter3;
     }
     function createCodec(options) {
       return new Codec(options);
@@ -53646,7 +53646,7 @@ var require_buffer2 = __commonJS({
       const isCompatible = typeof data === "object" && data.constructor.name === "EncoderBuffer" && typeof data.length === "number" && typeof data.join === "function";
       return isCompatible;
     };
-    EncoderBuffer.prototype.join = function join7(out2, offset2) {
+    EncoderBuffer.prototype.join = function join8(out2, offset2) {
       if (!out2)
         out2 = Buffer2.alloc(this.length);
       if (!offset2)
@@ -69666,6 +69666,11 @@ var require_dist6 = __commonJS({
   }
 });
 
+// src/index.ts
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { dirname as dirname5, join as join7 } from "node:path";
+import { existsSync as existsSync3 } from "node:fs";
+
 // src/server.ts
 var import_fastify = __toESM(require_fastify(), 1);
 
@@ -77736,7 +77741,7 @@ async function processMessage(message, sessionId, dependencies) {
 
 // ../../../node_modules/@platformatic/mcp/dist/routes/mcp.js
 var mcpPubSubRoutesPlugin = async (app, options) => {
-  const { enableSSE, opts: opts2, capabilities, serverInfo, tools, resources, prompts, resourceHandlers, sessionStore, messageBroker, localStreams } = options;
+  const { enableSSE, opts: opts2, capabilities, serverInfo, tools, resources, prompts, sessionStore, messageBroker, localStreams, resourceHandlers } = options;
   async function createSSESession() {
     const sessionId = randomUUID();
     const session = {
@@ -77875,10 +77880,10 @@ data: ${JSON.stringify(entry.message)}
         tools,
         resources,
         prompts,
-        resourceHandlers,
         request,
         reply,
-        authContext
+        authContext,
+        resourceHandlers
       });
       if (response) {
         return response;
@@ -78342,7 +78347,12 @@ function createAuthPreHandler(config, tokenValidator) {
     if (request.url.startsWith("/.well-known/") || request.url.startsWith("/mcp/.well-known")) {
       return;
     }
-    if (request.url.startsWith("/oauth/authorize")) {
+    if (request.url.startsWith("/oauth/authorize") || request.url.startsWith("/oauth/callback")) {
+      return;
+    }
+    if (config.excludedPaths?.some(
+      (path) => typeof path === "string" ? request.url.startsWith(path) : path.test(request.url)
+    )) {
       return;
     }
     const authHeader = request.headers.authorization;
@@ -78454,7 +78464,46 @@ function validateClientRegistrationResponse(data) {
 }
 
 // ../../../node_modules/@platformatic/mcp/dist/auth/oauth-client.js
+var discoveryCache = null;
+var discoveryCacheTime = 0;
+var DISCOVERY_CACHE_TTL = 5 * 60 * 1e3;
+async function discoverOIDCEndpoints(authorizationServer, logger) {
+  const now = Date.now();
+  if (discoveryCache && now - discoveryCacheTime < DISCOVERY_CACHE_TTL) {
+    return discoveryCache;
+  }
+  try {
+    const discoveryUrl = `${authorizationServer}/.well-known/openid-configuration`;
+    logger?.info({ discoveryUrl }, "OAuth client: fetching OIDC discovery document");
+    const response = await fetch(discoveryUrl);
+    if (response.ok) {
+      const metadata = await response.json();
+      discoveryCache = {
+        authorizationEndpoint: metadata.authorization_endpoint,
+        tokenEndpoint: metadata.token_endpoint,
+        introspectionEndpoint: metadata.introspection_endpoint,
+        registrationEndpoint: metadata.registration_endpoint
+      };
+      discoveryCacheTime = now;
+      logger?.info({ endpoints: discoveryCache }, "OAuth client: OIDC endpoints discovered");
+      return discoveryCache;
+    }
+    logger?.warn({ status: response.status }, "OAuth client: OIDC discovery failed, using defaults");
+  } catch (error) {
+    logger?.warn({ error: error.message }, "OAuth client: OIDC discovery error, using defaults");
+  }
+  const defaults4 = {
+    authorizationEndpoint: `${authorizationServer}/oauth/authorize`,
+    tokenEndpoint: `${authorizationServer}/oauth/token`,
+    introspectionEndpoint: `${authorizationServer}/oauth/introspect`,
+    registrationEndpoint: `${authorizationServer}/oauth/register`
+  };
+  discoveryCache = defaults4;
+  discoveryCacheTime = now;
+  return defaults4;
+}
 var oauthClientPlugin = async (fastify, opts2) => {
+  const endpoints = await discoverOIDCEndpoints(opts2.authorizationServer, fastify.log);
   const oauthClientMethods = {
     generatePKCEChallenge() {
       const codeVerifier = randomBytes(32).toString("base64url");
@@ -78483,19 +78532,19 @@ var oauthClientPlugin = async (fastify, opts2) => {
       if (opts2.resourceUri) {
         params.set("resource", opts2.resourceUri);
       }
-      const authorizationUrl = `${opts2.authorizationServer}/oauth/authorize?${params.toString()}`;
+      const authorizationUrl = `${endpoints.authorizationEndpoint}?${params.toString()}`;
       return {
         authorizationUrl,
         state,
         pkce
       };
     },
-    async exchangeCodeForToken(code, pkce, state, receivedState) {
+    async exchangeCodeForToken(code, pkce, state, receivedState, redirectUri) {
       if (state !== receivedState) {
         throw new Error("Invalid state parameter - possible CSRF attack");
       }
       try {
-        const tokenResponse = await fetch(`${opts2.authorizationServer}/oauth/token`, {
+        const tokenResponse = await fetch(endpoints.tokenEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -78506,7 +78555,9 @@ var oauthClientPlugin = async (fastify, opts2) => {
             code,
             client_id: opts2.clientId || "",
             code_verifier: pkce.codeVerifier,
-            ...opts2.clientSecret && { client_secret: opts2.clientSecret }
+            ...opts2.clientSecret && { client_secret: opts2.clientSecret },
+            // redirect_uri must match the one used in authorization request (required for OIDC)
+            ...redirectUri && { redirect_uri: redirectUri }
           }).toString()
         });
         if (!tokenResponse.ok) {
@@ -78527,7 +78578,7 @@ var oauthClientPlugin = async (fastify, opts2) => {
         throw new Error("Refresh token is required");
       }
       try {
-        const tokenResponse = await fetch(`${opts2.authorizationServer}/oauth/token`, {
+        const tokenResponse = await fetch(endpoints.tokenEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -78555,7 +78606,7 @@ var oauthClientPlugin = async (fastify, opts2) => {
     },
     async validateToken(accessToken) {
       try {
-        const introspectionResponse = await fetch(`${opts2.authorizationServer}/oauth/introspect`, {
+        const introspectionResponse = await fetch(endpoints.introspectionEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/x-www-form-urlencoded",
@@ -78584,7 +78635,7 @@ var oauthClientPlugin = async (fastify, opts2) => {
         throw new Error("Dynamic client registration not enabled");
       }
       try {
-        const registrationResponse = await fetch(`${opts2.authorizationServer}/oauth/register`, {
+        const registrationResponse = await fetch(endpoints.registrationEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -78681,15 +78732,19 @@ var authRoutesPlugin = async (fastify, opts2) => {
   }, async (request, reply) => {
     try {
       const { resource, redirect_uri } = request.query;
+      const callbackUrl = `${opts2.resourceUri || `${request.protocol}://${request.host}`}/oauth/callback`;
       const authRequest = await fastify.oauthClient.createAuthorizationRequest({
-        ...resource && { resource }
+        ...resource && { resource },
+        redirect_uri: callbackUrl
       });
       const sessionData = {
         state: authRequest.state,
         pkce: authRequest.pkce,
         resourceUri: resource,
         // eslint-disable-next-line camelcase
-        originalUrl: redirect_uri
+        originalUrl: redirect_uri,
+        // Store the callback URL for token exchange (must match exactly)
+        callbackUrl
       };
       const sessionMetadata = {
         id: authRequest.state,
@@ -78744,7 +78799,7 @@ var authRoutesPlugin = async (fastify, opts2) => {
       }
       const sessionData = sessionMetadata.authSession;
       await sessionStore.delete(state);
-      const tokens = await fastify.oauthClient.exchangeCodeForToken(code, sessionData.pkce, sessionData.state, state);
+      const tokens = await fastify.oauthClient.exchangeCodeForToken(code, sessionData.pkce, sessionData.state, state, sessionData.callbackUrl);
       if (sessionData.originalUrl) {
         const redirectUrl = new URL(sessionData.originalUrl);
         redirectUrl.searchParams.set("access_token", tokens.access_token);
@@ -78974,10 +79029,10 @@ var mcpPlugin = (0, import_fastify_plugin7.default)(async function(app, opts2) {
     tools,
     resources,
     prompts,
-    resourceHandlers,
     sessionStore,
     messageBroker,
-    localStreams
+    localStreams,
+    resourceHandlers
   });
   app.addHook("onClose", async () => {
     const unsubscribePromises = [];
@@ -101124,9 +101179,9 @@ var DEFAULT_TIMEOUTS = {
 var __filename = fileURLToPath(import.meta.url);
 var __dirname2 = dirname3(__filename);
 var WorkerPool = class {
-  constructor(poolSize = Math.max(1, availableParallelism() - 1), workerPath) {
+  constructor(poolSize = Math.max(1, availableParallelism() - 1), workerPath2) {
     this.poolSize = poolSize;
-    this.workerPath = workerPath ?? join5(__dirname2, "worker.js");
+    this.workerPath = workerPath2 ?? join5(__dirname2, "worker.js");
   }
   workers = [];
   availableWorkers = [];
@@ -115483,22 +115538,29 @@ function buildAuthConfig(config) {
   const projectUrl = config?.projectUrl ?? process.env["ORY_PROJECT_URL"];
   const projectApiKey = config?.projectApiKey ?? process.env["ORY_PROJECT_API_KEY"];
   const resourceUri = config?.resourceUri ?? process.env["MCP_RESOURCE_URI"];
-  if (!projectUrl || !config?.enabled) {
+  const clientId = process.env["OAUTH_CLIENT_ID"];
+  const clientSecret = process.env["OAUTH_CLIENT_SECRET"];
+  const authEnabled = config?.enabled ?? process.env["AUTH_ENABLED"] === "true";
+  if (!projectUrl || !authEnabled) {
     return { enabled: false };
   }
   return {
     enabled: true,
     authorizationServers: [projectUrl],
     resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
+    // Paths excluded from OAuth (health check, metrics, etc.)
+    excludedPaths: ["/health"],
     tokenValidation: {
-      // Prefer JWKS for JWT validation, fallback to introspection
+      // Prefer JWKS for JWT validation (works without API key)
       jwksUri: config?.jwksUri ?? `${projectUrl}/.well-known/jwks.json`,
+      // Introspection requires admin API key (optional)
       introspectionEndpoint: config?.introspectionEndpoint ?? (projectApiKey ? `${projectUrl}/admin/oauth2/introspect` : void 0),
       validateAudience: true
     },
-    oauth2Client: projectApiKey ? {
-      clientId: process.env["OAUTH_CLIENT_ID"],
-      clientSecret: process.env["OAUTH_CLIENT_SECRET"],
+    // OAuth2 client config - enabled if client credentials are provided
+    oauth2Client: clientId && clientSecret ? {
+      clientId,
+      clientSecret,
       authorizationServer: projectUrl,
       resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
       scopes: config?.scopes ?? ["openid"],
@@ -115507,7 +115569,7 @@ function buildAuthConfig(config) {
   };
 }
 async function createServer(config = {}, authConfig) {
-  const { port, host } = {
+  const { port, host, workerPath: workerPath2 } = {
     ...DEFAULT_CONFIG,
     ...config
   };
@@ -115527,12 +115589,21 @@ async function createServer(config = {}, authConfig) {
     ttlMs: 24 * 60 * 60 * 1e3
     // 1 day
   });
-  const workerPool = new WorkerPool();
+  const workerPool = new WorkerPool(void 0, workerPath2);
   await workerPool.initialize();
   fastify.log.info(
     { poolSize: workerPool.stats.total },
     "Worker pool initialized"
   );
+  fastify.get("/health", async () => {
+    const tempStorage = getTempStorage();
+    return {
+      status: "ok",
+      version: SERVER_VERSION,
+      tempStorage: tempStorage.stats,
+      workerPool: workerPool.stats
+    };
+  });
   const authorization = buildAuthConfig(authConfig);
   if (authorization.enabled) {
     fastify.log.info(
@@ -115554,21 +115625,15 @@ async function createServer(config = {}, authConfig) {
     },
     instructions: "AIP OpenAPI Reviewer - Analyze OpenAPI specs against Google API Improvement Proposals",
     enableSSE: true,
+    // Use in-memory stores for sessions and messages (can be changed to Redis if needed)
+    sessionStore: "memory",
+    messageBroker: "memory",
     authorization
   });
   initSubscriptionStore();
   registerAipTools(fastify, { workerPool });
   registerAipResources(fastify);
   registerAipPrompts(fastify);
-  fastify.get("/health", async () => {
-    const tempStorage = getTempStorage();
-    return {
-      status: "ok",
-      version: SERVER_VERSION,
-      tempStorage: tempStorage.stats,
-      workerPool: workerPool.stats
-    };
-  });
   return {
     fastify,
     async start() {
@@ -115588,12 +115653,17 @@ async function createServer(config = {}, authConfig) {
 }
 
 // src/index.ts
+var __filename2 = fileURLToPath3(import.meta.url);
+var __dirname3 = dirname5(__filename2);
 var PORT = parseInt(process.env["PORT"] ?? "4000", 10);
 var HOST = process.env["HOST"] ?? "0.0.0.0";
+var workerBundlePath = join7(__dirname3, "worker.bundle.js");
+var workerPath = existsSync3(workerBundlePath) ? workerBundlePath : void 0;
 async function main() {
   const server = await createServer({
     port: PORT,
-    host: HOST
+    host: HOST,
+    workerPath
   });
   const signals = ["SIGTERM", "SIGINT"];
   for (const signal of signals) {
