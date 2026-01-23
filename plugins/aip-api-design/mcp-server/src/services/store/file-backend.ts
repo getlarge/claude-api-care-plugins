@@ -93,7 +93,15 @@ export class LocalFileBackend implements FileBackend {
   }
 }
 
-// Future implementations can be added:
-// - S3FileBackend
+// Re-export S3 file backend
+export {
+  S3FileBackend,
+  createS3FileBackend,
+  type S3FileBackendOptions,
+  type S3Client,
+  type S3CommandFactories,
+} from './s3-file-backend.js';
+
+// Future implementations:
 // - GCSFileBackend
 // - AzureBlobFileBackend
