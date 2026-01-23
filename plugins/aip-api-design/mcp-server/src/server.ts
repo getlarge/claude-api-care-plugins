@@ -37,6 +37,8 @@ export const SERVER_VERSION = '1.0.0';
 export interface ServerConfig {
   port?: number;
   host?: string;
+  /** Path to worker bundle (for bundled deployments) */
+  workerPath?: string;
 }
 
 export interface OryAuthConfig {
@@ -49,10 +51,10 @@ export interface OryAuthConfig {
   scopes?: string[];
 }
 
-const DEFAULT_CONFIG: Required<ServerConfig> = {
+const DEFAULT_CONFIG = {
   port: 4000,
   host: '0.0.0.0',
-};
+} satisfies Omit<Required<ServerConfig>, 'workerPath'>;
 
 /**
  * Build authorization config from environment or explicit config.
@@ -63,9 +65,14 @@ function buildAuthConfig(config?: OryAuthConfig): AuthorizationConfig {
   const projectApiKey =
     config?.projectApiKey ?? process.env['ORY_PROJECT_API_KEY'];
   const resourceUri = config?.resourceUri ?? process.env['MCP_RESOURCE_URI'];
+  const clientId = process.env['OAUTH_CLIENT_ID'];
+  const clientSecret = process.env['OAUTH_CLIENT_SECRET'];
 
-  // Auth is disabled if no Ory config is provided
-  if (!projectUrl || !config?.enabled) {
+  // Auth enabled via explicit config or AUTH_ENABLED env var
+  const authEnabled = config?.enabled ?? process.env['AUTH_ENABLED'] === 'true';
+
+  // Auth is disabled if no Ory config is provided or not enabled
+  if (!projectUrl || !authEnabled) {
     return { enabled: false };
   }
 
@@ -73,24 +80,30 @@ function buildAuthConfig(config?: OryAuthConfig): AuthorizationConfig {
     enabled: true,
     authorizationServers: [projectUrl],
     resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
+    // Paths excluded from OAuth (health check, metrics, etc.)
+    excludedPaths: ['/health'],
     tokenValidation: {
-      // Prefer JWKS for JWT validation, fallback to introspection
+      // Prefer JWKS for JWT validation (works without API key)
       jwksUri: config?.jwksUri ?? `${projectUrl}/.well-known/jwks.json`,
+      // Introspection requires admin API key (optional)
       introspectionEndpoint:
         config?.introspectionEndpoint ??
         (projectApiKey ? `${projectUrl}/admin/oauth2/introspect` : undefined),
       validateAudience: true,
     },
-    oauth2Client: projectApiKey
-      ? {
-          clientId: process.env['OAUTH_CLIENT_ID'],
-          clientSecret: process.env['OAUTH_CLIENT_SECRET'],
-          authorizationServer: projectUrl,
-          resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
-          scopes: config?.scopes ?? ['openid'],
-          dynamicRegistration: false,
-        }
-      : undefined,
+    // OAuth2 client config - enabled if client credentials are provided
+    oauth2Client:
+      clientId && clientSecret
+        ? {
+            clientId,
+            clientSecret,
+            authorizationServer: projectUrl,
+            resourceUri:
+              resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
+            scopes: config?.scopes ?? ['openid'],
+            dynamicRegistration: false,
+          }
+        : undefined,
   };
 }
 
@@ -102,7 +115,7 @@ export async function createServer(
   config: ServerConfig = {},
   authConfig?: OryAuthConfig
 ) {
-  const { port, host } = {
+  const { port, host, workerPath } = {
     ...DEFAULT_CONFIG,
     ...config,
   };
@@ -128,12 +141,23 @@ export async function createServer(
   });
 
   // Initialize worker pool for CPU-intensive operations
-  const workerPool = new WorkerPool();
+  const workerPool = new WorkerPool(undefined, workerPath);
   await workerPool.initialize();
   fastify.log.info(
     { poolSize: workerPool.stats.total },
     'Worker pool initialized'
   );
+
+  // Health endpoint (registered before MCP plugin to bypass OAuth)
+  fastify.get('/health', async () => {
+    const tempStorage = getTempStorage();
+    return {
+      status: 'ok',
+      version: SERVER_VERSION,
+      tempStorage: tempStorage.stats,
+      workerPool: workerPool.stats,
+    };
+  });
 
   // Build authorization config
   const authorization = buildAuthConfig(authConfig);
@@ -160,6 +184,9 @@ export async function createServer(
     instructions:
       'AIP OpenAPI Reviewer - Analyze OpenAPI specs against Google API Improvement Proposals',
     enableSSE: true,
+    // Use in-memory stores for sessions and messages (can be changed to Redis if needed)
+    sessionStore: 'memory',
+    messageBroker: 'memory',
     authorization,
   });
 
@@ -174,17 +201,6 @@ export async function createServer(
 
   // Register AIP prompts using mcpAddPrompt
   registerAipPrompts(fastify);
-
-  // Health endpoint
-  fastify.get('/health', async () => {
-    const tempStorage = getTempStorage();
-    return {
-      status: 'ok',
-      version: SERVER_VERSION,
-      tempStorage: tempStorage.stats,
-      workerPool: workerPool.stats,
-    };
-  });
 
   return {
     fastify,

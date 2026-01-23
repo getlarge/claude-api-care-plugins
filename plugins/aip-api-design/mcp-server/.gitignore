@@ -5,3 +5,12 @@ node_modules/
 # Only commit *.bundle.js files, ignore everything else in dist/
 dist/*
 !dist/*.bundle.js
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# SQLite database files
+*.db
+*.db-journal
