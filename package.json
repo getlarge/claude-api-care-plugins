@@ -12,6 +12,7 @@
     }
   },
   "scripts": {
+    "postinstall": "patch-package --patch-dir plugins/aip-api-design/mcp-server/patches",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run lint --workspaces --if-present",
@@ -27,7 +28,11 @@
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "patch-package": "^8.0.0",
     "prettier": "^3.4.2",
     "prettier-plugin-sort-json": "^4.0.0"
+  },
+  "dependencies": {
+    "@platformatic/mcp": "^1.2.2"
   }
 }

@@ -1,19 +1,14 @@
 /**
  * AIP OpenAPI Reviewer MCP Server
  *
- * MCP integration code adapted from fastify-mcp
- * https://github.com/haroldadmin/fastify-mcp
- * Licensed under MIT
+ * Built with @platformatic/mcp for Fastify-native MCP support with OAuth2.
  */
 
 import Fastify from 'fastify';
-import { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+import mcpPlugin from '@platformatic/mcp';
+import type { AuthorizationConfig } from '@platformatic/mcp';
 
-import { createMcpServer, SERVER_VERSION } from './mcp.js';
 import { securityPlugin } from './plugins/security.js';
-import { rateLimitPlugin } from './plugins/rate-limit.js';
 import {
   initTempStorage,
   shutdownTempStorage,
@@ -23,36 +18,91 @@ import {
   initFindingsStorage,
   shutdownFindingsStorage,
 } from './services/findings-storage.js';
-import { WorkerPool } from './tools/worker-pool.js';
-import type { ToolContext } from './tools/types.js';
 import {
-  createStatefulTransport,
-  invalidSessionId,
-  Sessions,
-} from './sessions.js';
+  initSubscriptionStore,
+  shutdownSubscriptionStore,
+} from './services/subscription-store/index.js';
+import { WorkerPool } from './tools/worker-pool.js';
+import { registerAipTools } from './tools/register.js';
+import { registerAipResources } from './resources/register.js';
+import { registerAipPrompts } from './prompts/register.js';
 
-// ============================================================================
+// =============================================================================
 // Server Configuration
-// ============================================================================
+// =============================================================================
+
+export const SERVER_NAME = 'aip-openapi-reviewer';
+export const SERVER_VERSION = '1.0.0';
 
 export interface ServerConfig {
   port?: number;
   host?: string;
-  mcpEndpoint?: string;
+}
+
+export interface OryAuthConfig {
+  enabled: boolean;
+  projectUrl?: string;
+  projectApiKey?: string;
+  jwksUri?: string;
+  introspectionEndpoint?: string;
+  resourceUri?: string;
+  scopes?: string[];
 }
 
 const DEFAULT_CONFIG: Required<ServerConfig> = {
   port: 4000,
   host: '0.0.0.0',
-  mcpEndpoint: '/mcp',
 };
 
-// ============================================================================
-// Main Server Setup
-// ============================================================================
+/**
+ * Build authorization config from environment or explicit config.
+ */
+function buildAuthConfig(config?: OryAuthConfig): AuthorizationConfig {
+  // Check environment variables if no explicit config
+  const projectUrl = config?.projectUrl ?? process.env['ORY_PROJECT_URL'];
+  const projectApiKey =
+    config?.projectApiKey ?? process.env['ORY_PROJECT_API_KEY'];
+  const resourceUri = config?.resourceUri ?? process.env['MCP_RESOURCE_URI'];
 
-export async function createServer(config: ServerConfig = {}) {
-  const { port, host, mcpEndpoint } = {
+  // Auth is disabled if no Ory config is provided
+  if (!projectUrl || !config?.enabled) {
+    return { enabled: false };
+  }
+
+  return {
+    enabled: true,
+    authorizationServers: [projectUrl],
+    resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
+    tokenValidation: {
+      // Prefer JWKS for JWT validation, fallback to introspection
+      jwksUri: config?.jwksUri ?? `${projectUrl}/.well-known/jwks.json`,
+      introspectionEndpoint:
+        config?.introspectionEndpoint ??
+        (projectApiKey ? `${projectUrl}/admin/oauth2/introspect` : undefined),
+      validateAudience: true,
+    },
+    oauth2Client: projectApiKey
+      ? {
+          clientId: process.env['OAUTH_CLIENT_ID'],
+          clientSecret: process.env['OAUTH_CLIENT_SECRET'],
+          authorizationServer: projectUrl,
+          resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
+          scopes: config?.scopes ?? ['openid'],
+          dynamicRegistration: false,
+        }
+      : undefined,
+  };
+}
+
+// =============================================================================
+// Main Server Setup
+// =============================================================================
+
+export async function createServer(
+  config: ServerConfig = {},
+  authConfig?: OryAuthConfig
+) {
+  const { port, host } = {
     ...DEFAULT_CONFIG,
     ...config,
   };
@@ -61,28 +111,23 @@ export async function createServer(config: ServerConfig = {}) {
     logger: {
       level: process.env['LOG_LEVEL'] ?? 'info',
     },
-  }).withTypeProvider<TypeBoxTypeProvider>();
+  });
 
+  // Security plugin (CORS, headers)
   await fastify.register(securityPlugin);
-  await fastify.register(rateLimitPlugin);
-  // TODO: add authentication plugin and store user info in request context (AsyncLocalStorage)
-  // await fastify.register(authPlugin);
 
-  // Session storage for stateful mode
-  const sessions = new Sessions<StreamableHTTPServerTransport>();
-  // Initialize temp storage for storing modified specs
+  // Initialize storage layers
   await initTempStorage({
     type: 'sqlite',
     ttlMs: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Initialize findings storage for caching review results
-  // Uses longer TTL (1 day) since findings are useful across sessions
   await initFindingsStorage({
     type: 'sqlite',
-    ttlMs: 24 * 60 * 60 * 1000,
+    ttlMs: 24 * 60 * 60 * 1000, // 1 day
   });
 
+  // Initialize worker pool for CPU-intensive operations
   const workerPool = new WorkerPool();
   await workerPool.initialize();
   fastify.log.info(
@@ -90,89 +135,68 @@ export async function createServer(config: ServerConfig = {}) {
     'Worker pool initialized'
   );
 
-  const toolContext: ToolContext = { workerPool };
+  // Build authorization config
+  const authorization = buildAuthConfig(authConfig);
+  if (authorization.enabled) {
+    fastify.log.info(
+      { authorizationServers: authorization.authorizationServers },
+      'OAuth2 authorization enabled'
+    );
+  } else {
+    fastify.log.info('OAuth2 authorization disabled');
+  }
 
-  sessions.on('connected', (id) => {
-    fastify.log.info({ sessionId: id }, 'MCP session connected');
-  });
-  sessions.on('terminated', (id) => {
-    fastify.log.info({ sessionId: id }, 'MCP session terminated');
+  // Register @platformatic/mcp plugin
+  await fastify.register(mcpPlugin, {
+    serverInfo: {
+      name: SERVER_NAME,
+      version: SERVER_VERSION,
+    },
+    capabilities: {
+      tools: {},
+      resources: {},
+      prompts: {},
+    },
+    instructions:
+      'AIP OpenAPI Reviewer - Analyze OpenAPI specs against Google API Improvement Proposals',
+    enableSSE: true,
+    authorization,
   });
 
+  // Initialize subscription store (uses same redis config pattern as mcp plugin)
+  initSubscriptionStore();
+
+  // Register AIP tools using mcpAddTool
+  registerAipTools(fastify, { workerPool });
+
+  // Register AIP resources using mcpAddResource
+  registerAipResources(fastify);
+
+  // Register AIP prompts using mcpAddPrompt
+  registerAipPrompts(fastify);
+
+  // Health endpoint
   fastify.get('/health', async () => {
     const tempStorage = getTempStorage();
     return {
       status: 'ok',
       version: SERVER_VERSION,
-      sessions: sessions.count,
       tempStorage: tempStorage.stats,
       workerPool: workerPool.stats,
     };
   });
 
-  fastify.post(mcpEndpoint, async (req, reply) => {
-    const sessionId = req.headers['mcp-session-id'];
-    if (Array.isArray(sessionId)) {
-      return invalidSessionId(reply);
-    }
-
-    if (!sessionId) {
-      if (!isInitializeRequest(req.body)) {
-        return invalidSessionId(reply);
-      }
-
-      const transport = createStatefulTransport(sessions);
-      const server = createMcpServer(toolContext);
-      await server.connect(transport);
-      await transport.handleRequest(req.raw, reply.raw, req.body);
-    } else {
-      const transport = sessions.get(sessionId);
-      if (!transport) {
-        return invalidSessionId(reply);
-      }
-      await transport.handleRequest(req.raw, reply.raw, req.body);
-    }
-  });
-
-  fastify.get(mcpEndpoint, async (req, reply) => {
-    const sessionId = req.headers['mcp-session-id'];
-    if (!sessionId || Array.isArray(sessionId)) {
-      return invalidSessionId(reply);
-    }
-
-    const transport = sessions.get(sessionId);
-    if (!transport) {
-      return invalidSessionId(reply);
-    }
-    await transport.handleRequest(req.raw, reply.raw, req.body);
-  });
-
-  fastify.delete(mcpEndpoint, async (req, reply) => {
-    const sessionId = req.headers['mcp-session-id'];
-    if (!sessionId || Array.isArray(sessionId)) {
-      return invalidSessionId(reply);
-    }
-
-    const transport = sessions.get(sessionId);
-    if (!transport) {
-      return invalidSessionId(reply);
-    }
-
-    await transport.handleRequest(req.raw, reply.raw, req.body);
-    sessions.remove(sessionId);
-  });
-
   return {
     fastify,
-    sessions,
     async start() {
       await fastify.listen({ port, host });
       fastify.log.info(`MCP server listening on http://${host}:${port}`);
-      fastify.log.info(`MCP endpoint: ${mcpEndpoint}`);
-      fastify.log.info(`Session management: enabled`);
+      fastify.log.info(`MCP endpoint: /mcp`);
+      fastify.log.info(`OAuth metadata: /.well-known/oauth-protected-resource`);
     },
     async stop() {
       await workerPool.shutdown();
+      await shutdownSubscriptionStore();
       await shutdownFindingsStorage();
       await shutdownTempStorage();
       await fastify.close();

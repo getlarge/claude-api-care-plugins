@@ -13,7 +13,6 @@ async function main() {
   const server = await createServer({
     port: PORT,
     host: HOST,
-    mcpEndpoint: '/mcp',
   });
 
   // Graceful shutdown

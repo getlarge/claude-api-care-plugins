@@ -1,83 +1,81 @@
 /**
  * Prompt Registration
  *
- * Registers MCP prompt handlers with the server.
+ * Registers MCP prompt handlers with @platformatic/mcp.
+ * Uses mcpAddPrompt for Fastify-native prompt registration with TypeBox schemas.
  *
  * ## Design Decisions
  *
- * 1. **Zod for Validation**: We use Zod schemas for runtime validation of prompt
- *    arguments. This provides type safety and detailed error messages.
+ * 1. **TypeBox for Validation**: We use TypeBox schemas for runtime validation of prompt
+ *    arguments. This provides type safety and integrates with @platformatic/mcp.
  *
  * 2. **No Pagination Yet**: Currently returns all prompts in a single page.
  *    As we add more prompts, we'll implement cursor-based pagination.
  *
- * 3. **Error Handling**: Invalid prompt names and arguments return JSON-RPC
- *    error code -32602 (Invalid params) per MCP specification.
- *
- * 4. **Prompt Registry Pattern**: Centralized PROMPTS array makes it easy to
- *    add new prompts - just implement the handler and add to the array.
+ * 3. **Prompt Registry Pattern**: PROMPTS array makes it easy to add new prompts -
+ *    just implement the handler and add to the array.
  */
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { FastifyInstance } from 'fastify';
+import type { GetPromptResult } from '@platformatic/mcp';
+import type { PromptDefinition } from './types.js';
 import {
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema,
-  McpError,
-  type ListPromptsRequest,
-  type GetPromptRequest,
-} from '@modelcontextprotocol/sdk/types.js';
-import { zodToPromptArguments, type PromptDefinition } from './types.js';
-import { codeLocatorPrompt, aipLookupPrompt } from './handlers/index.js';
+  codeLocatorPrompt,
+  aipLookupPrompt,
+  CodeLocatorArgsSchema,
+  AipLookupArgsSchema,
+} from './handlers/index.js';
 
 /**
  * Registry of all available prompts.
  */
-const PROMPTS: PromptDefinition[] = [
-  codeLocatorPrompt,
-  aipLookupPrompt,
-  // Future prompts added here
-];
+const PROMPTS: PromptDefinition[] = [codeLocatorPrompt, aipLookupPrompt];
 
 /**
- * Register prompt handlers with the MCP server.
+ * Register all AIP prompts with the Fastify instance.
  */
-export function registerPrompts(server: Server) {
-  server.setRequestHandler(
-    ListPromptsRequestSchema,
-    async (_request: ListPromptsRequest) => {
-      // Note: Pagination not implemented yet (cursor ignored)
-      // All prompts returned in single page
-      return {
-        prompts: PROMPTS.map((p) => ({
-          name: p.name,
-          title: p.title,
-          description: p.description,
-          arguments: zodToPromptArguments(p.argsSchema),
-        })),
-      };
+export function registerAipPrompts(fastify: FastifyInstance) {
+  // Code Locator Prompt
+  fastify.mcpAddPrompt(
+    {
+      name: codeLocatorPrompt.name,
+      description: codeLocatorPrompt.description,
+      argumentSchema: CodeLocatorArgsSchema,
+    },
+    async (
+      _name: string,
+      args: {
+        method: string;
+        path: string;
+        framework?: 'nestjs' | 'fastify' | 'express' | 'unknown';
+        projectRoot: string;
+        operationId?: string;
+      }
+    ): Promise<GetPromptResult> => {
+      return codeLocatorPrompt.handler.execute(args);
     }
   );
 
-  server.setRequestHandler(
-    GetPromptRequestSchema,
-    async (request: GetPromptRequest) => {
-      const { name, arguments: args = {} } = request.params;
-
-      const promptDef = PROMPTS.find((p) => p.name === name);
-      if (!promptDef) {
-        throw new McpError(-32602, `Unknown prompt: ${name}`);
-      }
-
-      try {
-        const validated = promptDef.argsSchema.parse(args);
-        return await promptDef.handler.execute(validated);
-      } catch (error) {
-        if (error instanceof Error && 'issues' in error) {
-          // Zod validation error
-          throw new McpError(-32602, `Invalid arguments: ${error.message}`);
-        }
-        throw error;
-      }
+  // AIP Lookup Prompt
+  fastify.mcpAddPrompt(
+    {
+      name: aipLookupPrompt.name,
+      description: aipLookupPrompt.description,
+      argumentSchema: AipLookupArgsSchema,
+    },
+    async (
+      _name: string,
+      args: { aip: string; context?: string; finding?: string }
+    ): Promise<GetPromptResult> => {
+      return aipLookupPrompt.handler.execute(args);
     }
+  );
+
+  fastify.log.info(
+    { prompts: PROMPTS.map((p) => p.name) },
+    'AIP prompts registered'
   );
 }
+
+// Export for testing
+export { PROMPTS };

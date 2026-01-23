@@ -1,0 +1,163 @@
+diff --git a/node_modules/@platformatic/mcp/dist/decorators/meta.js b/node_modules/@platformatic/mcp/dist/decorators/meta.js
+index bf8d066..edd4075 100644
+--- a/node_modules/@platformatic/mcp/dist/decorators/meta.js
++++ b/node_modules/@platformatic/mcp/dist/decorators/meta.js
+@@ -1,7 +1,7 @@
+ import fp from 'fastify-plugin';
+ import { schemaToArguments, validateToolSchema } from "../validation/index.js";
+ const mcpDecoratorsPlugin = async (app, options) => {
+-    const { tools, resources, prompts } = options;
++    const { tools, resources, prompts, resourceHandlers } = options;
+     // Enhanced tool decorator with TypeBox schema support
+     app.decorate('mcpAddTool', (definition, handler) => {
+         const name = definition.name;
+@@ -61,6 +61,13 @@ const mcpDecoratorsPlugin = async (app, options) => {
+             handler
+         });
+     });
++    // Resource subscription handler setters
++    app.decorate('mcpSetResourcesSubscribeHandler', (handler) => {
++        resourceHandlers.subscribe = handler;
++    });
++    app.decorate('mcpSetResourcesUnsubscribeHandler', (handler) => {
++        resourceHandlers.unsubscribe = handler;
++    });
+ };
+ export default fp(mcpDecoratorsPlugin, {
+     name: 'mcp-decorators'
+diff --git a/node_modules/@platformatic/mcp/dist/handlers.js b/node_modules/@platformatic/mcp/dist/handlers.js
+index 7d8b05e..9c91280 100644
+--- a/node_modules/@platformatic/mcp/dist/handlers.js
++++ b/node_modules/@platformatic/mcp/dist/handlers.js
+@@ -196,7 +196,17 @@ async function handleResourcesRead(request, sessionId, dependencies) {
+     }
+     const params = paramsValidation.data;
+     const uri = params.uri;
+-    const resource = resources.get(uri);
++    // Try exact match first
++    let resource = resources.get(uri);
++    // If not found and URI has query params, try base URI (for uriSchema pattern matching)
++    if (!resource && uri.includes('?')) {
++        const baseUri = uri.split('?')[0];
++        const baseResource = resources.get(baseUri);
++        // Only use base resource if it has uriSchema (expects query params)
++        if (baseResource?.definition?.uriSchema) {
++            resource = baseResource;
++        }
++    }
+     if (!resource) {
+         return createError(request.id, METHOD_NOT_FOUND, `Resource '${uri}' not found`);
+     }
+@@ -248,6 +258,46 @@ async function handleResourcesRead(request, sessionId, dependencies) {
+         return createResponse(request.id, result);
+     }
+ }
++async function handleResourcesSubscribe(request, sessionId, dependencies) {
++    const { resourceHandlers } = dependencies;
++    // Use custom handler if set
++    if (resourceHandlers?.subscribe) {
++        try {
++            const result = await resourceHandlers.subscribe(request.params, {
++                sessionId,
++                request: dependencies.request,
++                reply: dependencies.reply,
++                authContext: dependencies.authContext
++            });
++            return createResponse(request.id, result);
++        }
++        catch (error) {
++            return createError(request.id, INTERNAL_ERROR, `Resource subscribe failed: ${error.message || error}`);
++        }
++    }
++    // No custom handler - return method not found
++    return createError(request.id, METHOD_NOT_FOUND, 'resources/subscribe handler not configured');
++}
++async function handleResourcesUnsubscribe(request, sessionId, dependencies) {
++    const { resourceHandlers } = dependencies;
++    // Use custom handler if set
++    if (resourceHandlers?.unsubscribe) {
++        try {
++            const result = await resourceHandlers.unsubscribe(request.params, {
++                sessionId,
++                request: dependencies.request,
++                reply: dependencies.reply,
++                authContext: dependencies.authContext
++            });
++            return createResponse(request.id, result);
++        }
++        catch (error) {
++            return createError(request.id, INTERNAL_ERROR, `Resource unsubscribe failed: ${error.message || error}`);
++        }
++    }
++    // No custom handler - return method not found
++    return createError(request.id, METHOD_NOT_FOUND, 'resources/unsubscribe handler not configured');
++}
+ async function handlePromptsGet(request, sessionId, dependencies) {
+     const { prompts } = dependencies;
+     // Validate the request parameters structure
+@@ -391,6 +441,10 @@ export async function handleRequest(request, sessionId, dependencies) {
+                 return await handleToolsCall(request, sessionId, dependencies);
+             case 'resources/read':
+                 return await handleResourcesRead(request, sessionId, dependencies);
++            case 'resources/subscribe':
++                return await handleResourcesSubscribe(request, sessionId, dependencies);
++            case 'resources/unsubscribe':
++                return await handleResourcesUnsubscribe(request, sessionId, dependencies);
+             case 'prompts/get':
+                 return await handlePromptsGet(request, sessionId, dependencies);
+             default:
+diff --git a/node_modules/@platformatic/mcp/dist/index.js b/node_modules/@platformatic/mcp/dist/index.js
+index 9991d82..db2da42 100644
+--- a/node_modules/@platformatic/mcp/dist/index.js
++++ b/node_modules/@platformatic/mcp/dist/index.js
+@@ -26,6 +26,11 @@ const mcpPlugin = fp(async function (app, opts) {
+     const tools = new Map();
+     const resources = new Map();
+     const prompts = new Map();
++    // Custom resource handlers for subscribe/unsubscribe
++    const resourceHandlers = {
++        subscribe: null,
++        unsubscribe: null
++    };
+     // Initialize stores and brokers based on configuration
+     let sessionStore;
+     let messageBroker;
+@@ -66,7 +71,8 @@ const mcpPlugin = fp(async function (app, opts) {
+     app.register(metaDecorators, {
+         tools,
+         resources,
+-        prompts
++        prompts,
++        resourceHandlers
+     });
+     app.register(pubsubDecorators, {
+         enableSSE,
+@@ -83,6 +89,7 @@ const mcpPlugin = fp(async function (app, opts) {
+         tools,
+         resources,
+         prompts,
++        resourceHandlers,
+         sessionStore,
+         messageBroker,
+         localStreams
+diff --git a/node_modules/@platformatic/mcp/dist/routes/mcp.js b/node_modules/@platformatic/mcp/dist/routes/mcp.js
+index ec7073d..aac2e69 100644
+--- a/node_modules/@platformatic/mcp/dist/routes/mcp.js
++++ b/node_modules/@platformatic/mcp/dist/routes/mcp.js
+@@ -3,7 +3,7 @@ import fp from 'fastify-plugin';
+ import { JSONRPC_VERSION, INTERNAL_ERROR } from "../schema.js";
+ import { processMessage } from "../handlers.js";
+ const mcpPubSubRoutesPlugin = async (app, options) => {
+-    const { enableSSE, opts, capabilities, serverInfo, tools, resources, prompts, sessionStore, messageBroker, localStreams } = options;
++    const { enableSSE, opts, capabilities, serverInfo, tools, resources, prompts, resourceHandlers, sessionStore, messageBroker, localStreams } = options;
+     async function createSSESession() {
+         const sessionId = randomUUID();
+         const session = {
+@@ -155,6 +155,7 @@ const mcpPubSubRoutesPlugin = async (app, options) => {
+                 tools,
+                 resources,
+                 prompts,
++                resourceHandlers,
+                 request,
+                 reply,
+                 authContext

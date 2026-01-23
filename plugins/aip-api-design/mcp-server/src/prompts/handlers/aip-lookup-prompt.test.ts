@@ -1,19 +1,20 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { Value } from '@sinclair/typebox/value';
 import { aipLookupPrompt, AipLookupArgsSchema } from './aip-lookup-prompt.js';
 
 describe('aip-lookup-prompt', () => {
   describe('schema validation', () => {
     it('should validate AIP number as string', () => {
       const args = { aip: '158' };
-      const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(result.aip, '158');
+      const errors = [...Value.Errors(AipLookupArgsSchema, args)];
+      assert.strictEqual(errors.length, 0);
     });
 
     it('should accept numeric string', () => {
       const args = { aip: '193' };
-      const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(result.aip, '193');
+      const errors = [...Value.Errors(AipLookupArgsSchema, args)];
+      assert.strictEqual(errors.length, 0);
     });
 
     it('should accept optional context', () => {
@@ -21,11 +22,8 @@ describe('aip-lookup-prompt', () => {
         aip: '122',
         context: 'Why do I need plural resource names?',
       };
-      const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(
-        result.context,
-        'Why do I need plural resource names?'
-      );
+      const errors = [...Value.Errors(AipLookupArgsSchema, args)];
+      assert.strictEqual(errors.length, 0);
     });
 
     it('should accept optional finding', () => {
@@ -33,23 +31,14 @@ describe('aip-lookup-prompt', () => {
         aip: '158',
         finding: 'GET /users is missing pagination parameters',
       };
-      const result = AipLookupArgsSchema.parse(args);
-      assert.strictEqual(
-        result.finding,
-        'GET /users is missing pagination parameters'
-      );
-    });
-
-    it('should reject non-numeric string during validation', () => {
-      const args = { aip: 'invalid' };
-      assert.throws(() => AipLookupArgsSchema.parse(args), {
-        message: /AIP must be a valid number/,
-      });
+      const errors = [...Value.Errors(AipLookupArgsSchema, args)];
+      assert.strictEqual(errors.length, 0);
     });
 
     it('should require aip parameter', () => {
       const args = {};
-      assert.throws(() => AipLookupArgsSchema.parse(args));
+      const errors = [...Value.Errors(AipLookupArgsSchema, args)];
+      assert.ok(errors.length > 0);
     });
   });
 
@@ -69,6 +58,18 @@ describe('aip-lookup-prompt', () => {
       } else {
         assert.fail('Expected text content');
       }
+    });
+
+    it('should reject invalid AIP number in schema', () => {
+      const args = { aip: 'invalid' };
+      const errors = [...Value.Errors(AipLookupArgsSchema, args)];
+
+      // TypeBox pattern validation should catch non-numeric strings
+      assert.ok(errors.length > 0, 'Should have validation errors');
+      assert.ok(
+        errors.some((e) => e.path === '/aip'),
+        'Error should be for aip field'
+      );
     });
 
     it('should include context when provided', async () => {

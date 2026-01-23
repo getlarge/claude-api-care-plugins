@@ -54,6 +54,23 @@ export interface JsonRpcResponse {
         required?: boolean;
       }>;
     }>;
+    resources?: Array<{
+      uri: string;
+      name: string;
+      description?: string;
+      mimeType?: string;
+      annotations?: {
+        audience?: string[];
+        priority?: number;
+      };
+    }>;
+    resourceTemplates?: Array<{
+      uriTemplate: string;
+      name: string;
+      description?: string;
+      mimeType?: string;
+    }>;
+    nextCursor?: string;
     description?: string;
   };
   error?: { code: number; message: string; data?: unknown };

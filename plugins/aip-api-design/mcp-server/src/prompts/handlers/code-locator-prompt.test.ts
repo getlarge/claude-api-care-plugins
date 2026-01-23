@@ -1,8 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert';
+import { Value } from '@sinclair/typebox/value';
 import {
   codeLocatorPrompt,
   CodeLocatorArgsSchema,
+  type CodeLocatorArgs,
 } from './code-locator-prompt.js';
 
 describe('code-locator-prompt', () => {
@@ -15,9 +17,8 @@ describe('code-locator-prompt', () => {
         projectRoot: '/path/to/project',
       };
 
-      const result = CodeLocatorArgsSchema.parse(args);
-      assert.strictEqual(result.method, 'GET'); // Uppercase
-      assert.strictEqual(result.framework, 'nestjs');
+      const errors = [...Value.Errors(CodeLocatorArgsSchema, args)];
+      assert.strictEqual(errors.length, 0);
     });
 
     it('should apply defaults', () => {
@@ -27,7 +28,10 @@ describe('code-locator-prompt', () => {
         projectRoot: '/path/to/project',
       };
 
-      const result = CodeLocatorArgsSchema.parse(args);
+      const result = Value.Default(
+        CodeLocatorArgsSchema,
+        args
+      ) as CodeLocatorArgs;
       assert.strictEqual(result.framework, 'unknown');
     });
 
@@ -39,7 +43,8 @@ describe('code-locator-prompt', () => {
         projectRoot: '/path',
       };
 
-      assert.throws(() => CodeLocatorArgsSchema.parse(args));
+      const errors = [...Value.Errors(CodeLocatorArgsSchema, args)];
+      assert.ok(errors.length > 0);
     });
 
     it('should require projectRoot', () => {
@@ -48,7 +53,8 @@ describe('code-locator-prompt', () => {
         path: '/users',
       };
 
-      assert.throws(() => CodeLocatorArgsSchema.parse(args));
+      const errors = [...Value.Errors(CodeLocatorArgsSchema, args)];
+      assert.ok(errors.length > 0);
     });
   });
 

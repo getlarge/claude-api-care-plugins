@@ -2,13 +2,11 @@
  * Prompt Registry Types
  *
  * Type definitions for prompt metadata and handlers.
+ * Migrated from Zod to TypeBox for @platformatic/mcp compatibility.
  */
 
-import type {
-  Prompt,
-  GetPromptResult,
-} from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
+import type { TObject, Static } from '@sinclair/typebox';
+import type { GetPromptResult } from '@platformatic/mcp';
 
 /**
  * Prompt handler function that generates prompt messages.
@@ -22,44 +20,47 @@ export interface PromptHandler<TArgs = Record<string, unknown>> {
 
 /**
  * Prompt definition with schema and handler.
- * Combines MCP's Prompt type with Zod validation.
+ * Combines MCP's Prompt type with TypeBox validation.
  */
-export interface PromptDefinition<TSchema extends z.ZodTypeAny = z.ZodTypeAny> {
+export interface PromptDefinition<TSchema extends TObject = TObject> {
   /** Unique prompt name */
   name: string;
   /** Human-readable title */
   title?: string;
   /** Human-readable description */
   description?: string;
-  /** Zod schema for argument validation */
+  /** TypeBox schema for argument validation */
   argsSchema: TSchema;
   /** Handler function */
-  handler: PromptHandler<z.infer<TSchema>>;
+  handler: PromptHandler<Static<TSchema>>;
 }
 
 /**
- * Convert Zod schema to MCP PromptArgument array.
+ * MCP PromptArgument type (subset of MCP spec).
  */
-export function zodToPromptArguments(
-  schema: z.ZodTypeAny
-): Prompt['arguments'] {
-  // Extract shape from ZodObject
-  if (!(schema instanceof z.ZodObject)) {
-    throw new Error('Prompt arguments schema must be a ZodObject');
-  }
+export interface PromptArgument {
+  name: string;
+  description?: string;
+  required?: boolean;
+}
 
-  const shape = schema.shape as Record<string, z.ZodTypeAny>;
-  return Object.entries(shape).map(([name, fieldSchema]) => {
-    const isOptional = fieldSchema instanceof z.ZodOptional;
-    const innerSchema = isOptional ? fieldSchema.unwrap() : fieldSchema;
+/**
+ * Convert TypeBox schema to MCP PromptArgument array.
+ */
+export function typeboxToPromptArguments(schema: TObject): PromptArgument[] {
+  const properties = schema.properties ?? {};
+  const required = schema.required ?? [];
 
-    // In Zod v4, description is directly accessible on the schema instance
-    const description = (innerSchema as { description?: string }).description;
+  return Object.entries(properties).map(([name, fieldSchema]) => {
+    const description =
+      (fieldSchema as { description?: string }).description ??
+      `Argument: ${name}`;
+    const isRequired = required.includes(name);
 
     return {
       name,
-      description: description || `Argument: ${name}`,
-      required: !isOptional,
+      description,
+      required: isRequired,
     };
   });
 }

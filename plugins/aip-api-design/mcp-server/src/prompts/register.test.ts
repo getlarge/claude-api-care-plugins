@@ -1,133 +1,79 @@
-import { describe, it } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { type Prompt, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { registerPrompts } from './register.js';
+import Fastify, { type FastifyInstance } from 'fastify';
+import mcpPlugin from '@platformatic/mcp';
+import { registerAipPrompts, PROMPTS } from './register.js';
 
 describe('prompt registration', () => {
-  it('should register prompts/list handler', async () => {
-    const mcpServer = new McpServer(
-      { name: 'test', version: '1.0.0' },
-      {
-        capabilities: { prompts: {} },
-      }
-    );
-    registerPrompts(mcpServer.server);
+  let fastify: FastifyInstance;
 
-    // @ts-expect-error: accessing private _requestHandlers Map
-    const listHandler = mcpServer.server._requestHandlers.get('prompts/list');
-    assert.ok(listHandler);
+  beforeEach(async () => {
+    fastify = Fastify({ logger: false });
 
-    const response = await listHandler({
-      method: 'prompts/list',
-      params: {},
+    // Register MCP plugin first
+    await fastify.register(mcpPlugin, {
+      serverInfo: {
+        name: 'test',
+        version: '1.0.0',
+      },
+      capabilities: {
+        prompts: {},
+      },
     });
 
-    assert.ok(response.prompts);
-    assert.ok(response.prompts.length > 0);
+    // Then register our prompts
+    registerAipPrompts(fastify);
+  });
 
-    const codeLocator = response.prompts.find(
-      (p: Prompt) => p.name === 'aip-code-locator'
-    );
+  afterEach(async () => {
+    await fastify.close();
+  });
+
+  it('should export PROMPTS registry', () => {
+    assert.ok(Array.isArray(PROMPTS));
+    assert.strictEqual(PROMPTS.length, 2);
+  });
+
+  it('should have code locator prompt in registry', () => {
+    const codeLocator = PROMPTS.find((p) => p.name === 'aip-code-locator');
     assert.ok(codeLocator);
     assert.strictEqual(codeLocator.title, 'Find API Implementation');
-    assert.ok(codeLocator.arguments);
-    assert.ok(codeLocator.arguments.length >= 4);
+    assert.ok(codeLocator.argsSchema);
   });
 
-  it('should register prompts/get handler', async () => {
-    const mcpServer = new McpServer(
-      { name: 'test', version: '1.0.0' },
-      {
-        capabilities: { prompts: {} },
-      }
-    );
-    registerPrompts(mcpServer.server);
+  it('should have aip lookup prompt in registry', () => {
+    const aipLookup = PROMPTS.find((p) => p.name === 'aip-lookup');
+    assert.ok(aipLookup);
+    assert.strictEqual(aipLookup.title, 'Fetch and Explain AIP');
+    assert.ok(aipLookup.argsSchema);
+  });
 
-    // @ts-expect-error: accessing private _requestHandlers Map
-    const getHandler = mcpServer.server._requestHandlers.get('prompts/get');
-    assert.ok(getHandler);
+  it('should execute code locator prompt handler', async () => {
+    const codeLocator = PROMPTS.find((p) => p.name === 'aip-code-locator');
+    assert.ok(codeLocator);
 
-    const response = await getHandler({
-      method: 'prompts/get',
-      params: {
-        name: 'aip-code-locator',
-        arguments: {
-          method: 'GET',
-          path: '/test',
-          projectRoot: '/path',
-        },
-      },
+    const result = await codeLocator.handler.execute({
+      method: 'GET',
+      path: '/test',
+      projectRoot: '/path',
     });
 
-    assert.ok(response.messages);
-    assert.strictEqual(response.messages.length, 1);
-    assert.strictEqual(response.messages[0].role, 'user');
+    assert.ok(result.messages);
+    assert.strictEqual(result.messages.length, 1);
+    assert.strictEqual(result.messages[0].role, 'user');
   });
 
-  it('should return error for unknown prompt', async () => {
-    const mcpServer = new McpServer(
-      { name: 'test', version: '1.0.0' },
-      {
-        capabilities: { prompts: {} },
-      }
-    );
-    registerPrompts(mcpServer.server);
+  it('should execute aip lookup prompt handler', async () => {
+    const aipLookup = PROMPTS.find((p) => p.name === 'aip-lookup');
+    assert.ok(aipLookup);
 
-    // @ts-expect-error: accessing private _requestHandlers Map
-    const getHandler = mcpServer.server._requestHandlers.get('prompts/get');
-    assert.ok(getHandler);
+    const result = await aipLookup.handler.execute({
+      aip: '158',
+    });
 
-    await assert.rejects(
-      async () => {
-        await getHandler({
-          method: 'prompts/get',
-          params: {
-            name: 'unknown-prompt',
-            arguments: {},
-          },
-        });
-      },
-      (error: McpError) => {
-        assert.strictEqual(error.code, -32602);
-        assert.ok(error.message.includes('Unknown prompt'));
-        return true;
-      }
-    );
-  });
-
-  it('should validate prompt arguments', async () => {
-    const mcpServer = new McpServer(
-      { name: 'test', version: '1.0.0' },
-      {
-        capabilities: { prompts: {} },
-      }
-    );
-    registerPrompts(mcpServer.server);
-
-    // @ts-expect-error: accessing private _requestHandlers Map
-    const getHandler = mcpServer.server._requestHandlers.get('prompts/get');
-    assert.ok(getHandler);
-
-    await assert.rejects(
-      async () => {
-        await getHandler({
-          method: 'prompts/get',
-          params: {
-            name: 'aip-code-locator',
-            arguments: {
-              method: 'GET',
-              path: '/test',
-              // Missing required projectRoot
-            },
-          },
-        });
-      },
-      (error: McpError) => {
-        assert.strictEqual(error.code, -32602);
-        assert.ok(error.message.includes('Invalid arguments'));
-        return true;
-      }
-    );
+    assert.ok(result.messages);
+    assert.strictEqual(result.messages.length, 1);
+    assert.strictEqual(result.messages[0].role, 'user');
+    assert.ok(result.description?.includes('AIP-158'));
   });
 });

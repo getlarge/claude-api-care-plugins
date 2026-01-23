@@ -1,62 +1,59 @@
 /**
- * MCP Logging Service
+ * Logging Service
  *
- * Provides structured logging via MCP logging notifications.
- * Falls back to console when MCP logging fails.
+ * Provides structured logging using Fastify's native logger.
+ * Replaces the MCP SDK logging with standard Fastify logging.
  */
 
-import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { FastifyBaseLogger } from 'fastify';
 
-export type LogLevel = 'debug' | 'info' | 'warning' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export interface Logger {
-  debug(message: string, data?: Record<string, unknown>): Promise<void>;
-  info(message: string, data?: Record<string, unknown>): Promise<void>;
-  warning(message: string, data?: Record<string, unknown>): Promise<void>;
-  error(message: string, data?: Record<string, unknown>): Promise<void>;
+  debug(message: string, data?: Record<string, unknown>): void;
+  info(message: string, data?: Record<string, unknown>): void;
+  warn(message: string, data?: Record<string, unknown>): void;
+  error(message: string, data?: Record<string, unknown>): void;
 }
 
 /**
- * Log a message via MCP logging notification.
+ * Create a namespaced logger instance from a Fastify logger.
  *
- * @param server - MCP server instance
- * @param level - Log level
- * @param logger - Logger name (e.g., 'aip-correlate')
- * @param message - Log message
- * @param data - Optional structured data
+ * @param baseLogger - Fastify logger instance (e.g., fastify.log or request.log)
+ * @param name - Logger name (added to log context)
+ * @returns Logger interface with level methods
  */
-export async function log(
-  server: Server,
-  level: LogLevel,
-  logger: string,
-  message: string,
-  data?: Record<string, unknown>
-): Promise<void> {
-  try {
-    await server.sendLoggingMessage({
-      level,
-      logger,
-      data: data ? { message, ...data } : message,
-    });
-  } catch {
-    // Logging failure is non-fatal, fall back to console
-    const consoleMethod = level === 'warning' ? 'warn' : level;
-    console[consoleMethod](`[${logger}] ${message}`, data ?? '');
-  }
+export function createLogger(
+  baseLogger: FastifyBaseLogger,
+  name: string
+): Logger {
+  const child = baseLogger.child({ logger: name });
+
+  return {
+    debug: (message, data) =>
+      child.debug(data ? { ...data, msg: message } : message),
+    info: (message, data) =>
+      child.info(data ? { ...data, msg: message } : message),
+    warn: (message, data) =>
+      child.warn(data ? { ...data, msg: message } : message),
+    error: (message, data) =>
+      child.error(data ? { ...data, msg: message } : message),
+  };
 }
 
 /**
- * Create a namespaced logger instance.
+ * Create a simple console logger for use outside Fastify context.
  *
- * @param server - MCP server instance
  * @param name - Logger name
  * @returns Logger interface with level methods
  */
-export function createLogger(server: Server, name: string): Logger {
+export function createConsoleLogger(name: string): Logger {
+  const prefix = `[${name}]`;
+
   return {
-    debug: (message, data) => log(server, 'debug', name, message, data),
-    info: (message, data) => log(server, 'info', name, message, data),
-    warning: (message, data) => log(server, 'warning', name, message, data),
-    error: (message, data) => log(server, 'error', name, message, data),
+    debug: (message, data) => console.debug(`${prefix} ${message}`, data ?? ''),
+    info: (message, data) => console.info(`${prefix} ${message}`, data ?? ''),
+    warn: (message, data) => console.warn(`${prefix} ${message}`, data ?? ''),
+    error: (message, data) => console.error(`${prefix} ${message}`, data ?? ''),
   };
 }

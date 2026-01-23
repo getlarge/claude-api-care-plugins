@@ -89,8 +89,8 @@ describe('aip-review E2E', () => {
       assert.ok(resourceLink, 'Should have resource_link content');
       assert.ok(resourceLink.uri, 'resource_link should have uri');
       assert.ok(
-        resourceLink.uri?.startsWith('aip://findings/'),
-        'uri should be aip://findings/{reviewId}'
+        resourceLink.uri?.startsWith('aip://findings?id='),
+        'uri should be aip://findings?id={reviewId}'
       );
       assert.strictEqual(
         resourceLink.mimeType,

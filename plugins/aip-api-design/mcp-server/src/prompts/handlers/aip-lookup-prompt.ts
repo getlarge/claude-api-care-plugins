@@ -1,35 +1,41 @@
-import { z } from 'zod';
-import type { PromptMessage } from '@modelcontextprotocol/sdk/types.js';
+/**
+ * AIP Lookup Prompt
+ *
+ * Prompt handler for fetching and explaining Google API Improvement Proposals.
+ * Migrated from Zod to TypeBox for @platformatic/mcp compatibility.
+ */
+
+import { Type, type Static } from '@sinclair/typebox';
+import type { GetPromptResult } from '@platformatic/mcp';
 import type { PromptDefinition } from '../types.js';
 
 /**
- * Zod schema for AIP lookup prompt arguments.
+ * TypeBox schema for AIP lookup prompt arguments.
  */
-export const AipLookupArgsSchema = z.object({
-  aip: z
-    .string()
-    .refine((val) => !isNaN(parseInt(val, 10)), {
-      message: 'AIP must be a valid number',
+export const AipLookupArgsSchema = Type.Object({
+  aip: Type.String({
+    description: 'AIP number to look up (e.g., 122, 158, 193)',
+    pattern: '^[0-9]+$', // Must be a numeric string
+  }),
+  context: Type.Optional(
+    Type.String({
+      description: 'Optional context or specific question about the AIP',
     })
-    .describe('AIP number to look up (e.g., 122, 158, 193)'),
-  context: z
-    .string()
-    .optional()
-    .describe('Optional context or specific question about the AIP'),
-  finding: z
-    .string()
-    .optional()
-    .describe('Optional review finding that references this AIP'),
+  ),
+  finding: Type.Optional(
+    Type.String({
+      description: 'Optional review finding that references this AIP',
+    })
+  ),
 });
 
-export type AipLookupArgs = z.infer<typeof AipLookupArgsSchema>;
+export type AipLookupArgs = Static<typeof AipLookupArgsSchema>;
 
 /**
  * Build the AIP lookup prompt text based on the agent definition.
  */
 function buildAipLookupPrompt(args: AipLookupArgs): string {
   const { context, finding } = args;
-  // Safe to parse since schema validation ensures it's a valid number
   const aip = parseInt(args.aip, 10);
 
   let prompt = `# AIP Lookup Agent
@@ -142,24 +148,24 @@ export const aipLookupPrompt: PromptDefinition<typeof AipLookupArgsSchema> = {
     'Fetch and explain a specific Google API Improvement Proposal (AIP)',
   argsSchema: AipLookupArgsSchema,
   handler: {
-    async execute(args: AipLookupArgs) {
-      const validated = AipLookupArgsSchema.parse(args);
-      const promptText = buildAipLookupPrompt(validated);
-      const aipNum = parseInt(validated.aip, 10);
+    async execute(args: AipLookupArgs): Promise<GetPromptResult> {
+      // @platformatic/mcp validates the schema before calling this handler
+      // So we only need to do additional business logic validation here
 
-      const messages: PromptMessage[] = [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            text: promptText,
-          },
-        },
-      ];
+      const promptText = buildAipLookupPrompt(args);
+      const aipNum = parseInt(args.aip, 10);
 
       return {
         description: `Fetch and explain AIP-${aipNum}`,
-        messages,
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: promptText,
+            },
+          },
+        ],
       };
     },
   },
