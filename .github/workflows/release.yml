@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build openapi-reviewer
+        working-directory: plugins/aip-api-design/openapi-reviewer
+        run: npm run build
+
+      - name: Build mcp-server
+        working-directory: plugins/aip-api-design/mcp-server
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Create release archives
+        run: |
+          # Create dist archive for openapi-reviewer
+          cd plugins/aip-api-design/openapi-reviewer
+          tar -czvf ../../../openapi-reviewer-dist.tar.gz dist/
+          cd ../../..
+
+          # Create dist archive for mcp-server
+          cd plugins/aip-api-design/mcp-server
+          tar -czvf ../../../mcp-server-dist.tar.gz dist/
+          cd ../../..
+
+          # Create combined archive
+          mkdir -p release-dist
+          cp plugins/aip-api-design/openapi-reviewer/dist/*.bundle.js release-dist/
+          cp plugins/aip-api-design/mcp-server/dist/*.bundle.js release-dist/
+          tar -czvf aip-plugin-bundles.tar.gz release-dist/
+
+      - name: Generate checksums
+        run: |
+          sha256sum openapi-reviewer-dist.tar.gz > checksums.txt
+          sha256sum mcp-server-dist.tar.gz >> checksums.txt
+          sha256sum aip-plugin-bundles.tar.gz >> checksums.txt
+          cat checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            openapi-reviewer-dist.tar.gz
+            mcp-server-dist.tar.gz
+            aip-plugin-bundles.tar.gz
+            checksums.txt
+            plugins/aip-api-design/openapi-reviewer/dist/reviewer.bundle.js
+            plugins/aip-api-design/openapi-reviewer/dist/cli.bundle.js
+            plugins/aip-api-design/openapi-reviewer/dist/discover.bundle.js
+            plugins/aip-api-design/mcp-server/dist/server.bundle.js
+            plugins/aip-api-design/mcp-server/dist/stdio.bundle.js
+            plugins/aip-api-design/mcp-server/dist/worker.bundle.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

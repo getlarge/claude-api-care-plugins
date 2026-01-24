@@ -20,6 +20,7 @@
     "test": "npm run build:types && node --import tsx --test 'src/**/*.test.ts'",
     "test:e2e": "npm run build:types && node --env-file-if-exists=.env --import tsx --test 'src/**/*.e2e-test.ts'",
     "test:e2e:http": "npm run build:types && node --env-file-if-exists=.env --import tsx --test 'src/**/*.http-e2e-test.ts'",
+    "test:integration": "npm run build:types && node --env-file-if-exists=.env.test --import tsx --test 'src/**/*.integration-test.ts'",
     "docker:up": "docker compose up -d postgres redis minio minio-init",
     "docker:up:full": "docker compose --profile full up -d",
     "docker:down": "docker compose down",
