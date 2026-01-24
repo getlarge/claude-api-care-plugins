@@ -24,6 +24,11 @@ RUN npm run build
 # Production stage - minimal image with just the bundles
 FROM node:22-slim AS production
 
+# OCI labels for GitHub Container Registry
+LABEL org.opencontainers.image.source="https://github.com/getlarge/claude-aip-plugins"
+LABEL org.opencontainers.image.description="AIP OpenAPI Reviewer MCP Server - Analyze OpenAPI specs against Google API Improvement Proposals"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+
 WORKDIR /app
 
 # Copy only the self-contained bundles (no node_modules needed)
