@@ -122,10 +122,19 @@ export class PostgresStore extends BaseStore {
       this.ownPool = true;
     }
 
-    // Run migrations to ensure schema is up to date
-    const migrationsApplied = await runPgMigrations(this.pool, allPgMigrations);
-    if (migrationsApplied > 0) {
-      console.log(`PostgresStore: Applied ${migrationsApplied} migration(s)`);
+    // For default table name, run migrations
+    // For custom table names (e.g., testing), create table inline
+    if (this.tableName === 'specs') {
+      const migrationsApplied = await runPgMigrations(
+        this.pool,
+        allPgMigrations
+      );
+      if (migrationsApplied > 0) {
+        console.log(`PostgresStore: Applied ${migrationsApplied} migration(s)`);
+      }
+    } else {
+      // Create custom table for non-default table names (testing)
+      await this.createTable();
     }
 
     // Start periodic cleanup
@@ -133,6 +142,34 @@ export class PostgresStore extends BaseStore {
       () => this.cleanup(),
       60 * 1000 // 1 minute
     );
+  }
+
+  /**
+   * Create table with indexes (for custom table names).
+   */
+  private async createTable(): Promise<void> {
+    if (!this.pool) return;
+
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS ${this.tableName} (
+        id TEXT PRIMARY KEY,
+        filename TEXT NOT NULL,
+        content_type TEXT NOT NULL,
+        created_at BIGINT NOT NULL,
+        expires_at BIGINT NOT NULL,
+        session_id TEXT
+      )
+    `);
+
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_${this.tableName}_expires_at
+      ON ${this.tableName}(expires_at)
+    `);
+
+    await this.pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_${this.tableName}_created_at
+      ON ${this.tableName}(created_at DESC)
+    `);
   }
 
   async store(
