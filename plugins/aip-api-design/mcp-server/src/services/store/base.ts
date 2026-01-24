@@ -53,6 +53,20 @@ export interface ListOptions {
    * Default: 50
    */
   pageSize?: number;
+
+  /**
+   * If true, return only metadata without loading content.
+   * Items will have empty string for content field.
+   * Useful for listing large numbers of items efficiently.
+   * Default: false
+   */
+  metadataOnly?: boolean;
+
+  /**
+   * Maximum concurrent file fetches (when metadataOnly is false).
+   * Default: 10
+   */
+  concurrency?: number;
 }
 
 /**
@@ -145,6 +159,17 @@ export abstract class BaseStore extends EventEmitter {
    * Get storage statistics.
    */
   abstract get stats(): StoreStats;
+
+  /**
+   * Check if the store is healthy and can accept requests.
+   * Default implementation returns true. Override for stores
+   * that need connection health checks (e.g., PostgreSQL, Redis).
+   *
+   * @returns true if healthy, false otherwise
+   */
+  async isHealthy(): Promise<boolean> {
+    return true;
+  }
 
   /**
    * Generate a random ID.

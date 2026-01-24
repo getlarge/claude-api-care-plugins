@@ -61,6 +61,24 @@ export interface PostgresStoreOptions extends StoreOptions {
 }
 
 /**
+ * Validate table name to prevent SQL injection.
+ * Only allows alphanumeric characters and underscores.
+ */
+function validateTableName(name: string): string {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    throw new Error(
+      `Invalid table name: "${name}". Must start with letter/underscore and contain only alphanumeric characters and underscores.`
+    );
+  }
+  if (name.length > 63) {
+    throw new Error(
+      `Table name too long: "${name}". PostgreSQL limits identifiers to 63 characters.`
+    );
+  }
+  return name;
+}
+
+/**
  * PostgreSQL metadata store with pluggable FileBackend for content.
  * Metadata in PostgreSQL enables efficient queries and shared access.
  * Content stored via FileBackend (local FS, S3, GCS, Azure Blob).
@@ -77,7 +95,7 @@ export class PostgresStore extends BaseStore {
     super(options);
     this.connectionUrl = options.connectionUrl ?? process.env['DATABASE_URL'];
     this.pool = options.pool;
-    this.tableName = options.tableName ?? 'specs';
+    this.tableName = validateTableName(options.tableName ?? 'specs');
     this.fileBackend = options.fileBackend ?? new LocalFileBackend();
   }
 
@@ -253,6 +271,8 @@ export class PostgresStore extends BaseStore {
 
     const pageSize = options?.pageSize ?? 50;
     const cursor = options?.cursor;
+    const metadataOnly = options?.metadataOnly ?? false;
+    const concurrency = options?.concurrency ?? 10;
 
     // Parse cursor (format: "createdAt:{timestamp}")
     let createdAtBefore = Date.now();
@@ -287,34 +307,24 @@ export class PostgresStore extends BaseStore {
 
     // Check if there are more pages
     const hasMore = rows.length > pageSize;
-    const items: StoredSpec[] = [];
-
-    // Process up to pageSize items
     const rowsToProcess = hasMore ? rows.slice(0, pageSize) : rows;
 
-    for (const row of rowsToProcess) {
-      // Load content from file backend
-      let content: string;
-      try {
-        const contentResult = await this.fileBackend.read(row.filename);
-        if (!contentResult) {
-          // File missing, skip this item
-          continue;
-        }
-        content = contentResult;
-      } catch {
-        // Error reading, skip
-        continue;
-      }
+    // Build items - either metadata only or with content
+    let items: StoredSpec[];
 
-      items.push({
+    if (metadataOnly) {
+      // Fast path: return metadata without loading content
+      items = rowsToProcess.map((row) => ({
         id: row.id,
-        content,
+        content: '', // Empty for metadata-only mode
         contentType: row.content_type as 'json' | 'yaml',
         createdAt: parseInt(row.created_at, 10),
         expiresAt: parseInt(row.expires_at, 10),
         sessionId: row.session_id ?? undefined,
-      });
+      }));
+    } else {
+      // Load content in parallel with concurrency limiting
+      items = await this.fetchContentBatched(rowsToProcess, concurrency);
     }
 
     // Build next cursor from the last item's createdAt
@@ -323,6 +333,53 @@ export class PostgresStore extends BaseStore {
       : undefined;
 
     return { items, nextCursor };
+  }
+
+  /**
+   * Fetch content for rows in parallel with concurrency limiting.
+   */
+  private async fetchContentBatched(
+    rows: Array<{
+      id: string;
+      filename: string;
+      content_type: string;
+      created_at: string;
+      expires_at: string;
+      session_id: string | null;
+    }>,
+    concurrency: number
+  ): Promise<StoredSpec[]> {
+    const items: StoredSpec[] = [];
+
+    // Process in batches to limit concurrency
+    for (let i = 0; i < rows.length; i += concurrency) {
+      const batch = rows.slice(i, i + concurrency);
+
+      const results = await Promise.allSettled(
+        batch.map(async (row) => {
+          const content = await this.fileBackend.read(row.filename);
+          if (!content) return null;
+
+          return {
+            id: row.id,
+            content,
+            contentType: row.content_type as 'json' | 'yaml',
+            createdAt: parseInt(row.created_at, 10),
+            expiresAt: parseInt(row.expires_at, 10),
+            sessionId: row.session_id ?? undefined,
+          } as StoredSpec;
+        })
+      );
+
+      // Collect successful results
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          items.push(result.value);
+        }
+      }
+    }
+
+    return items;
   }
 
   async cleanup(): Promise<number> {
@@ -400,6 +457,20 @@ export class PostgresStore extends BaseStore {
       `SELECT COUNT(*) as count FROM ${this.tableName}`
     );
     return parseInt(result.rows[0].count, 10);
+  }
+
+  /**
+   * Check if the database connection is healthy.
+   */
+  override async isHealthy(): Promise<boolean> {
+    if (!this.pool) return false;
+
+    try {
+      await this.pool.query('SELECT 1');
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private serializeYaml(spec: Record<string, unknown>): string {

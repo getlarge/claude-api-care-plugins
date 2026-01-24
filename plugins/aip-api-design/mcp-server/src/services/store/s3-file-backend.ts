@@ -24,6 +24,8 @@ export interface S3CommandOutput {
     transformToString(): Promise<string>;
   };
   Contents?: Array<{ Key?: string }>;
+  IsTruncated?: boolean;
+  NextContinuationToken?: string;
 }
 
 export interface S3FileBackendOptions {
@@ -64,6 +66,7 @@ export interface S3CommandFactories {
   ListObjectsV2Command: new (input: {
     Bucket: string;
     Prefix: string;
+    ContinuationToken?: string;
   }) => S3Command;
   DeleteObjectsCommand: new (input: {
     Bucket: string;
@@ -156,30 +159,38 @@ export class S3FileBackend implements FileBackend {
 
   async deleteAll(): Promise<void> {
     try {
-      // List all objects with prefix
-      const listCommand = new this.commands.ListObjectsV2Command({
-        Bucket: this.bucket,
-        Prefix: this.prefix,
-      });
+      let continuationToken: string | undefined;
 
-      const listResponse = await this.client.send(listCommand);
-      const objects = listResponse.Contents ?? [];
+      // Paginate through all objects with prefix
+      do {
+        const listCommand = new this.commands.ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: this.prefix,
+          ContinuationToken: continuationToken,
+        });
 
-      if (objects.length === 0) {
-        return;
-      }
+        const listResponse = await this.client.send(listCommand);
+        const objects = listResponse.Contents ?? [];
 
-      // Delete all objects
-      const deleteCommand = new this.commands.DeleteObjectsCommand({
-        Bucket: this.bucket,
-        Delete: {
-          Objects: objects
-            .filter((obj) => obj.Key)
-            .map((obj) => ({ Key: obj.Key! })),
-        },
-      });
+        if (objects.length > 0) {
+          // Delete objects in this batch (S3 allows up to 1000 per request)
+          const deleteCommand = new this.commands.DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: {
+              Objects: objects
+                .filter((obj) => obj.Key)
+                .map((obj) => ({ Key: obj.Key! })),
+            },
+          });
 
-      await this.client.send(deleteCommand);
+          await this.client.send(deleteCommand);
+        }
+
+        // Continue if there are more objects
+        continuationToken = listResponse.IsTruncated
+          ? listResponse.NextContinuationToken
+          : undefined;
+      } while (continuationToken);
     } catch {
       // Ignore cleanup errors
     }
