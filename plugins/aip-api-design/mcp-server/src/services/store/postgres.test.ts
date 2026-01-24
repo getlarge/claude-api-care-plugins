@@ -298,12 +298,35 @@ describe('PostgresStore', () => {
   });
 
   describe('shutdown', () => {
-    test('cleans up resources', async () => {
+    test('closes pool without deleting data', async () => {
       await store.store({ test: 1 });
+      const fileCount = mockFileBackend.files.size;
 
       await store.shutdown();
 
-      // File backend should be cleared
+      // Files should NOT be deleted on shutdown
+      assert.strictEqual(
+        mockFileBackend.files.size,
+        fileCount,
+        'Files should be preserved on shutdown'
+      );
+    });
+  });
+
+  describe('clearAll', () => {
+    test('deletes all specs and files', async () => {
+      await store.store({ test: 1 });
+      await store.store({ test: 2 });
+
+      // Set up mock data for clearAll to find
+      const filenames = Array.from(mockFileBackend.files.keys());
+      for (const filename of filenames) {
+        mockPool.mockData.set(`spec:${filename}`, { filename });
+      }
+
+      await store.clearAll();
+
+      // Files should be deleted
       assert.strictEqual(
         mockFileBackend.files.size,
         0,

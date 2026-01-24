@@ -5,6 +5,7 @@
  * - Connection pooling for high concurrency
  * - Required FileBackend for content storage
  * - Indexed expiry for efficient cleanup
+ * - Migration-based schema management
  *
  * Requires `pg` package.
  */
@@ -20,6 +21,8 @@ import {
   ListResult,
 } from './base.js';
 import { FileBackend, LocalFileBackend } from './file-backend.js';
+import { runPgMigrations } from './migrations/postgres.js';
+import allPgMigrations from './migrations/all_pg.js';
 
 /**
  * PostgreSQL client interface - minimal subset we need.
@@ -101,27 +104,11 @@ export class PostgresStore extends BaseStore {
       this.ownPool = true;
     }
 
-    // Create metadata table
-    await this.pool.query(`
-      CREATE TABLE IF NOT EXISTS ${this.tableName} (
-        id TEXT PRIMARY KEY,
-        filename TEXT NOT NULL,
-        content_type TEXT NOT NULL,
-        created_at BIGINT NOT NULL,
-        expires_at BIGINT NOT NULL,
-        session_id TEXT
-      )
-    `);
-
-    // Index on expires_at for efficient cleanup
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_${this.tableName}_expires_at ON ${this.tableName}(expires_at)
-    `);
-
-    // Index on created_at for efficient pagination
-    await this.pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_${this.tableName}_created_at ON ${this.tableName}(created_at DESC)
-    `);
+    // Run migrations to ensure schema is up to date
+    const migrationsApplied = await runPgMigrations(this.pool, allPgMigrations);
+    if (migrationsApplied > 0) {
+      console.log(`PostgresStore: Applied ${migrationsApplied} migration(s)`);
+    }
 
     // Start periodic cleanup
     this.cleanupInterval = setInterval(
@@ -368,27 +355,32 @@ export class PostgresStore extends BaseStore {
     }
 
     if (this.pool) {
-      // Get all files to delete
-      const selectResult = await this.pool.query<{ filename: string }>(
-        `SELECT filename FROM ${this.tableName}`
-      );
-
-      for (const row of selectResult.rows) {
-        await this.fileBackend.delete(row.filename);
-      }
-
-      // Clean up database
-      await this.pool.query(`DELETE FROM ${this.tableName}`);
-
       // Close pool if we own it
       if (this.ownPool) {
         await this.pool.end();
       }
       this.pool = undefined;
     }
+  }
 
-    // Clean up file backend
-    await this.fileBackend.deleteAll();
+  /**
+   * Clear all data (for testing purposes).
+   * WARNING: This deletes all specs and files!
+   */
+  async clearAll(): Promise<void> {
+    if (!this.pool) return;
+
+    // Get all files to delete
+    const selectResult = await this.pool.query<{ filename: string }>(
+      `SELECT filename FROM ${this.tableName}`
+    );
+
+    for (const row of selectResult.rows) {
+      await this.fileBackend.delete(row.filename);
+    }
+
+    // Clear database
+    await this.pool.query(`DELETE FROM ${this.tableName}`);
   }
 
   get stats(): StoreStats {
