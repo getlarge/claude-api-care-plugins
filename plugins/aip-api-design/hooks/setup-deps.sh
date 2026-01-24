@@ -1,12 +1,15 @@
 #!/bin/bash
 # Setup script for AIP API Design plugin
-# Downloads pre-built bundles from GitHub releases if not present
+# Downloads pre-built bundles from GitHub releases with local caching
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_DIR="$(dirname "$SCRIPT_DIR")"
 REPO="getlarge/claude-aip-plugins"
+
+# Cache directory for downloaded releases
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/aip-plugin"
 
 # Bundle paths
 MCP_DIST="$PLUGIN_DIR/mcp-server/dist"
@@ -36,7 +39,7 @@ if [ "$NODE_VERSION" -lt 22 ] || ([ "$NODE_VERSION" -eq 22 ] && [ "$NODE_MINOR" 
 fi
 
 # =============================================================================
-# Check if bundles exist
+# Helper functions
 # =============================================================================
 
 check_bundles() {
@@ -52,20 +55,6 @@ check_bundles() {
     return 0
 }
 
-# Check if all bundles exist
-if check_bundles "$MCP_DIST" "${MCP_BUNDLES[@]}" && \
-   check_bundles "$REVIEWER_DIST" "${REVIEWER_BUNDLES[@]}"; then
-    echo "[aip-api-design] Bundles found (Node.js $(node -v))"
-    exit 0
-fi
-
-# =============================================================================
-# Download bundles from GitHub releases
-# =============================================================================
-
-echo "[aip-api-design] Downloading bundles from GitHub releases..."
-
-# Get latest release tag
 get_latest_release() {
     if command -v curl &> /dev/null; then
         curl -s "https://api.github.com/repos/$REPO/releases/latest" | \
@@ -78,12 +67,9 @@ get_latest_release() {
     fi
 }
 
-# Download a file from GitHub release
-download_bundle() {
-    local tag="$1"
-    local filename="$2"
-    local dest="$3"
-    local url="https://github.com/$REPO/releases/download/$tag/$filename"
+download_file() {
+    local url="$1"
+    local dest="$2"
 
     mkdir -p "$(dirname "$dest")"
 
@@ -92,23 +78,43 @@ download_bundle() {
     elif command -v wget &> /dev/null; then
         wget -q "$url" -O "$dest"
     else
-        echo "[aip-api-design] Error: curl or wget required to download bundles"
+        echo "[aip-api-design] Error: curl or wget required"
         return 1
     fi
 }
 
-# Get latest release
-LATEST_TAG=$(get_latest_release)
+# Copy bundle from cache or download
+get_bundle() {
+    local tag="$1"
+    local filename="$2"
+    local dest="$3"
+    local cache_file="$CACHE_DIR/$tag/$filename"
 
-if [ -z "$LATEST_TAG" ]; then
-    echo "[aip-api-design] Could not determine latest release."
-    echo "[aip-api-design] Falling back to building from source..."
+    # Check if already in cache
+    if [ -f "$cache_file" ]; then
+        mkdir -p "$(dirname "$dest")"
+        cp "$cache_file" "$dest"
+        return 0
+    fi
 
-    # Fallback: build from source
+    # Download to cache first, then copy
+    local url="https://github.com/$REPO/releases/download/$tag/$filename"
+    if download_file "$url" "$cache_file"; then
+        mkdir -p "$(dirname "$dest")"
+        cp "$cache_file" "$dest"
+        return 0
+    fi
+
+    return 1
+}
+
+build_from_source() {
+    echo "[aip-api-design] Building from source..."
+
     if [ -f "$PLUGIN_DIR/mcp-server/package.json" ]; then
         cd "$PLUGIN_DIR/mcp-server"
         if command -v npm &> /dev/null; then
-            echo "[aip-api-design] Building mcp-server..."
+            echo "[aip-api-design]   Building mcp-server..."
             npm install --ignore-scripts 2>/dev/null || true
             npm run build 2>/dev/null || true
         fi
@@ -117,13 +123,31 @@ if [ -z "$LATEST_TAG" ]; then
     if [ -f "$PLUGIN_DIR/openapi-reviewer/package.json" ]; then
         cd "$PLUGIN_DIR/openapi-reviewer"
         if command -v npm &> /dev/null; then
-            echo "[aip-api-design] Building openapi-reviewer..."
+            echo "[aip-api-design]   Building openapi-reviewer..."
             npm install --ignore-scripts 2>/dev/null || true
             npm run build 2>/dev/null || true
         fi
     fi
+}
 
-    # Check if build succeeded
+# =============================================================================
+# Main logic
+# =============================================================================
+
+# Check if all bundles already exist
+if check_bundles "$MCP_DIST" "${MCP_BUNDLES[@]}" && \
+   check_bundles "$REVIEWER_DIST" "${REVIEWER_BUNDLES[@]}"; then
+    echo "[aip-api-design] Bundles found (Node.js $(node -v))"
+    exit 0
+fi
+
+# Get latest release tag
+LATEST_TAG=$(get_latest_release)
+
+if [ -z "$LATEST_TAG" ]; then
+    echo "[aip-api-design] Could not determine latest release."
+    build_from_source
+
     if check_bundles "$MCP_DIST" "${MCP_BUNDLES[@]}" && \
        check_bundles "$REVIEWER_DIST" "${REVIEWER_BUNDLES[@]}"; then
         echo "[aip-api-design] Built from source successfully"
@@ -134,30 +158,41 @@ if [ -z "$LATEST_TAG" ]; then
     fi
 fi
 
-echo "[aip-api-design] Downloading release $LATEST_TAG..."
+# Check if we have this version cached
+CACHE_VERSION_FILE="$CACHE_DIR/$LATEST_TAG/.version"
+if [ -f "$CACHE_VERSION_FILE" ]; then
+    echo "[aip-api-design] Using cached release $LATEST_TAG..."
+else
+    echo "[aip-api-design] Downloading release $LATEST_TAG..."
+fi
 
-# Create dist directories
-mkdir -p "$MCP_DIST" "$REVIEWER_DIST"
+# Create directories
+mkdir -p "$MCP_DIST" "$REVIEWER_DIST" "$CACHE_DIR/$LATEST_TAG"
 
-# Download MCP server bundles
+# Get MCP server bundles (from cache or download)
 for bundle in "${MCP_BUNDLES[@]}"; do
     if [ ! -f "$MCP_DIST/$bundle" ]; then
-        echo "[aip-api-design]   Downloading $bundle..."
-        if ! download_bundle "$LATEST_TAG" "$bundle" "$MCP_DIST/$bundle"; then
-            echo "[aip-api-design]   Warning: Failed to download $bundle"
+        if get_bundle "$LATEST_TAG" "$bundle" "$MCP_DIST/$bundle"; then
+            echo "[aip-api-design]   Got $bundle"
+        else
+            echo "[aip-api-design]   Warning: Failed to get $bundle"
         fi
     fi
 done
 
-# Download openapi-reviewer bundles
+# Get openapi-reviewer bundles (from cache or download)
 for bundle in "${REVIEWER_BUNDLES[@]}"; do
     if [ ! -f "$REVIEWER_DIST/$bundle" ]; then
-        echo "[aip-api-design]   Downloading $bundle..."
-        if ! download_bundle "$LATEST_TAG" "$bundle" "$REVIEWER_DIST/$bundle"; then
-            echo "[aip-api-design]   Warning: Failed to download $bundle"
+        if get_bundle "$LATEST_TAG" "$bundle" "$REVIEWER_DIST/$bundle"; then
+            echo "[aip-api-design]   Got $bundle"
+        else
+            echo "[aip-api-design]   Warning: Failed to get $bundle"
         fi
     fi
 done
+
+# Mark this version as cached
+touch "$CACHE_VERSION_FILE"
 
 # Final check
 if check_bundles "$MCP_DIST" "${MCP_BUNDLES[@]}" && \
