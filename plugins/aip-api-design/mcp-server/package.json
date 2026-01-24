@@ -17,7 +17,7 @@
     "start:stdio": "node dist/stdio.bundle.js",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build:types && node --import tsx --test 'src/**/*.test.ts'",
+    "test": "npm run build:types && node --import tsx --test --test-force-exit 'src/**/*.test.ts'",
     "test:e2e": "npm run build:types && node --env-file-if-exists=.env --import tsx --test 'src/**/*.e2e-test.ts'",
     "test:e2e:http": "npm run build:types && node --env-file-if-exists=.env --import tsx --test 'src/**/*.http-e2e-test.ts'",
     "test:integration": "npm run build:types && node --env-file-if-exists=.env.test --import tsx --test 'src/**/*.integration-test.ts'",
