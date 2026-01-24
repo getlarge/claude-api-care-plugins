@@ -35,6 +35,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Extract version from tag
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="${{ inputs.version }}"
+          fi
+          # Remove 'v' prefix if present
+          VERSION="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+      - name: Bump versions in package files
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          echo "Bumping versions to $VERSION"
+
+          # Update plugin.json
+          jq --arg v "$VERSION" '.version = $v' \
+            plugins/aip-api-design/.claude-plugin/plugin.json > tmp.json \
+            && mv tmp.json plugins/aip-api-design/.claude-plugin/plugin.json
+
+          # Update openapi-reviewer package.json
+          cd plugins/aip-api-design/openapi-reviewer
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          cd ../../..
+
+          # Update mcp-server package.json
+          cd plugins/aip-api-design/mcp-server
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          cd ../../..
+
+          echo "=== Updated versions ==="
+          echo "plugin.json: $(jq -r '.version' plugins/aip-api-design/.claude-plugin/plugin.json)"
+          echo "openapi-reviewer: $(jq -r '.version' plugins/aip-api-design/openapi-reviewer/package.json)"
+          echo "mcp-server: $(jq -r '.version' plugins/aip-api-design/mcp-server/package.json)"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
