@@ -97,6 +97,14 @@ function createMockPool() {
         };
       }
 
+      // SELECT filename FROM tableName (no WHERE clause) - used by clearAll
+      if (text.includes('SELECT filename FROM') && !text.includes('WHERE')) {
+        const rows = Array.from(mockData.values()).map((v) => ({
+          filename: v.filename,
+        }));
+        return { rows, rowCount: rows.length };
+      }
+
       if (text.includes('INSERT') || text.includes('UPDATE')) {
         // Store operation
         if (values && values.length >= 6) {
