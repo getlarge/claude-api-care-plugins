@@ -65,12 +65,15 @@ jobs:
 
       - name: Run unit tests
         run: npm test
+        timeout-minutes: 5
 
       - name: Run integration tests
         run: npm run test:integration -w @getlarge/aip-openapi-reviewer
+        timeout-minutes: 5
 
       - name: Run plugin validation tests
         run: npm run test:plugin -w @getlarge/aip-openapi-reviewer
+        timeout-minutes: 5
 
   e2e-test:
     needs: checks
@@ -100,6 +103,7 @@ jobs:
 
       - name: Run e2e tests
         run: npm run test:e2e
+        timeout-minutes: 10
 
   integration-test:
     needs: checks
@@ -177,6 +181,7 @@ jobs:
           S3_FORCE_PATH_STYLE: 'true'
           REDIS_URL: redis://localhost:6379
         run: npm run test:integration -w @getlarge/aip-openapi-reviewer-mcp
+        timeout-minutes: 10
 
       - name: Cleanup
         if: always()
