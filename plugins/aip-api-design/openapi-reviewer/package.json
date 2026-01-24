@@ -1,6 +1,6 @@
 {
   "name": "@getlarge/aip-openapi-reviewer",
-  "version": "1.0.0",
+  "version": "0.2.1",
   "description": "Review OpenAPI specifications against Google's API Improvement Proposals (AIP)",
   "type": "module",
   "main": "./dist/reviewer.bundle.js",
