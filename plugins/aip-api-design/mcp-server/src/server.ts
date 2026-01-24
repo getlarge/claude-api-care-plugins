@@ -188,8 +188,13 @@ export async function createServer(
       resources: {},
       prompts: {},
     },
-    instructions:
-      'AIP OpenAPI Reviewer - Analyze OpenAPI specs against Google API Improvement Proposals',
+    instructions: `AIP OpenAPI Reviewer - Analyze and fix REST/OpenAPI APIs following Google API Improvement Proposals (AIPs).
+
+Use when: reviewing OpenAPI/Swagger specs, linting API design, fixing violations, checking naming conventions, pagination, error handling, idempotency.
+
+Workflow: Start with aip-review to analyze a spec, then use aip-apply-fixes to auto-fix issues or aip-correlate to find code locations (NestJS, Fastify, Express).
+
+Categories: naming (AIP-122), standard methods (AIP-131-135), pagination (AIP-158), errors (AIP-193), idempotency (AIP-155), filtering (AIP-132/160).`,
     enableSSE: true,
     // Use in-memory stores for sessions and messages (can be changed to Redis if needed)
     sessionStore: 'memory',

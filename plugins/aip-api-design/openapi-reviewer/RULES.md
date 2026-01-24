@@ -4,31 +4,31 @@ This document lists all 17 rules implemented in the reviewer, organized by categ
 
 ## Quick Reference
 
-| Rule ID                              | Severity   | AIP     | Description                             |
-| ------------------------------------ | ---------- | ------- | --------------------------------------- |
-| `naming/plural-resources`            | warning    | AIP-122 | Resource names should be plural         |
-| `naming/no-verbs`                    | error      | AIP-131 | No verbs in paths, use HTTP methods     |
-| `naming/consistent-casing`           | warning    | AIP-122 | Consistent casing across all paths      |
-| `naming/nested-ownership`            | suggestion | AIP-122 | Nested params should reflect parent     |
-| `methods/get-no-body`                | error      | AIP-131 | GET must not have request body          |
-| `methods/post-returns-201`           | suggestion | AIP-131 | POST should return 201/202              |
-| `methods/patch-over-put`             | suggestion | AIP-134 | Prefer PATCH for partial updates        |
-| `methods/delete-idempotent`          | warning    | AIP-135 | DELETE should be idempotent, no body    |
-| `pagination/list-paginated`          | warning    | AIP-158 | List endpoints need pagination          |
-| `pagination/max-page-size`           | suggestion | AIP-158 | Page size needs maximum limit           |
-| `pagination/response-has-next-token` | warning    | AIP-158 | Response must include next_page_token   |
-| `errors/schema-defined`              | warning    | AIP-193 | Consistent error schema required        |
-| `errors/responses-documented`        | suggestion | AIP-193 | Document error responses                |
-| `errors/standard-codes`              | suggestion | AIP-193 | Use standard HTTP error codes           |
-| `idempotency/post-has-key`           | suggestion | AIP-155 | POST should accept Idempotency-Key      |
-| `filtering/list-filterable`          | suggestion | AIP-160 | List endpoints should support filtering |
-| `filtering/list-has-ordering`        | suggestion | AIP-132 | List endpoints should support ordering  |
+| Rule ID                          | Severity   | AIP     | Description                             |
+| -------------------------------- | ---------- | ------- | --------------------------------------- |
+| `aip122/plural-resources`        | warning    | AIP-122 | Resource names should be plural         |
+| `aip122/no-verbs`                | error      | AIP-122 | No verbs in paths, use HTTP methods     |
+| `aip122/consistent-casing`       | warning    | AIP-122 | Consistent casing across all paths      |
+| `aip122/nested-ownership`        | suggestion | AIP-122 | Nested params should reflect parent     |
+| `aip131/get-no-body`             | error      | AIP-131 | GET must not have request body          |
+| `aip133/post-returns-created`    | suggestion | AIP-133 | POST should return 201/202              |
+| `aip134/patch-over-put`          | suggestion | AIP-134 | Prefer PATCH for partial updates        |
+| `aip135/delete-idempotent`       | warning    | AIP-135 | DELETE should be idempotent, no body    |
+| `aip158/list-paginated`          | warning    | AIP-158 | List endpoints need pagination          |
+| `aip158/max-page-size`           | suggestion | AIP-158 | Page size needs maximum limit           |
+| `aip158/response-has-next-token` | warning    | AIP-158 | Response must include next_page_token   |
+| `aip193/schema-defined`          | warning    | AIP-193 | Consistent error schema required        |
+| `aip193/responses-documented`    | suggestion | AIP-193 | Document error responses                |
+| `aip193/standard-codes`          | suggestion | AIP-193 | Use standard HTTP error codes           |
+| `aip155/idempotency-key`         | suggestion | AIP-155 | POST should accept Idempotency-Key      |
+| `aip132/has-filtering`           | suggestion | AIP-160 | List endpoints should support filtering |
+| `aip132/has-ordering`            | suggestion | AIP-132 | List endpoints should support ordering  |
 
 ---
 
-## Naming Rules
+## Naming Rules (AIP-122)
 
-### `naming/plural-resources`
+### `aip122/plural-resources`
 
 **Severity:** warning
 **AIP:** [AIP-122](https://google.aip.dev/122)
@@ -47,10 +47,10 @@ Resource names in paths should be plural nouns (e.g., `/users` not `/user`).
 /orders/{orderId}/items/{itemId}
 ```
 
-### `naming/no-verbs`
+### `aip122/no-verbs`
 
 **Severity:** error
-**AIP:** [AIP-131](https://google.aip.dev/131)
+**AIP:** [AIP-122](https://google.aip.dev/122)
 
 Paths should use nouns, not verbs. HTTP methods convey the action.
 
@@ -68,7 +68,7 @@ DELETE /items/{id}
 
 **Note:** Custom method suffixes with `:` are allowed (e.g., `/orders/{id}:cancel`).
 
-### `naming/consistent-casing`
+### `aip122/consistent-casing`
 
 **Severity:** warning
 **AIP:** [AIP-122](https://google.aip.dev/122)
@@ -85,7 +85,7 @@ All path segments should use consistent casing style throughout the API.
 /order_items
 ```
 
-### `naming/nested-ownership`
+### `aip122/nested-ownership`
 
 **Severity:** suggestion
 **AIP:** [AIP-122](https://google.aip.dev/122)
@@ -102,9 +102,9 @@ Nested resource parameters should reflect parent ownership, not use generic `{id
 
 ---
 
-## Standard Methods Rules
+## Standard Methods Rules (AIP-131 to 135)
 
-### `methods/get-no-body`
+### `aip131/get-no-body`
 
 **Severity:** error
 **AIP:** [AIP-131](https://google.aip.dev/131)
@@ -126,10 +126,10 @@ get:
       in: query
 ```
 
-### `methods/post-returns-201`
+### `aip133/post-returns-created`
 
 **Severity:** suggestion
-**AIP:** [AIP-131](https://google.aip.dev/131)
+**AIP:** [AIP-133](https://google.aip.dev/133)
 
 POST for resource creation should return `201 Created` (sync) or `202 Accepted` (async), not `200 OK`.
 
@@ -143,7 +143,7 @@ post:
       description: Request accepted, processing async
 ```
 
-### `methods/patch-over-put`
+### `aip134/patch-over-put`
 
 **Severity:** suggestion
 **AIP:** [AIP-134](https://google.aip.dev/134)
@@ -159,7 +159,7 @@ Prefer PATCH for partial updates over PUT. If you have PUT, consider also adding
     description: Update specific fields
 ```
 
-### `methods/delete-idempotent`
+### `aip135/delete-idempotent`
 
 **Severity:** warning
 **AIP:** [AIP-135](https://google.aip.dev/135)
@@ -182,9 +182,9 @@ delete:
 
 ---
 
-## Pagination Rules
+## Pagination Rules (AIP-158)
 
-### `pagination/list-paginated`
+### `aip158/list-paginated`
 
 **Severity:** warning
 **AIP:** [AIP-158](https://google.aip.dev/158)
@@ -206,7 +206,7 @@ get:
         type: string
 ```
 
-### `pagination/max-page-size`
+### `aip158/max-page-size`
 
 **Severity:** suggestion
 **AIP:** [AIP-158](https://google.aip.dev/158)
@@ -224,7 +224,7 @@ Page size parameter should have a maximum value to prevent abuse.
     default: 20
 ```
 
-### `pagination/response-has-next-token`
+### `aip158/response-has-next-token`
 
 **Severity:** warning
 **AIP:** [AIP-158](https://google.aip.dev/158)
@@ -249,9 +249,9 @@ responses:
 
 ---
 
-## Error Rules
+## Error Rules (AIP-193)
 
-### `errors/schema-defined`
+### `aip193/schema-defined`
 
 **Severity:** warning
 **AIP:** [AIP-193](https://google.aip.dev/193)
@@ -278,7 +278,7 @@ components:
               type: array
 ```
 
-### `errors/responses-documented`
+### `aip193/responses-documented`
 
 **Severity:** suggestion
 **AIP:** [AIP-193](https://google.aip.dev/193)
@@ -298,7 +298,7 @@ responses:
     description: Unexpected error
 ```
 
-### `errors/standard-codes`
+### `aip193/standard-codes`
 
 **Severity:** suggestion
 **AIP:** [AIP-193](https://google.aip.dev/193)
@@ -310,9 +310,9 @@ Use standard HTTP error codes. Non-standard codes (e.g., 418, 499) should be avo
 
 ---
 
-## Idempotency Rules
+## Idempotency Rules (AIP-155)
 
-### `idempotency/post-has-key`
+### `aip155/idempotency-key`
 
 **Severity:** suggestion
 **AIP:** [AIP-155](https://google.aip.dev/155)
@@ -335,9 +335,9 @@ post:
 
 ---
 
-## Filtering Rules
+## Filtering Rules (AIP-132, AIP-160)
 
-### `filtering/list-filterable`
+### `aip132/has-filtering`
 
 **Severity:** suggestion
 **AIP:** [AIP-160](https://google.aip.dev/160)
@@ -361,7 +361,7 @@ parameters:
     in: query
 ```
 
-### `filtering/list-has-ordering`
+### `aip132/has-ordering`
 
 **Severity:** suggestion
 **AIP:** [AIP-132](https://google.aip.dev/132)
@@ -390,7 +390,7 @@ aip-review api.yaml
 aip-review api.yaml -c naming -c pagination
 
 # Skip specific rules
-aip-review api.yaml -x naming/plural-resources -x idempotency/post-has-key
+aip-review api.yaml -x aip122/plural-resources -x aip155/idempotency-key
 
 # JSON output for CI
 aip-review api.yaml --format json

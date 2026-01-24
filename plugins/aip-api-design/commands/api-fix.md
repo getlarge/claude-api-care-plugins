@@ -201,7 +201,7 @@ After each task:
   - Updated openapi.yaml
   - Updated src/routes/user.ts
 
-Updated plan: thoughts/api/plans/2024-01-15-orders-api-plan.md
+Updated plan: thoughts/api/plans/2025-01-15-orders-api-plan.md
 
 Continue with Task 1.2? [y/n]
 ```
@@ -408,7 +408,7 @@ Fixed spec written to: api.yaml
 
 ### Plan-Based Fix (Interactive)
 
-User: `/api-fix thoughts/api/plans/2024-01-15-orders-api-plan.md`
+User: `/api-fix thoughts/api/plans/2025-01-15-orders-api-plan.md`
 
 Claude: "Phase 1 (Quick Wins) has 3 tasks pending.
 

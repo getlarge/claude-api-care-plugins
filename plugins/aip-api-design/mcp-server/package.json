@@ -26,6 +26,9 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f",
     "docker:reset": "docker compose down -v && docker compose up -d postgres redis minio minio-init"
+    "docker:build": "docker build -t ghcr.io/getlarge/aip-mcp-server:latest -f Dockerfile ../../..",
+    "docker:push": "docker push ghcr.io/getlarge/aip-mcp-server:latest",
+    "docker:run": "docker run --rm -p 4000:4000 -e AUTH_ENABLED=false ghcr.io/getlarge/aip-mcp-server:latest"
   },
   "keywords": [
     "mcp",

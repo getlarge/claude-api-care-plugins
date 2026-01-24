@@ -284,7 +284,7 @@ If the fix requires understanding business logic or making architectural decisio
       ],
       "type": "rename-path-segment"
     },
-    "ruleId": "naming/plural-resources"
+    "ruleId": "aip122/plural-resources"
   },
   "suggestedDiffs": {
     "codeDiffs": [

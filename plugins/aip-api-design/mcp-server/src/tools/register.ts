@@ -51,7 +51,7 @@ export function registerAipTools(
     {
       name: 'aip-review',
       description:
-        'Analyze an OpenAPI spec against Google AIP guidelines. Returns a compact summary with reviewId and a link to full findings. Use findingsPath/findingsUrl to access detailed findings, or pass reviewId to aip-apply-fixes.',
+        'Analyze/lint an OpenAPI spec against Google AIP guidelines. Checks naming, pagination, errors, idempotency, filtering. Returns reviewId for caching - pass to aip-apply-fixes or access via aip://findings resource.',
       inputSchema: ReviewInputSchema,
     },
     async (params: ReviewInput, context: HandlerContext) => {
@@ -64,7 +64,7 @@ export function registerAipTools(
     {
       name: 'aip-list-rules',
       description:
-        'List available AIP rules. Can filter by AIP number, category, or return all rules.',
+        'List available AIP linting rules. Filter by AIP number (122, 158, 193...) or category (naming, pagination, errors, standard-methods, idempotency, filtering).',
       inputSchema: ListRulesInputSchema,
     },
     async (params: ListRulesInput, _context: HandlerContext) => {
@@ -77,7 +77,7 @@ export function registerAipTools(
     {
       name: 'aip-get-info',
       description:
-        'Get information about a specific AIP (API Improvement Proposal). Returns the AIP summary and link.',
+        'Get information about a specific AIP (API Improvement Proposal) by number. Returns summary, link to google.aip.dev, and key requirements.',
       inputSchema: GetInfoInputSchema,
     },
     async (params: GetInfoInput, _context: HandlerContext) => {
@@ -90,7 +90,7 @@ export function registerAipTools(
     {
       name: 'aip-apply-fixes',
       description:
-        'Apply suggested fixes to an OpenAPI spec. Provide spec via: specPath (local file) or specUrl (HTTP URL). Use writeBack=true with specPath to save to disk. Returns a signed URL to download the modified spec (valid for 5 minutes).',
+        'Auto-fix AIP violations in an OpenAPI spec. Requires reviewId from aip-review. Supports specPath (local file, can writeBack) or specUrl (HTTP). Returns modified spec via signed URL or writes to disk.',
       inputSchema: ApplyFixesInputSchema,
     },
     async (params: ApplyFixesInput, context: HandlerContext) => {
@@ -103,7 +103,7 @@ export function registerAipTools(
     {
       name: 'aip-correlate',
       description:
-        'Correlate AIP review findings with code locations. Uses MCP sampling when available, falls back to Claude Agent SDK. Returns ExtendedFinding[] with file:line references for each API endpoint.',
+        'Find source code locations for AIP violations. Supports NestJS, Fastify, Express frameworks. Returns file:line references for each finding. Requires reviewId from aip-review.',
       inputSchema: CorrelateInputSchema,
     },
     async (params: CorrelateInput, context: HandlerContext) => {

@@ -153,7 +153,7 @@ Fast fixes that improve API quality immediately.
 
 ### Task 1.1: Fix resource naming
 
-**Finding:** `naming/plural-resources` at `GET /user/{id}`
+**Finding:** `aip122/plural-resources` at `GET /user/{id}`
 **Code Location:** `src/users/users.controller.ts:42` (high confidence)
 
 **OpenAPI Fix:**
@@ -187,7 +187,7 @@ export class UsersController {
 
 ### Task 1.2: Remove verbs from paths
 
-**Finding:** `naming/no-verbs` at `POST /createOrder`
+**Finding:** `aip122/no-verbs` at `POST /createOrder`
 **Code Location:** `src/orders/orders.controller.ts:28` (high confidence)
 
 **OpenAPI Fix:**
@@ -220,7 +220,7 @@ async create(@Body() dto: CreateOrderDto) {
 
 ### Task 2.1: Add pagination to list endpoints
 
-**Finding:** `pagination/list-paginated` at `GET /orders`
+**Finding:** `aip158/list-paginated` at `GET /orders`
 **Code Location:** `src/orders/orders.controller.ts:15` (high confidence)
 
 **OpenAPI Fix:**
@@ -274,7 +274,7 @@ paths:
 
 ### Task 3.1: Define standard error schema
 
-**Finding:** `errors/schema-defined`
+**Finding:** `aip193/schema-defined`
 **Code Location:** N/A (new schema to create)
 
 **OpenAPI Fix:**
@@ -432,4 +432,4 @@ fix.jsonPath: "$.paths['/user/{id}'].get.parameters"
 
 ## Example
 
-User: `/api-plan thoughts/api/reviews/2024-01-15-orders-api-review.md`
+User: `/api-plan thoughts/api/reviews/2025-01-15-orders-api-review.md`

@@ -1,6 +1,6 @@
 # AIP API Design Plugin - Project Context
 
-This document summarizes the research and development work done to create a Claude Code plugin for API design review following Google's API Improvement Proposals (AIP).
+This document summarizes the Claude Code plugin for API design review following Google's API Improvement Proposals (AIP).
 
 ## Project Goal
 
@@ -8,21 +8,20 @@ Create tooling to help design and review REST APIs following Google's AIPs, adap
 
 ### Target Use Cases
 
-1. **Lint OpenAPI specs** against AIP rules
+1. **Lint OpenAPI specs** against AIP rules (17 rules implemented)
 2. **Interactive design partner** for new APIs
 3. **Evaluate existing APIs** against AIP principles
-4. **Framework-specific fixes** (NestJS, Fastify)
+4. **Correlate findings with code locations** (NestJS, Fastify, Express)
+5. **Apply automated fixes** to OpenAPI specs
 
-### Priority AIP Areas
+### Implemented AIP Areas
 
-- Error handling (AIP-193, 194)
-- Pagination (AIP-158)
-- Filtering & sorting (AIP-160, 132)
-- Long-running operations & jobs (AIP-151, 155)
-- Field masks / partial updates (AIP-134)
-- Batch operations (AIP-231+)
-- Resource naming (AIP-122, 123)
-- Standard methods (AIP-131 to 135)
+- Resource naming (AIP-122) — 4 rules
+- Standard methods (AIP-131 to 135) — 5 rules
+- Pagination (AIP-158) — 3 rules
+- Error handling (AIP-193) — 3 rules
+- Idempotency (AIP-155) — 1 rule
+- Filtering & sorting (AIP-132, 160) — 2 rules
 
 ---
 
@@ -82,11 +81,11 @@ All generated documents live in `thoughts/api/`:
 thoughts/
 └── api/
     ├── discovery/
-    │   └── 2024-01-15-discovery.md
+    │   └── 2025-01-15-discovery.md
     ├── reviews/
-    │   └── 2024-01-15-orders-api-review.md
+    │   └── 2025-01-15-orders-api-review.md
     └── plans/
-        └── 2024-01-15-orders-api-plan.md
+        └── 2025-01-15-orders-api-plan.md
 ```
 
 **Why this matters:**
@@ -106,74 +105,123 @@ claude-aip-plugins/                    # Marketplace root
 │   └── marketplace.json               # Lists available plugins
 ├── README.md
 └── plugins/
-    └── aip-api-design/                # The plugin
+    └── aip-api-design/                # The plugin (v0.2.1)
         ├── .claude-plugin/
         │   └── plugin.json            # Plugin manifest
+        ├── .mcp.json                  # MCP server configuration
         ├── README.md
         │
-        ├── commands/                  # Slash commands
+        ├── commands/                  # Slash commands (5)
         │   ├── api-discover.md        # Find OpenAPI specs
         │   ├── api-review.md          # Run AIP rule checks
         │   ├── api-plan.md            # Create prioritized fix plan
         │   ├── api-fix.md             # Implement fixes phase-by-phase
         │   └── api-validate.md        # Verify fixes, update plan
         │
-        ├── agents/
-        │   └── aip-lookup.md          # Fetch specific AIPs on demand
+        ├── agents/                    # Agents (2)
+        │   ├── aip-lookup.md          # Fetch specific AIPs on demand
+        │   └── aip-code-locator.md    # Locate code related to API findings
         │
         ├── skills/
-        │   └── aip-knowledge/         # Reference material
-        │       ├── SKILL.md           # Quick reference, when to load what
-        │       ├── errors.md          # AIP-193, 194
-        │       ├── pagination.md      # AIP-158
-        │       ├── filtering.md       # AIP-160, 132
-        │       ├── lro.md             # AIP-151, 155 (long-running ops, jobs)
-        │       ├── field-masks.md     # AIP-134 (partial updates)
-        │       ├── batch.md           # AIP-231+ (batch operations)
-        │       └── rest-mapping.md    # Proto concepts → REST/OpenAPI
+        │   ├── aip-knowledge/         # Reference material (9 files)
+        │   │   ├── SKILL.md           # Quick reference, when to load what
+        │   │   ├── errors.md          # AIP-193, 194
+        │   │   ├── pagination.md      # AIP-158
+        │   │   ├── filtering.md       # AIP-160, 132
+        │   │   ├── lro.md             # AIP-151, 155 (long-running ops, jobs)
+        │   │   ├── field-masks.md     # AIP-134 (partial updates)
+        │   │   ├── batch.md           # AIP-231+ (batch operations)
+        │   │   ├── rest-mapping.md    # Proto concepts → REST/OpenAPI
+        │   │   └── linter-rules.md    # All 17 automated rules reference
+        │   │
+        │   └── aip-code-correlator/   # Code correlation guidance
+        │       ├── SKILL.md           # Code correlation skill guide
+        │       └── diff-templates.md  # Diff generation templates
         │
-        ├── openapi-reviewer/          # Standalone JS reviewer
+        ├── hooks/
+        │   └── hooks.json             # Hook definitions
+        │
+        ├── openapi-reviewer/          # Standalone JS reviewer library
         │   ├── package.json
+        │   ├── RULES.md               # Full rule documentation
         │   └── src/
         │       ├── index.js           # Library entry point
-        │       ├── rules/             # AIP rules organized by AIP number
+        │       ├── rules/             # 17 AIP rules (aip122, aip131-135, aip155, aip158, aip193)
         │       ├── reviewer.js        # OpenAPIReviewer class
         │       ├── fixer.js           # OpenAPIFixer class
         │       ├── discover.js        # Spec discovery
         │       ├── formatters.js      # Console, Markdown, JSON, SARIF output
         │       └── cli.js             # Command-line interface
         │
-        └── mcp-server/                # MCP server for Claude integration
+        └── mcp-server/                # MCP server (@platformatic/mcp)
             ├── package.json
             └── src/
-                └── ...                # MCP tools wrapping the reviewer
+                ├── server.ts          # Main server (Fastify-based)
+                ├── tools/             # 5 MCP tools
+                ├── prompts/           # 2 MCP prompts
+                ├── resources/         # 2 MCP resources
+                ├── services/          # Storage backends, subscriptions
+                └── plugins/           # Auth (OIDC/OAuth) & security
 ```
 
 ---
 
-## AIP Rules Implemented (in openapi-reviewer/)
+## AIP Rules Implemented (17 rules)
 
-The standalone reviewer includes these rules:
+The standalone reviewer includes these rules organized by AIP number:
 
-| Rule ID                       | Category    | Severity   | Description                             |
-| ----------------------------- | ----------- | ---------- | --------------------------------------- |
-| `naming/plural-resources`     | naming      | warning    | Resource names should be plural         |
-| `naming/no-verbs`             | naming      | warning    | No verbs in paths, use HTTP methods     |
-| `methods/get-no-body`         | methods     | error      | GET must not have request body          |
-| `methods/post-returns-201`    | methods     | warning    | POST should return 201/202              |
-| `methods/patch-over-put`      | methods     | suggestion | Prefer PATCH for partial updates        |
-| `pagination/list-paginated`   | pagination  | warning    | List endpoints need pagination          |
-| `pagination/max-page-size`    | pagination  | suggestion | Page size needs maximum limit           |
-| `errors/schema-defined`       | errors      | warning    | Consistent error schema required        |
-| `errors/responses-documented` | errors      | suggestion | Document error responses                |
-| `idempotency/post-has-key`    | idempotency | suggestion | POST should accept Idempotency-Key      |
-| `filtering/list-filterable`   | filtering   | suggestion | List endpoints should support filtering |
+### Naming (AIP-122) — 4 rules
+
+| Rule ID                    | Severity   | Description                         |
+| -------------------------- | ---------- | ----------------------------------- |
+| `aip122/plural-resources`  | warning    | Resource names should be plural     |
+| `aip122/no-verbs`          | error      | No verbs in paths, use HTTP methods |
+| `aip122/consistent-casing` | warning    | Consistent casing across all paths  |
+| `aip122/nested-ownership`  | suggestion | Nested params should reflect parent |
+
+### Standard Methods (AIP-131 to 135) — 5 rules
+
+| Rule ID                       | Severity   | Description                          |
+| ----------------------------- | ---------- | ------------------------------------ |
+| `aip131/get-no-body`          | error      | GET must not have request body       |
+| `aip133/post-returns-created` | suggestion | POST should return 201/202           |
+| `aip134/patch-over-put`       | suggestion | Prefer PATCH for partial updates     |
+| `aip135/delete-idempotent`    | warning    | DELETE should be idempotent, no body |
+
+### Pagination (AIP-158) — 3 rules
+
+| Rule ID                          | Severity   | Description                           |
+| -------------------------------- | ---------- | ------------------------------------- |
+| `aip158/list-paginated`          | warning    | List endpoints need pagination        |
+| `aip158/max-page-size`           | suggestion | Page size needs maximum limit         |
+| `aip158/response-has-next-token` | warning    | Response must include next_page_token |
+
+### Errors (AIP-193) — 3 rules
+
+| Rule ID                       | Severity   | Description                      |
+| ----------------------------- | ---------- | -------------------------------- |
+| `aip193/schema-defined`       | warning    | Consistent error schema required |
+| `aip193/responses-documented` | suggestion | Document error responses         |
+| `aip193/standard-codes`       | suggestion | Use standard HTTP error codes    |
+
+### Idempotency (AIP-155) — 1 rule
+
+| Rule ID                  | Severity   | Description                        |
+| ------------------------ | ---------- | ---------------------------------- |
+| `aip155/idempotency-key` | suggestion | POST should accept Idempotency-Key |
+
+### Filtering (AIP-132, 160) — 2 rules
+
+| Rule ID                | Severity   | Description                             |
+| ---------------------- | ---------- | --------------------------------------- |
+| `aip132/has-filtering` | suggestion | List endpoints should support filtering |
+| `aip132/has-ordering`  | suggestion | List endpoints should support ordering  |
 
 ### Finding Structure
 
 ```typescript
 interface Finding {
-  ruleId: string; // e.g., "pagination/list-paginated"
+  ruleId: string; // e.g., "aip158/list-paginated"
   severity: 'error' | 'warning' | 'suggestion';
   category: string; // e.g., "pagination"
   path: string; // e.g., "GET /users"
@@ -183,6 +231,48 @@ interface Finding {
   context?: object; // Machine-readable data for fixers
 }
 ```
+
+---
+
+## MCP Server Features
+
+The MCP server exposes the reviewer functionality via the Model Context Protocol using `@platformatic/mcp`.
+
+### Tools (5)
+
+| Tool              | Description                                                                |
+| ----------------- | -------------------------------------------------------------------------- |
+| `aip-review`      | Analyze OpenAPI spec against AIP guidelines. Returns reviewId for caching. |
+| `aip-list-rules`  | List available rules. Filter by AIP number or category.                    |
+| `aip-get-info`    | Get information about a specific AIP (summary and link).                   |
+| `aip-apply-fixes` | Apply suggested fixes to spec. Supports writeBack for local files.         |
+| `aip-correlate`   | Correlate findings with code locations (NestJS, Fastify, Express).         |
+
+### Prompts (2)
+
+| Prompt         | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `code-locator` | Generate instructions for finding API endpoint code in a project. |
+| `aip-lookup`   | Generate instructions for fetching and explaining a specific AIP. |
+
+### Resources (2)
+
+| URI Pattern                    | Description                                 |
+| ------------------------------ | ------------------------------------------- |
+| `aip://findings?id={reviewId}` | Access cached review findings by review ID. |
+| `aip://specs?id={specId}`      | Access modified OpenAPI specs by spec ID.   |
+
+Resources support subscriptions for real-time updates (memory or Redis backend).
+
+### Storage Backends
+
+- **Findings**: File-based or memory storage for review results
+- **Temp Specs**: Temporary storage for modified specs with signed URLs
+- **Subscriptions**: Memory or Redis for resource subscription notifications
+
+### Authentication
+
+Supports OIDC discovery and OAuth flows for secured deployments.
 
 ---
 
@@ -223,7 +313,7 @@ To improve the plugin based on real usage:
 ```markdown
 #### 🟡 `GET /orders` — Missing pagination
 
-- **Rule:** `pagination/list-paginated`
+- **Rule:** `aip158/list-paginated`
 
 <!-- FEEDBACK: false-positive - internal endpoint with max 10 items -->
 ```
@@ -246,7 +336,7 @@ To improve the plugin based on real usage:
 
 ### False Positives
 
-- `naming/plural-resources` triggers on `/health` (should be exception)
+- `aip122/plural-resources` triggers on `/health` (should be exception)
 
 ### Missing Rules
 
@@ -303,21 +393,27 @@ To improve the plugin based on real usage:
 - Security schemes
 - Versioning patterns
 - Authorization patterns
+- Custom methods (AIP-136)
 
-### Framework Fixers
+### Framework-Specific Code Fixers
+
+The `aip-correlate` tool locates code, but automated code fixes are not yet implemented:
 
 - NestJS: Generate decorators, DTOs, exception filters from findings
 - Fastify: Generate schemas, error handlers from findings
+- Express: Generate middleware and validators from findings
 
 ### Integrations
 
 - Export as Spectral ruleset for CI/CD
-- SARIF output for IDE integration
-- GitHub Actions workflow
+- GitHub Actions workflow for PR reviews
 
-### GraphQL Variant
+### Already Implemented ✓
 
-- Separate skill or mapping guide for GraphQL APIs
+- ~~SARIF output for IDE integration~~ (formatters.js supports SARIF)
+- ~~Framework detection~~ (aip-correlate supports NestJS, Fastify, Express)
+- ~~Code location correlation~~ (aip-correlate tool)
+- ~~MCP resources with subscriptions~~ (memory + Redis backends)
 
 ---
 

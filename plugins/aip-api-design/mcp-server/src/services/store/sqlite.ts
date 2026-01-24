@@ -24,6 +24,8 @@ import {
   ListResult,
 } from './base.js';
 import { FileBackend, LocalFileBackend } from './file-backend.js';
+import { runMigrations } from './migrations/index.js';
+import allMigrations from './migrations/all.js';
 
 export interface SqliteStoreOptions extends StoreOptions {
   /** Path to SQLite database file (default: temp directory) */
@@ -65,22 +67,12 @@ export class SqliteStore extends BaseStore {
     this.db.exec('PRAGMA main.journal_mode = WAL');
     this.db.exec('PRAGMA main.auto_vacuum = INCREMENTAL');
 
-    // Create metadata table
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS specs (
-        id TEXT PRIMARY KEY,
-        filename TEXT NOT NULL,
-        content_type TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        expires_at INTEGER NOT NULL,
-        session_id TEXT
-      )
-    `);
-
-    // Index on expires_at for efficient cleanup
-    this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_specs_expires_at ON specs(expires_at)
-    `);
+    // Run migrations
+    const migrationsApplied = runMigrations(this.db, allMigrations);
+    if (migrationsApplied > 0) {
+      // Log would be nice but we don't have access to logger here
+      // Migrations are idempotent so this is safe
+    }
 
     // Start periodic cleanup
     this.cleanupInterval = setInterval(

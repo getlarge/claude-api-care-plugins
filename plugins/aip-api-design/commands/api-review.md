@@ -74,7 +74,7 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
    Optional flags for the review step:
    - `--strict` or `-s`: Treat warnings as errors
    - `-c naming -c pagination`: Only run specific categories
-   - `-x naming/plural-resources`: Skip specific rules
+   - `-x aip122/plural-resources`: Skip specific rules
 
    Available formats:
    - `--format json`: Machine-readable output (use as intermediate)

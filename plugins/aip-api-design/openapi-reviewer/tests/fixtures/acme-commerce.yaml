@@ -39,7 +39,7 @@ paths:
   # ORDERS - Mixed compliance
   # ============================================
 
-  # ❌ naming/no-verbs - verb prefix in path
+  # ❌ aip122/no-verbs - verb prefix in path
   /getOrder/{id}:
     get:
       tags: [Orders]
@@ -57,10 +57,10 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  # ❌ pagination/list-paginated - no pagination params
-  # ❌ filtering/list-filterable - no filter params
-  # ❌ filtering/list-has-ordering - no order_by
-  # ❌ errors/responses-documented - no error responses
+  # ❌ aip158/list-paginated - no pagination params
+  # ❌ aip132/has-filtering - no filter params
+  # ❌ aip132/has-ordering - no order_by
+  # ❌ aip193/responses-documented - no error responses
   /orders:
     get:
       tags: [Orders]
@@ -76,8 +76,8 @@ paths:
                 items:
                   $ref: '#/components/schemas/Order'
 
-    # ❌ methods/post-returns-201 - returns 200 instead of 201
-    # ❌ idempotency/post-has-key - no Idempotency-Key header
+    # ❌ aip133/post-returns-created - returns 200 instead of 201
+    # ❌ aip155/idempotency-key - no Idempotency-Key header
     post:
       tags: [Orders]
       summary: Create order (BAD - returns 200, no idempotency)
@@ -113,7 +113,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-    # ❌ methods/patch-over-put - PUT without PATCH
+    # ❌ aip134/patch-over-put - PUT without PATCH
     put:
       tags: [Orders]
       summary: Replace order (BAD - should use PATCH for partial updates)
@@ -172,7 +172,7 @@ paths:
   # PRODUCTS - Mixed compliance
   # ============================================
 
-  # ❌ naming/plural-resources - singular resource name
+  # ❌ aip122/plural-resources - singular resource name
   /product:
     get:
       tags: [Products]
@@ -183,7 +183,7 @@ paths:
           in: query
           schema:
             type: integer
-            # ❌ pagination/max-page-size - no maximum
+            # ❌ aip158/max-page-size - no maximum
         - name: page_token
           in: query
           schema:
@@ -217,7 +217,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-    # ❌ methods/delete-idempotent - DELETE with request body
+    # ❌ aip135/delete-idempotent - DELETE with request body
     delete:
       tags: [Products]
       summary: Delete product (BAD - has request body)
@@ -404,7 +404,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  # ❌ naming/nested-ownership - uses generic {id} in nested path
+  # ❌ aip122/nested-ownership - uses generic {id} in nested path
   /customers/{customerId}/addresses/{id}:
     get:
       tags: [Customers]
@@ -431,7 +431,7 @@ paths:
   # WEBHOOKS - Non-compliant
   # ============================================
 
-  # ❌ naming/plural-resources - singular
+  # ❌ aip122/plural-resources - singular
   /webhook:
     get:
       tags: [Webhooks]
@@ -447,8 +447,8 @@ paths:
                 items:
                   $ref: '#/components/schemas/Webhook'
 
-    # ❌ idempotency/post-has-key - no idempotency header
-    # ❌ errors/responses-documented - no error responses
+    # ❌ aip155/idempotency-key - no idempotency header
+    # ❌ aip193/responses-documented - no error responses
     post:
       tags: [Webhooks]
       summary: Create webhook (BAD - no idempotency, no error docs)
@@ -472,7 +472,7 @@ paths:
   # ============================================
 
   /reports:
-    # ❌ methods/get-no-body - GET with request body (bad pattern for complex queries)
+    # ❌ aip131/get-no-body - GET with request body (bad pattern for complex queries)
     get:
       tags: [Reports]
       summary: Query reports (BAD - GET with body)
@@ -553,7 +553,7 @@ paths:
   # INVENTORY - Inconsistent casing
   # ============================================
 
-  # ❌ naming/consistent-casing - mixed casing across paths
+  # ❌ aip122/consistent-casing - mixed casing across paths
   /inventory_items:
     get:
       tags: [Products]
@@ -671,7 +671,7 @@ paths:
   # NON-STANDARD ERROR CODES
   # ============================================
 
-  # ❌ errors/standard-codes - 418 is non-standard
+  # ❌ aip193/standard-codes - 418 is non-standard
   /teapot:
     get:
       summary: Easter egg endpoint (BAD - non-standard error code)
@@ -840,7 +840,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Product'
-        # ❌ pagination/response-has-next-token - missing next_page_token
+        # ❌ aip158/response-has-next-token - missing next_page_token
 
     ProductSearchResults:
       type: object
@@ -1080,7 +1080,7 @@ components:
     # ERROR SCHEMA
     # ============================================
 
-    # ✅ errors/schema-defined - proper error schema exists
+    # ✅ aip193/schema-defined - proper error schema exists
     Error:
       type: object
       required:
