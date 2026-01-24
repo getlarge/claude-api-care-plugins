@@ -75,13 +75,13 @@ This plugin follows a **progressive disclosure** pattern. Each command produces 
 /api-review openapi/orders-api.yaml
 
 # 3. Create a fix plan from the review
-/api-plan thoughts/api/reviews/2024-01-15-orders-api-review.md
+/api-plan thoughts/api/reviews/2025-01-15-orders-api-review.md
 
 # 4. Implement fixes (phase by phase)
-/api-fix thoughts/api/plans/2024-01-15-orders-api-plan.md
+/api-fix thoughts/api/plans/2025-01-15-orders-api-plan.md
 
 # 5. Validate fixes were applied correctly
-/api-validate thoughts/api/plans/2024-01-15-orders-api-plan.md
+/api-validate thoughts/api/plans/2025-01-15-orders-api-plan.md
 ```
 
 For detailed flow diagrams and architecture, see [User Flows Documentation](docs/user-flows.md).
@@ -94,11 +94,11 @@ All documents are stored in `thoughts/api/`:
 thoughts/
 └── api/
     ├── discovery/
-    │   └── 2024-01-15-discovery.md
+    │   └── 2025-01-15-discovery.md
     ├── reviews/
-    │   └── 2024-01-15-orders-api-review.md
+    │   └── 2025-01-15-orders-api-review.md
     └── plans/
-        └── 2024-01-15-orders-api-plan.md
+        └── 2025-01-15-orders-api-plan.md
 ```
 
 These documents:
@@ -119,7 +119,7 @@ After `/api-review`, edit the review document to add feedback:
 ```markdown
 #### 🟡 `GET /orders` — Missing pagination
 
-- **Rule:** `pagination/list-paginated`
+- **Rule:** `aip158/list-paginated`
 - **AIP:** [AIP-158](https://google.aip.dev/158)
 - **Message:** List endpoint missing pagination parameters
 
@@ -148,7 +148,7 @@ If you find recurring false positives or missing rules, note them:
 
 ### False Positives
 
-- `naming/plural-resources` triggers on `/health` endpoint (should be exception)
+- `aip122/plural-resources` triggers on `/health` endpoint (should be exception)
 
 ### Missing Rules
 
@@ -157,7 +157,7 @@ If you find recurring false positives or missing rules, note them:
 
 ### Severity Adjustments
 
-- `idempotency/post-has-key` should be suggestion, not warning for internal APIs
+- `aip155/idempotency-key` should be suggestion, not warning for internal APIs
 ```
 
 ## AIP Reference
@@ -174,39 +174,48 @@ The agent will (hopefully) fetch AIP-158 and explain the rationale.
 aip-api-design/
 ├── .claude-plugin/
 │   └── plugin.json           # Plugin manifest
-├── commands/
+├── .mcp.json                 # MCP server configuration
+├── commands/                 # 5 slash commands
 │   ├── api-discover.md       # Find OpenAPI specs
 │   ├── api-review.md         # Run AIP rules
 │   ├── api-plan.md           # Create fix plan
 │   ├── api-fix.md            # Implement fixes
 │   └── api-validate.md       # Verify fixes
-├── agents/
-│   └── aip-lookup.md         # Fetch/explain AIPs on demand
+├── agents/                   # 2 agents
+│   ├── aip-lookup.md         # Fetch/explain AIPs on demand
+│   └── aip-code-locator.md   # Locate code for API endpoints
 ├── hooks/
-│   ├── hooks.json            # SessionStart hook config
-│   └── setup-deps.sh         # Auto-install dependencies
+│   └── hooks.json            # Hook definitions
 ├── skills/
-│   └── aip-knowledge/
-│       ├── SKILL.md          # Quick reference
-│       ├── errors.md         # AIP-193, 194
-│       ├── pagination.md     # AIP-158
-│       ├── filtering.md      # AIP-160, 132
-│       ├── lro.md            # AIP-151, 155
-│       ├── field-masks.md    # AIP-134
-│       ├── batch.md          # AIP-231+
-│       └── rest-mapping.md   # Proto → REST
-├── openapi-reviewer/         # Standalone reviewer
+│   ├── aip-knowledge/        # Reference material (9 files)
+│   │   ├── SKILL.md          # Quick reference
+│   │   ├── errors.md         # AIP-193, 194
+│   │   ├── pagination.md     # AIP-158
+│   │   ├── filtering.md      # AIP-160, 132
+│   │   ├── lro.md            # AIP-151, 155
+│   │   ├── field-masks.md    # AIP-134
+│   │   ├── batch.md          # AIP-231+
+│   │   ├── rest-mapping.md   # Proto → REST
+│   │   └── linter-rules.md   # All 17 rules reference
+│   └── aip-code-correlator/  # Code correlation guidance
+│       ├── SKILL.md
+│       └── diff-templates.md
+├── openapi-reviewer/         # Standalone JS reviewer (17 rules)
 │   ├── package.json
 │   ├── RULES.md              # Rule documentation
 │   └── src/
 │       ├── cli.js            # Review CLI
 │       ├── discover.js       # Discovery CLI
-│       ├── rules/            # AIP rules organized by number
+│       ├── rules/            # Rules: aip122, aip131-135, aip155, aip158, aip193
 │       ├── reviewer.js
 │       ├── fixer.js
-│       └── formatters.js
-└── mcp-server/               # MCP server for Claude
-    └── src/                  # Tools wrapping the reviewer
+│       └── formatters.js     # Console, Markdown, JSON, SARIF
+└── mcp-server/               # MCP server (@platformatic/mcp)
+    └── src/
+        ├── tools/            # 5 MCP tools
+        ├── prompts/          # 2 MCP prompts
+        ├── resources/        # 2 MCP resources
+        └── services/         # Storage, subscriptions
 ```
 
 ## Contributing

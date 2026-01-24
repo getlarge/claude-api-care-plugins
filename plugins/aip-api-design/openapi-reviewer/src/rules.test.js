@@ -796,7 +796,7 @@ describe('aip132/has-ordering', () => {
 // Version Prefix and Singleton Tests
 // ============================================
 
-describe('naming/plural-resources - version handling', () => {
+describe('aip122/plural-resources - version handling', () => {
   it('ignores v1, v2, etc version prefixes', () => {
     const spec = { paths: { '/v1/users': {}, '/v2/orders': {} } };
     const findings = runRule('aip122/plural-resources', spec);
@@ -818,7 +818,7 @@ describe('naming/plural-resources - version handling', () => {
   });
 });
 
-describe('naming/plural-resources - singletons', () => {
+describe('aip122/plural-resources - singletons', () => {
   it('allows singular name for singleton resources', () => {
     const spec = {
       paths: {
@@ -859,7 +859,7 @@ describe('naming/plural-resources - singletons', () => {
   });
 });
 
-describe('naming/no-verbs - custom methods', () => {
+describe('aip122/no-verbs - custom methods', () => {
   it('allows hyphenated custom methods on resources', () => {
     const spec = {
       paths: {
@@ -909,7 +909,7 @@ describe('naming/no-verbs - custom methods', () => {
   });
 });
 
-describe('naming/no-verbs - noun exceptions', () => {
+describe('aip122/no-verbs - noun exceptions', () => {
   it('allows checklist as a noun', () => {
     const spec = { paths: { '/v1/checklists': {}, '/v1/checklists/{id}': {} } };
     const findings = runRule('aip122/no-verbs', spec);
@@ -938,7 +938,7 @@ describe('naming/no-verbs - noun exceptions', () => {
   });
 });
 
-describe('naming/no-verbs - version prefixes', () => {
+describe('aip122/no-verbs - version prefixes', () => {
   it('does not flag version prefixes', () => {
     const spec = {
       paths: {

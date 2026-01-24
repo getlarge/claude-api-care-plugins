@@ -76,21 +76,21 @@ Re-run API review and validate against the fix plan.
 
 ### Fixed Issues ✓
 
-- ✓ `naming/plural-resources` at `GET /user/{id}` — FIXED
-- ✓ `naming/no-verbs` at `POST /createOrder` — FIXED
-- ✓ `pagination/list-paginated` at `GET /orders` — FIXED
+- ✓ `aip122/plural-resources` at `GET /user/{id}` — FIXED
+- ✓ `aip122/no-verbs` at `POST /createOrder` — FIXED
+- ✓ `aip158/list-paginated` at `GET /orders` — FIXED
 
 ### Remaining Issues
 
-- 🟡 `pagination/list-paginated` at `GET /users` — still missing
-- 🟡 `errors/schema-defined` — not yet addressed
-- 🟡 `errors/responses-documented` at 5 endpoints — not yet addressed
+- 🟡 `aip158/list-paginated` at `GET /users` — still missing
+- 🟡 `aip193/schema-defined` — not yet addressed
+- 🟡 `aip193/responses-documented` at 5 endpoints — not yet addressed
 
 ### Regressions ⚠️
 
 {If any new issues introduced:}
 
-- ⚠️ NEW: `naming/plural-resources` at `GET /item/{id}` — introduced in recent changes
+- ⚠️ NEW: `aip122/plural-resources` at `GET /item/{id}` — introduced in recent changes
 
 ### Recommendations
 
@@ -148,4 +148,4 @@ The API now passes AIP review. Ready to create PR?
 
 ## Example
 
-User: `/api-validate thoughts/api/plans/2024-01-15-orders-api-plan.md`
+User: `/api-validate thoughts/api/plans/2025-01-15-orders-api-plan.md`

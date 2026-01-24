@@ -57,6 +57,7 @@ For Claude Desktop, add to config:
 | `aip-apply-fixes` | Apply suggested fixes to a spec        |
 | `aip-list-rules`  | List available AIP rules               |
 | `aip-get-info`    | Get information about a specific AIP   |
+| `aip-correlate`   | Correlate findings with code locations |
 
 ### aip-review
 
@@ -101,6 +102,30 @@ Parameters:
 
 Returns a signed URL (valid 5 minutes) to download the modified spec.
 
+### aip-correlate
+
+```json
+{
+  "arguments": {
+    "correlationLevel": "moderate",
+    "framework": "nestjs",
+    "projectRoot": "/path/to/project",
+    "reviewId": "abc123"
+  },
+  "name": "aip-correlate"
+}
+```
+
+Parameters:
+
+- `reviewId` (string): Review ID from a previous `aip-review` call
+- `projectRoot` (string): Root directory of the project to search for code
+- `specPath` (string): Path to OpenAPI spec (optional, for context extraction)
+- `framework` (string): Framework hint - "nestjs", "fastify", "express", or "unknown"
+- `correlationLevel` (string): How aggressively to correlate - "minimal", "moderate", or "thorough"
+
+Returns ExtendedFinding[] with file:line references for each API endpoint.
+
 ## Prompts
 
 The server exposes prompt templates that can be invoked through MCP clients.
@@ -138,23 +163,48 @@ const result = await client.getPrompt({
 
 Returns a user role message containing a detailed search strategy and instructions for locating the API endpoint implementation in the codebase.
 
+### aip-lookup
+
+Get detailed information about a specific AIP for understanding rule context.
+
+**Arguments:**
+
+| Name    | Type   | Required | Description                               |
+| ------- | ------ | -------- | ----------------------------------------- |
+| aip     | string | Yes      | AIP number (e.g., "158", "193")           |
+| context | string | No       | Context about why you need this AIP       |
+| finding | string | No       | Specific finding to explain with this AIP |
+
+**Example:**
+
+```typescript
+const result = await client.getPrompt({
+  name: 'aip-lookup',
+  arguments: {
+    aip: '158',
+    context: 'User wants to understand pagination requirements',
+  },
+});
+// Returns prompt messages for explaining AIP-158
+```
+
 ## Resources
 
 The server exposes resources via the MCP resources protocol. Resources are cached artifacts from tools that can be accessed later.
 
 ### Resource Templates
 
-| URI Template                | Name                   | Description                                                                   | MIME Type                  |
-| --------------------------- | ---------------------- | ----------------------------------------------------------------------------- | -------------------------- |
-| `aip://findings/{reviewId}` | AIP Review Findings    | Cached review findings by reviewId (may include code locations if correlated) | `application/json`         |
-| `aip://specs/{specId}`      | Modified OpenAPI Specs | Modified OpenAPI specs after applying fixes                                   | `application/octet-stream` |
+| URI Pattern                    | Name                   | Description                                                                   | MIME Type                                  |
+| ------------------------------ | ---------------------- | ----------------------------------------------------------------------------- | ------------------------------------------ |
+| `aip://findings?id={reviewId}` | AIP Review Findings    | Cached review findings by reviewId (may include code locations if correlated) | `application/json`                         |
+| `aip://specs?id={specId}`      | Modified OpenAPI Specs | Modified OpenAPI specs after applying fixes                                   | `application/x-yaml` or `application/json` |
 
 ### Accessing Resources
 
 Resources are automatically created when using tools:
 
-1. **After `aip-review`**: Review findings are stored and accessible via `aip://findings/{reviewId}`
-2. **After `aip-apply-fixes`**: Modified specs are stored and accessible via `aip://specs/{specId}`
+1. **After `aip-review`**: Review findings are stored and accessible via `aip://findings?id={reviewId}`
+2. **After `aip-apply-fixes`**: Modified specs are stored and accessible via `aip://specs?id={specId}`
 
 **Example workflow:**
 
@@ -166,7 +216,7 @@ const reviewResult = await client.callTool('aip-review', {
 // reviewResult.reviewId = "abc123"
 
 // 2. Access findings resource
-const findings = await client.readResource('aip://findings/abc123');
+const findings = await client.readResource('aip://findings?id=abc123');
 // Returns full findings JSON
 
 // 3. Apply fixes
@@ -177,7 +227,7 @@ const fixResult = await client.callTool('aip-apply-fixes', {
 // fixResult.specId = "xyz789"
 
 // 4. Access modified spec
-const modifiedSpec = await client.readResource('aip://specs/xyz789');
+const modifiedSpec = await client.readResource('aip://specs?id=xyz789');
 // Returns modified OpenAPI spec
 ```
 

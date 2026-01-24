@@ -99,7 +99,7 @@ For each finding, build this structure:
 ```json
 {
   "finding": {
-    "ruleId": "naming/plural-resources",
+    "ruleId": "aip122/plural-resources",
     "severity": "warning",
     "path": "GET /user/{id}",
     "message": "Resource name should be plural",
@@ -153,7 +153,7 @@ Write to `thoughts/api/correlations/{date}-{spec-name}.json`:
     /* ... */
   ],
   "framework": "nestjs",
-  "generatedAt": "2024-01-15T10:30:00Z",
+  "generatedAt": "2025-01-15T10:30:00Z",
   "reviewPath": "thoughts/api/reviews/...",
   "specPath": "openapi.yaml",
   "summary": {
@@ -179,7 +179,7 @@ Report results to user:
 
 **Not found:** DELETE /admin/cache, GET /health
 
-Correlation saved to: thoughts/api/correlations/2024-01-15-orders-api.json
+Correlation saved to: thoughts/api/correlations/2025-01-15-orders-api.json
 ```
 
 ## MCP Tools Reference
