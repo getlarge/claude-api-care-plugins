@@ -241,17 +241,86 @@ export function pluralize(word) {
  */
 
 /**
+ * Noun-verb switches - words that can be both nouns and verbs
+ * In API context, these should be treated as NOUNS, not verbs
+ * Must NOT be in COMMON_VERBS to allow NLP disambiguation
+ * @type {Set<string>}
+ */
+const NOUN_VERB_SWITCHES = new Set([
+  'download',
+  'upload',
+  'search',
+  'order',
+  'report',
+  'backup',
+  'export',
+  'import',
+  'request',
+  'response',
+  'result',
+  'run',
+  'build',
+  'release',
+  'deploy',
+  'test',
+  'check',
+  'review',
+  'comment',
+  'like',
+  'share',
+  'post',
+  'link',
+  'tag',
+  'filter',
+  'sort',
+  'group',
+  'copy',
+  'clone',
+  'merge',
+  'split',
+  'transfer',
+  'sync',
+  'update',
+  'change',
+  'edit',
+  'view',
+  'display',
+  'alert',
+  'notice',
+  'warning',
+  'error',
+  'log',
+  'record',
+  'trace',
+  'track',
+  'watch',
+  'follow',
+  'bookmark',
+  'favorite',
+  'star',
+  'archive',
+  'draft',
+  'template',
+  'snapshot',
+  'checkpoint',
+  'restore',
+  'reset',
+  'revert',
+  'undo',
+  'redo',
+]);
+
+/**
  * Common API action verbs - fast path detection
+ * These are PURE verbs that are never used as nouns in API paths
  * @type {Set<string>}
  */
 const COMMON_VERBS = new Set([
   'get',
   'set',
   'put',
-  'post',
   'delete',
   'create',
-  'update',
   'remove',
   'add',
   'fetch',
@@ -259,11 +328,9 @@ const COMMON_VERBS = new Set([
   'receive',
   'validate',
   'verify',
-  'check',
   'process',
   'handle',
   'execute',
-  'run',
   'start',
   'stop',
   'cancel',
@@ -274,12 +341,6 @@ const COMMON_VERBS = new Set([
   'deactivate',
   'enable',
   'disable',
-  'sync',
-  'import',
-  'export',
-  'upload',
-  'download',
-  'search',
   'find',
   'list',
   'show',
@@ -296,18 +357,13 @@ const COMMON_VERBS = new Set([
   'disconnect',
   'attach',
   'detach',
-  'link',
-  'unlink',
   'bind',
   'unbind',
   'lock',
   'unlock',
-  'archive',
-  'restore',
   'retry',
   'refresh',
   'reload',
-  'reset',
   'clear',
   'flush',
   'purge',
@@ -325,17 +381,10 @@ const COMMON_VERBS = new Set([
   'unflag',
   'mark',
   'unmark',
-  'tag',
-  'untag',
   'assign',
   'unassign',
-  'transfer',
   'move',
-  'copy',
-  'clone',
   'duplicate',
-  'merge',
-  'split',
   'join',
   'leave',
   'invite',
@@ -345,7 +394,6 @@ const COMMON_VERBS = new Set([
   'acknowledge',
   'dismiss',
   'notify',
-  'alert',
   'warn',
   'resolve',
   'escalate',
@@ -356,9 +404,6 @@ const COMMON_VERBS = new Set([
   'resume',
   'skip',
   'reorder',
-  'sort',
-  'filter',
-  'group',
   'ungroup',
   'expand',
   'collapse',
@@ -382,11 +427,8 @@ const COMMON_VERBS = new Set([
   'parse',
   'render',
   'compile',
-  'build',
-  'deploy',
   'publish',
   'unpublish',
-  'release',
   'rollback',
   'migrate',
   'seed',
@@ -414,7 +456,6 @@ const COMMON_VERBS = new Set([
   'inject',
   'extract',
   'embed',
-  'detach',
   'insert',
   'append',
   'prepend',
@@ -455,8 +496,12 @@ export function isVerb(word, context = 'api-path') {
 
   let result;
 
-  // Fast path: Known common verbs
-  if (COMMON_VERBS.has(lower)) {
+  // Fast path: Noun-verb switches are nouns in API context
+  if (context === 'api-path' && NOUN_VERB_SWITCHES.has(lower)) {
+    result = false;
+  }
+  // Fast path: Known common verbs (pure verbs only)
+  else if (COMMON_VERBS.has(lower)) {
     result = true;
   }
   // Fast path: Uncountables are nouns, not verbs
@@ -517,8 +562,12 @@ export function isNoun(word, context = 'api-path') {
 
   let result;
 
+  // Fast path: Noun-verb switches are nouns in API context
+  if (context === 'api-path' && NOUN_VERB_SWITCHES.has(lower)) {
+    result = true;
+  }
   // Fast path: API-specific uncountables are nouns
-  if (API_UNCOUNTABLES.has(lower)) {
+  else if (API_UNCOUNTABLES.has(lower)) {
     result = true;
   }
   // Fast path: Known verbs are not nouns (in isolation)
@@ -600,17 +649,17 @@ export function singularize(word) {
 
   let result;
 
+  // Fast path: Uncountables - check first, they should never be singularized
+  if (API_UNCOUNTABLES.has(lower)) {
+    result = word;
+  }
   // Fast path: Known irregular singulars
-  if (IRREGULAR_SINGULARS.has(lower)) {
+  else if (IRREGULAR_SINGULARS.has(lower)) {
     result = IRREGULAR_SINGULARS.get(lower) || word;
   }
   // Fast path: Already singular irregular
   else if (IRREGULAR_PLURALS.has(lower)) {
     result = word; // Already singular
-  }
-  // Fast path: Uncountables
-  else if (API_UNCOUNTABLES.has(lower)) {
-    result = word;
   }
   // Slow path: Use NLP
   else {
