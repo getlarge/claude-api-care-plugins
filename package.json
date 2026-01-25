@@ -9,10 +9,10 @@
   "overrides": {
     "@anthropic-ai/claude-agent-sdk": {
       "zod": "^4.1.13"
-    }
+    },
+    "@platformatic/mcp": "npm:@getlarge/fastify-mcp@^1.2.2-getlarge.1"
   },
   "scripts": {
-    "postinstall": "patch-package --patch-dir plugins/aip-api-design/mcp-server/patches",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run lint --workspaces --if-present",
@@ -33,6 +33,6 @@
     "prettier-plugin-sort-json": "^4.0.0"
   },
   "dependencies": {
-    "@platformatic/mcp": "^1.2.2"
+    "@getlarge/fastify-mcp": "^1.2.2-getlarge.1"
   }
 }
