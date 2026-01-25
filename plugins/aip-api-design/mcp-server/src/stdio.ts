@@ -90,7 +90,7 @@ async function main() {
   });
 
   // Initialize subscription store for resource subscriptions
-  initSubscriptionStore();
+  await initSubscriptionStore();
 
   // Register AIP tools, resources, and prompts
   registerAipTools(fastify, { workerPool });

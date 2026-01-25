@@ -10,11 +10,11 @@ import type { Redis } from 'ioredis';
 export type { SubscriptionStore, SubscriptionStoreOptions } from './base.js';
 export { DEFAULT_SUBSCRIPTION_TTL_MS } from './base.js';
 export { MemorySubscriptionStore } from './memory.js';
-export { RedisSubscriptionStore } from './redis.js';
+// Re-export type only - actual class loaded dynamically to avoid bundling ioredis
+export type { RedisSubscriptionStore } from './redis.js';
 
 import type { SubscriptionStore, SubscriptionStoreOptions } from './base.js';
 import { MemorySubscriptionStore } from './memory.js';
-import { RedisSubscriptionStore } from './redis.js';
 
 export interface CreateSubscriptionStoreOptions extends SubscriptionStoreOptions {
   redis?: Redis;
@@ -23,11 +23,14 @@ export interface CreateSubscriptionStoreOptions extends SubscriptionStoreOptions
 /**
  * Create a subscription store.
  * Uses Redis if redis option provided, otherwise memory.
+ * Redis store is loaded dynamically to avoid requiring ioredis when not used.
  */
-export function createSubscriptionStore(
+export async function createSubscriptionStore(
   options: CreateSubscriptionStoreOptions = {}
-): SubscriptionStore {
+): Promise<SubscriptionStore> {
   if (options.redis) {
+    // Dynamic import to avoid bundling ioredis when not used
+    const { RedisSubscriptionStore } = await import('./redis.js');
     return new RedisSubscriptionStore({
       redis: options.redis,
       ttlMs: options.ttlMs,
@@ -42,13 +45,13 @@ let store: SubscriptionStore | null = null;
 /**
  * Initialize the subscription store singleton.
  */
-export function initSubscriptionStore(
+export async function initSubscriptionStore(
   options: CreateSubscriptionStoreOptions = {}
-): SubscriptionStore {
+): Promise<SubscriptionStore> {
   if (store) {
-    store.close().catch(() => {});
+    await store.close().catch(() => {});
   }
-  store = createSubscriptionStore(options);
+  store = await createSubscriptionStore(options);
   return store;
 }
 

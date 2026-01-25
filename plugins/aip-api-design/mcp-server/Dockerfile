@@ -31,7 +31,17 @@ LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 WORKDIR /app
 
-# Copy only the self-contained bundles (no node_modules needed)
+# Copy workspace files for npm workspace resolution of local deps
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/plugins/aip-api-design/openapi-reviewer ./plugins/aip-api-design/openapi-reviewer
+COPY --from=builder /app/plugins/aip-api-design/mcp-server/package.json ./plugins/aip-api-design/mcp-server/
+
+# Install optional runtime dependencies (marked external in esbuild)
+WORKDIR /app/plugins/aip-api-design/mcp-server
+RUN HUSKY=0 npm install --omit=dev --include=optional
+WORKDIR /app
+
+# Copy only the self-contained bundles
 # Worker must be named worker.js as that's what worker-pool.ts expects via __dirname resolution
 COPY --from=builder /app/plugins/aip-api-design/mcp-server/dist/server.bundle.js ./server.bundle.js
 COPY --from=builder /app/plugins/aip-api-design/mcp-server/dist/server.bundle.js.map ./server.bundle.js.map

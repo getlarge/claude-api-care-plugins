@@ -203,7 +203,7 @@ Categories: naming (AIP-122), standard methods (AIP-131-135), pagination (AIP-15
   });
 
   // Initialize subscription store (uses same redis config pattern as mcp plugin)
-  initSubscriptionStore();
+  await initSubscriptionStore();
 
   // Register AIP tools using mcpAddTool
   registerAipTools(fastify, { workerPool });
