@@ -2,12 +2,12 @@
  * Code Locator Prompt
  *
  * Prompt handler for finding API implementation code locations.
- * Migrated from Zod to TypeBox for @platformatic/mcp compatibility.
+ * Migrated from Zod to TypeBox for @getlarge/fastify-mcp compatibility.
  */
 
 import { Type, type Static } from '@sinclair/typebox';
 import { Value } from '@sinclair/typebox/value';
-import type { GetPromptResult } from '@platformatic/mcp';
+import type { GetPromptResult } from '@getlarge/fastify-mcp';
 import { buildLocatorPrompt, type Framework } from '../code-locator.js';
 import type { PromptDefinition } from '../types.js';
 
@@ -53,7 +53,7 @@ export const codeLocatorPrompt: PromptDefinition<typeof CodeLocatorArgsSchema> =
     argsSchema: CodeLocatorArgsSchema,
     handler: {
       async execute(args: CodeLocatorArgs): Promise<GetPromptResult> {
-        // @platformatic/mcp validates the schema before calling this handler
+        // @getlarge/fastify-mcp validates the schema before calling this handler
         // Apply defaults for optional fields
         const validated = Value.Default(
           CodeLocatorArgsSchema,

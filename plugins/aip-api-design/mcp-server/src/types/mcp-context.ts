@@ -1,12 +1,12 @@
 /**
  * MCP Handler Context Types
  *
- * Local type definitions for @platformatic/mcp handler context.
+ * Local type definitions for @getlarge/fastify-mcp handler context.
  * These match the internal types from the library since they're not exported.
  */
 
 import type { FastifyRequest, FastifyReply } from 'fastify';
-import type { CallToolResult, ReadResourceResult } from '@platformatic/mcp';
+import type { CallToolResult, ReadResourceResult } from '@getlarge/fastify-mcp';
 
 // Re-export for external consumers
 export type { CallToolResult, ReadResourceResult };
@@ -30,7 +30,7 @@ export interface AuthorizationContext {
 
 /**
  * Context passed to MCP tool/resource/prompt handlers.
- * Mirrors HandlerContext from @platformatic/mcp/types.
+ * Mirrors HandlerContext from @getlarge/fastify-mcp/types.
  */
 export interface HandlerContext {
   sessionId?: string;
@@ -65,7 +65,7 @@ export interface ResourceTemplate {
 
 /**
  * Handler function type for resources/subscribe.
- * Uses SubscribeRequest['params'] from @platformatic/mcp/dist/schema.
+ * Uses SubscribeRequest['params'] from @getlarge/fastify-mcp/dist/schema.
  */
 export type ResourceSubscribeHandler = (
   params: { uri: string },
@@ -74,23 +74,11 @@ export type ResourceSubscribeHandler = (
 
 /**
  * Handler function type for resources/unsubscribe.
- * Uses UnsubscribeRequest['params'] from @platformatic/mcp/dist/schema.
+ * Uses UnsubscribeRequest['params'] from @getlarge/fastify-mcp/dist/schema.
  */
 export type ResourceUnsubscribeHandler = (
   params: { uri: string },
   context: HandlerContext
 ) => Promise<Record<string, never>>;
 
-/**
- * Fastify instance augmentation for MCP resource subscription handlers.
- */
-declare module 'fastify' {
-  interface FastifyInstance {
-    mcpSetResourcesSubscribeHandler: (
-      handler: ResourceSubscribeHandler
-    ) => void;
-    mcpSetResourcesUnsubscribeHandler: (
-      handler: ResourceUnsubscribeHandler
-    ) => void;
-  }
-}
+// Fastify instance augmentation is provided by @getlarge/fastify-mcp

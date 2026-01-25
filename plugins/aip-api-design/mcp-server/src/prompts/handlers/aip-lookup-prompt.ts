@@ -2,11 +2,11 @@
  * AIP Lookup Prompt
  *
  * Prompt handler for fetching and explaining Google API Improvement Proposals.
- * Migrated from Zod to TypeBox for @platformatic/mcp compatibility.
+ * Migrated from Zod to TypeBox for @getlarge/fastify-mcp compatibility.
  */
 
 import { Type, type Static } from '@sinclair/typebox';
-import type { GetPromptResult } from '@platformatic/mcp';
+import type { GetPromptResult } from '@getlarge/fastify-mcp';
 import type { PromptDefinition } from '../types.js';
 
 /**
@@ -149,7 +149,7 @@ export const aipLookupPrompt: PromptDefinition<typeof AipLookupArgsSchema> = {
   argsSchema: AipLookupArgsSchema,
   handler: {
     async execute(args: AipLookupArgs): Promise<GetPromptResult> {
-      // @platformatic/mcp validates the schema before calling this handler
+      // @getlarge/fastify-mcp validates the schema before calling this handler
       // So we only need to do additional business logic validation here
 
       const promptText = buildAipLookupPrompt(args);

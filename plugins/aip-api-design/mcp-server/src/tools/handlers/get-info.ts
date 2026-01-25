@@ -2,11 +2,11 @@
  * Get AIP Info Handler
  *
  * Returns information about a specific AIP.
- * Adapted for @platformatic/mcp HandlerContext.
+ * Adapted for @getlarge/fastify-mcp HandlerContext.
  */
 
 import { AIP_METADATA } from '@getlarge/aip-openapi-reviewer';
-import type { CallToolResult } from '@platformatic/mcp';
+import type { CallToolResult } from '@getlarge/fastify-mcp';
 
 import type { GetInfoInput, GetInfoOutput } from '../../schemas/index.js';
 

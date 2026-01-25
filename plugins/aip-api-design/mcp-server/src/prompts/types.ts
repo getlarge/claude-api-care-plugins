@@ -2,11 +2,11 @@
  * Prompt Registry Types
  *
  * Type definitions for prompt metadata and handlers.
- * Migrated from Zod to TypeBox for @platformatic/mcp compatibility.
+ * Migrated from Zod to TypeBox for @getlarge/fastify-mcp compatibility.
  */
 
 import type { TObject, Static } from '@sinclair/typebox';
-import type { GetPromptResult } from '@platformatic/mcp';
+import type { GetPromptResult } from '@getlarge/fastify-mcp';
 
 /**
  * Prompt handler function that generates prompt messages.

@@ -1,13 +1,13 @@
 /**
  * Prompt Registration
  *
- * Registers MCP prompt handlers with @platformatic/mcp.
+ * Registers MCP prompt handlers with @getlarge/fastify-mcp.
  * Uses mcpAddPrompt for Fastify-native prompt registration with TypeBox schemas.
  *
  * ## Design Decisions
  *
  * 1. **TypeBox for Validation**: We use TypeBox schemas for runtime validation of prompt
- *    arguments. This provides type safety and integrates with @platformatic/mcp.
+ *    arguments. This provides type safety and integrates with @getlarge/fastify-mcp.
  *
  * 2. **No Pagination Yet**: Currently returns all prompts in a single page.
  *    As we add more prompts, we'll implement cursor-based pagination.
@@ -17,7 +17,7 @@
  */
 
 import type { FastifyInstance } from 'fastify';
-import type { GetPromptResult } from '@platformatic/mcp';
+import type { GetPromptResult } from '@getlarge/fastify-mcp';
 import type { PromptDefinition } from './types.js';
 import {
   codeLocatorPrompt,
