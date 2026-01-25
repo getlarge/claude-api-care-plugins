@@ -132,6 +132,13 @@ export const ReviewInputSchema = Type.Object({
       description: 'Treat warnings as errors',
     })
   ),
+  lenient: Type.Optional(
+    Type.Boolean({
+      default: false,
+      description:
+        'Skip strict OpenAPI schema validation. Use when specs have minor schema issues but are still processable. The server will automatically fallback to lenient mode if strict validation fails.',
+    })
+  ),
   categories: Type.Optional(
     Type.Array(Type.String(), {
       description:
@@ -161,6 +168,18 @@ export const ReviewCompactOutputSchema = Type.Object({
   specTitle: Type.Optional(Type.String()),
   specVersion: Type.Optional(Type.String()),
   summary: ReviewSummarySchema,
+  lenientMode: Type.Optional(
+    Type.Boolean({
+      description:
+        'True if review was done in lenient mode (strict OpenAPI validation was skipped)',
+    })
+  ),
+  lenientReason: Type.Optional(
+    Type.String({
+      description:
+        'Reason for lenient mode (explicit request or auto-fallback)',
+    })
+  ),
   findingsUrl: Type.Optional(
     Type.String({
       description: 'Signed URL to download full findings (HTTP transport)',

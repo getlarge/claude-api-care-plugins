@@ -45,6 +45,7 @@ const argsConfig = {
   options: {
     help: { type: 'boolean', short: 'h', default: false },
     strict: { type: 'boolean', short: 's', default: false },
+    lenient: { type: 'boolean', short: 'l', default: false },
     format: { type: 'string', short: 'f', default: 'console' },
     category: { type: 'string', short: 'c', multiple: true, default: [] },
     skip: { type: 'string', short: 'x', multiple: true, default: [] },
@@ -62,6 +63,7 @@ const argsConfig = {
  * @typedef {Object} ParsedValues
  * @property {boolean} [help]
  * @property {boolean} [strict]
+ * @property {boolean} [lenient]
  * @property {string} [format]
  * @property {string[]} [category]
  * @property {string[]} [skip]
@@ -86,6 +88,7 @@ function parseArgs(args) {
     options: {
       help: v.help ?? false,
       strict: v.strict ?? false,
+      lenient: v.lenient ?? false,
       format: /** @type {CLIOptions['format']} */ (v.format ?? 'console'),
       categories: v.category ?? [],
       skipRules: v.skip ?? [],
@@ -102,6 +105,7 @@ function parseArgs(args) {
  * @typedef {Object} CLIOptions
  * @property {'console' | 'json' | 'markdown' | 'sarif' | 'summary'} format
  * @property {boolean} strict
+ * @property {boolean} lenient
  * @property {string[]} categories
  * @property {string[]} skipRules
  * @property {boolean} noColor
@@ -129,6 +133,7 @@ ARGUMENTS:
 OPTIONS:
   -h, --help          Show this help message
   -s, --strict        Treat warnings as errors
+  -l, --lenient       Skip strict OpenAPI validation (use when spec has minor schema issues)
   -f, --format <fmt>  Output format: console (default), json, markdown, sarif, summary
   -c, --category <c>  Only run rules in category (can repeat)
   -x, --skip <rule>   Skip specific rule by ID (can repeat)
@@ -176,13 +181,21 @@ EXIT CODES:
 /**
  * Load, validate, and parse spec file using swagger-parser
  * @param {string} specPath
+ * @param {boolean} [lenient=false] - Skip strict validation, only dereference refs
  * @returns {Promise<import('./types.js').OpenAPISpec>}
  */
-async function loadSpec(specPath) {
+async function loadSpec(specPath, lenient = false) {
   const resolved = resolve(specPath);
 
   if (!existsSync(resolved)) {
     throw new Error(`File not found: ${specPath}`);
+  }
+
+  if (lenient) {
+    // Lenient mode: only dereference refs, skip strict schema validation
+    // Use this when specs have minor schema issues but are still processable
+    const spec = /** @type {any} */ (await SwaggerParser.dereference(resolved));
+    return spec;
   }
 
   // Use SwaggerParser.validate() for strict validation
@@ -244,14 +257,44 @@ async function main(args) {
     return handleFromJson(options);
   }
 
-  // Load spec
+  // Load spec with automatic fallback to lenient mode
   let spec;
+  let usedLenient = options.lenient;
   try {
-    spec = await loadSpec(specPath);
+    spec = await loadSpec(specPath, options.lenient);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error(`Error loading spec: ${message}`);
-    return 2;
+
+    // If not in lenient mode, try automatic fallback
+    if (!options.lenient) {
+      const useColor = !options.noColor && process.stdout.isTTY;
+      const yellow = useColor ? '\x1b[33m' : '';
+      const reset = useColor ? '\x1b[0m' : '';
+
+      console.error(
+        `${yellow}Warning: Strict validation failed: ${message}${reset}`
+      );
+      console.error(
+        `${yellow}Falling back to lenient mode (skipping schema validation)...${reset}\n`
+      );
+
+      try {
+        spec = await loadSpec(specPath, true);
+        usedLenient = true;
+      } catch (lenientError) {
+        const lenientMessage =
+          lenientError instanceof Error
+            ? lenientError.message
+            : String(lenientError);
+        console.error(
+          `Error loading spec (even in lenient mode): ${lenientMessage}`
+        );
+        return 2;
+      }
+    } else {
+      console.error(`Error loading spec: ${message}`);
+      return 2;
+    }
   }
 
   // Build reviewer config
@@ -267,7 +310,22 @@ async function main(args) {
 
   // Run review
   const reviewer = new OpenAPIReviewer(config);
-  const result = reviewer.review(spec, specPath);
+  let result;
+  try {
+    result = reviewer.review(spec, specPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Error reviewing spec: ${message}`);
+    return 2;
+  }
+
+  // Add lenient mode flag to metadata if used
+  if (usedLenient) {
+    result.metadata.lenientMode = true;
+    result.metadata.lenientReason = options.lenient
+      ? 'explicitly requested'
+      : 'automatic fallback due to validation failure';
+  }
 
   // Handle fix mode
   if (options.fix) {
@@ -296,6 +354,16 @@ async function main(args) {
   }
 
   console.log(output);
+
+  // Show lenient mode note for console output
+  if (usedLenient && options.format === 'console') {
+    const useColor = !options.noColor && process.stdout.isTTY;
+    const dim = useColor ? '\x1b[2m' : '';
+    const reset = useColor ? '\x1b[0m' : '';
+    console.log(
+      `\n${dim}Note: Reviewed in lenient mode (strict OpenAPI validation was skipped).${reset}`
+    );
+  }
 
   // Exit code based on findings
   if (result.summary.errors > 0) {

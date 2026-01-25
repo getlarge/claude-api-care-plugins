@@ -21,6 +21,7 @@ import type { WorkerTask, WorkerResult } from './worker-pool.js';
 
 interface ReviewPayload {
   strict?: boolean;
+  lenient?: boolean;
   categories?: string[];
   skipRules?: string[];
 }
@@ -67,7 +68,7 @@ function handleReview(
   rawText: string
 ): WorkerResult {
   try {
-    const { strict, categories, skipRules } = payload;
+    const { strict, lenient, categories, skipRules } = payload;
 
     // Generate reviewId from raw spec content
     const reviewId = generateReviewId(rawText);
@@ -79,13 +80,23 @@ function handleReview(
     });
 
     const result = reviewer.review(spec, sourcePath);
+    const parsedResult = JSON.parse(formatJSON(result));
+
+    // Add lenient mode flag to metadata if used
+    if (lenient) {
+      parsedResult.metadata = {
+        ...parsedResult.metadata,
+        lenientMode: true,
+        lenientReason: 'explicitly requested or auto-fallback',
+      };
+    }
 
     // Return structured data with reviewId
     return {
       success: true,
       data: {
         reviewId,
-        ...JSON.parse(formatJSON(result)),
+        ...parsedResult,
       },
     };
   } catch (error) {

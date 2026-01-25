@@ -34,12 +34,14 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
    - categories (optional): ["naming", "pagination", "errors", ...]
    - skipRules (optional): ["rule-id-to-skip"]
    - strict (optional): false
+   - lenient (optional): false (set to true if spec has validation issues)
    ```
 
    The MCP tool will:
    - Review the spec and return a reviewId
    - Cache findings for use with other tools (apply-fixes, correlate)
    - Provide findingsPath and findingsUrl for detailed results
+   - Automatically fallback to lenient mode if strict OpenAPI validation fails
 
    Save the review document to `thoughts/api/reviews/{YYYY-MM-DD}-{spec-name}-review.md`
 
@@ -73,6 +75,7 @@ Analyze an OpenAPI specification against Google's API Improvement Proposals (AIP
 
    Optional flags for the review step:
    - `--strict` or `-s`: Treat warnings as errors
+   - `--lenient` or `-l`: Skip strict OpenAPI validation (auto-fallback on failure)
    - `-c naming -c pagination`: Only run specific categories
    - `-x aip122/plural-resources`: Skip specific rules
 
