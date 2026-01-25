@@ -188,7 +188,7 @@ export function registerAipResources(fastify: FastifyInstance) {
   // Register subscription handlers using the subscription store
   const subscriptionStore = getSubscriptionStore();
 
-  fastify.mcpSetResourcesSubscribeHandler(async (params, context) => {
+  fastify.mcpSetResourceSubscribeHandler(async (params, context) => {
     const sessionId = context.sessionId;
     if (!sessionId) {
       throw new Error('Session ID required for subscriptions');
@@ -201,7 +201,7 @@ export function registerAipResources(fastify: FastifyInstance) {
     return {};
   });
 
-  fastify.mcpSetResourcesUnsubscribeHandler(async (params, context) => {
+  fastify.mcpSetResourceUnsubscribeHandler(async (params, context) => {
     const sessionId = context.sessionId;
     if (!sessionId) {
       throw new Error('Session ID required for subscriptions');

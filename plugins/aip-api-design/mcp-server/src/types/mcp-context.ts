@@ -81,16 +81,4 @@ export type ResourceUnsubscribeHandler = (
   context: HandlerContext
 ) => Promise<Record<string, never>>;
 
-/**
- * Fastify instance augmentation for MCP resource subscription handlers.
- */
-declare module 'fastify' {
-  interface FastifyInstance {
-    mcpSetResourcesSubscribeHandler: (
-      handler: ResourceSubscribeHandler
-    ) => void;
-    mcpSetResourcesUnsubscribeHandler: (
-      handler: ResourceUnsubscribeHandler
-    ) => void;
-  }
-}
+// Fastify instance augmentation is provided by @getlarge/fastify-mcp
