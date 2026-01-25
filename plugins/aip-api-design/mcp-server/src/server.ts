@@ -26,6 +26,7 @@ import { WorkerPool } from './tools/worker-pool.js';
 import { registerAipTools } from './tools/register.js';
 import { registerAipResources } from './resources/register.js';
 import { registerAipPrompts } from './prompts/register.js';
+import { getStorageConfig, buildStoreOptions } from './config/index.js';
 
 // =============================================================================
 // Server Configuration
@@ -129,16 +130,22 @@ export async function createServer(
   // Security plugin (CORS, headers)
   await fastify.register(securityPlugin);
 
-  // Initialize storage layers
-  await initTempStorage({
-    type: 'sqlite',
-    ttlMs: 5 * 60 * 1000, // 5 minutes
-  });
+  // Get storage configuration from environment
+  const storageConfig = getStorageConfig();
+  fastify.log.info(
+    { storeType: storageConfig.type, hasS3: !!storageConfig.s3 },
+    'Storage configuration loaded'
+  );
 
-  await initFindingsStorage({
-    type: 'sqlite',
-    ttlMs: 24 * 60 * 60 * 1000, // 1 day
-  });
+  // Initialize storage layers with configuration
+  const tempStoreOptions = await buildStoreOptions(storageConfig, 'temp');
+  await initTempStorage(tempStoreOptions);
+
+  const findingsStoreOptions = await buildStoreOptions(
+    storageConfig,
+    'findings'
+  );
+  await initFindingsStorage(findingsStoreOptions);
 
   // Initialize worker pool for CPU-intensive operations
   const workerPool = new WorkerPool(undefined, workerPath);

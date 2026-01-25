@@ -2,9 +2,8 @@
 *.tsbuildinfo
 node_modules/
 
-# Only commit *.bundle.js files, ignore everything else in dist/
-dist/*
-!dist/*.bundle.js
+# Build outputs - bundles are distributed via GitHub releases
+dist/
 
 # Environment files with secrets
 .env

@@ -52,7 +52,7 @@ export async function initFindingsStorage(
   const findingsOptions: CreateStoreOptions = {
     type: options?.type ?? 'memory',
     ttlMs: options?.ttlMs ?? DEFAULT_FINDINGS_TTL_MS,
-    ...options,
+    fileBackend: options?.fileBackend,
     // Use separate paths for findings
     memory: {
       useFileSystem: options?.memory?.useFileSystem ?? true,
@@ -64,6 +64,10 @@ export async function initFindingsStorage(
         options?.sqlite?.dbPath ??
         join(tmpdir(), 'aip-mcp-findings', 'findings.db'),
       ...options?.sqlite,
+    },
+    postgres: {
+      tableName: options?.postgres?.tableName ?? 'findings',
+      ...options?.postgres,
     },
   };
 

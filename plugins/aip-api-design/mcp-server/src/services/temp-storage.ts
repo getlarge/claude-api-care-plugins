@@ -9,7 +9,10 @@ export {
   BaseStore,
   MemoryStore,
   SqliteStore,
+  PostgresStore,
   LocalFileBackend,
+  S3FileBackend,
+  createS3FileBackend,
   createStore,
   detectStoreType,
 } from './store/index.js';
@@ -21,6 +24,8 @@ export type {
   FileBackend,
   StoreType,
   CreateStoreOptions,
+  S3FileBackendOptions,
+  PostgresStoreOptions,
 } from './store/index.js';
 
 import { BaseStore, createStore } from './store/index.js';
