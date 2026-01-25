@@ -165,6 +165,7 @@ jobs:
           tag_name: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
           generate_release_notes: true
           draft: ${{ github.event_name == 'workflow_dispatch' }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             openapi-reviewer-dist.tar.gz
             mcp-server-dist.tar.gz
