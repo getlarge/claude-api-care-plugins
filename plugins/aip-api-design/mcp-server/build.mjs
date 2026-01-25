@@ -43,6 +43,8 @@ const commonOptions = {
   minify: false,
   sourcemap: true,
   logLevel: 'info',
+  // Mark optional dependencies as external (they're dynamically imported)
+  external: ['pg', '@aws-sdk/client-s3', 'ioredis'],
 };
 
 // Bundle the STDIO server
