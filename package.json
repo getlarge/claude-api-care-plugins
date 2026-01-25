@@ -9,8 +9,7 @@
   "overrides": {
     "@anthropic-ai/claude-agent-sdk": {
       "zod": "^4.1.13"
-    },
-    "@platformatic/mcp": "npm:@getlarge/fastify-mcp@^1.2.2-getlarge.1"
+    }
   },
   "scripts": {
     "format": "prettier --write .",
@@ -32,7 +31,5 @@
     "prettier": "^3.4.2",
     "prettier-plugin-sort-json": "^4.0.0"
   },
-  "dependencies": {
-    "@getlarge/fastify-mcp": "^1.2.2-getlarge.1"
-  }
+  "dependencies": {}
 }

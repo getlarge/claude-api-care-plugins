@@ -2,12 +2,12 @@
  * List Rules Handler
  *
  * Lists available AIP rules with optional filtering.
- * Adapted for @platformatic/mcp HandlerContext.
+ * Adapted for @getlarge/fastify-mcp HandlerContext.
  */
 
 import { defaultRegistry } from '@getlarge/aip-openapi-reviewer';
 import type { RuleCategory } from '@getlarge/aip-openapi-reviewer/types';
-import type { CallToolResult } from '@platformatic/mcp';
+import type { CallToolResult } from '@getlarge/fastify-mcp';
 
 import type { ListRulesInput, ListRulesOutput } from '../../schemas/index.js';
 

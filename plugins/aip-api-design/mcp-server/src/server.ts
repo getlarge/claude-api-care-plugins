@@ -1,12 +1,12 @@
 /**
  * AIP OpenAPI Reviewer MCP Server
  *
- * Built with @platformatic/mcp for Fastify-native MCP support with OAuth2.
+ * Built with @getlarge/fastify-mcp for Fastify-native MCP support with OAuth2.
  */
 
 import Fastify from 'fastify';
-import mcpPlugin from '@platformatic/mcp';
-import type { AuthorizationConfig } from '@platformatic/mcp';
+import mcpPlugin from '@getlarge/fastify-mcp';
+import type { AuthorizationConfig } from '@getlarge/fastify-mcp';
 
 import { securityPlugin } from './plugins/security.js';
 import {
@@ -177,7 +177,7 @@ export async function createServer(
     fastify.log.info('OAuth2 authorization disabled');
   }
 
-  // Register @platformatic/mcp plugin
+  // Register @getlarge/fastify-mcp plugin
   await fastify.register(mcpPlugin, {
     serverInfo: {
       name: SERVER_NAME,

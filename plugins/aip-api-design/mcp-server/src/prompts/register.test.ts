@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import Fastify, { type FastifyInstance } from 'fastify';
-import mcpPlugin from '@platformatic/mcp';
+import mcpPlugin from '@getlarge/fastify-mcp';
 import { registerAipPrompts, PROMPTS } from './register.js';
 
 describe('prompt registration', () => {

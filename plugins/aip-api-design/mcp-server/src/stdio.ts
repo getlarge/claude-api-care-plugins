@@ -5,14 +5,14 @@
  * Runs the MCP server over standard input/output for local integration
  * with Claude Code and Claude Desktop.
  *
- * Uses @platformatic/mcp's STDIO transport.
+ * Uses @getlarge/fastify-mcp's STDIO transport.
  */
 
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import Fastify from 'fastify';
-import mcpPlugin from '@platformatic/mcp';
-import { runStdioServer } from '@platformatic/mcp';
+import mcpPlugin from '@getlarge/fastify-mcp';
+import { runStdioServer } from '@getlarge/fastify-mcp';
 
 import { securityPlugin } from './plugins/security.js';
 import {
@@ -74,7 +74,7 @@ async function main() {
   // Security plugin (for consistent behavior, though not strictly needed in STDIO)
   await fastify.register(securityPlugin);
 
-  // Register @platformatic/mcp plugin (no authorization for STDIO)
+  // Register @getlarge/fastify-mcp plugin (no authorization for STDIO)
   await fastify.register(mcpPlugin, {
     serverInfo: {
       name: SERVER_NAME,
