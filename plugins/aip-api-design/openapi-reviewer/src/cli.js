@@ -310,7 +310,14 @@ async function main(args) {
 
   // Run review
   const reviewer = new OpenAPIReviewer(config);
-  const result = reviewer.review(spec, specPath);
+  let result;
+  try {
+    result = reviewer.review(spec, specPath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Error reviewing spec: ${message}`);
+    return 2;
+  }
 
   // Add lenient mode flag to metadata if used
   if (usedLenient) {

@@ -306,36 +306,55 @@ describe('CLI Invalid Spec Handling', () => {
     'invalid-spec.yaml'
   );
 
-  it('exits with code 2 for invalid OpenAPI spec', async () => {
-    const { exitCode, stderr } = await runCLI([INVALID_SPEC_PATH]);
+  it('falls back to lenient mode for invalid OpenAPI spec', async () => {
+    const { exitCode, stderr, stdout } = await runCLI([
+      INVALID_SPEC_PATH,
+      '--format',
+      'json',
+    ]);
 
-    assert.strictEqual(exitCode, 2, 'Should exit with code 2 for invalid spec');
+    // With lenient fallback, the CLI should succeed (exit 0) and show a warning
+    assert.strictEqual(
+      exitCode,
+      0,
+      'Should exit with code 0 after lenient fallback'
+    );
     assert.ok(
-      stderr.includes('Error') || stderr.includes('error'),
-      'Should show error message in stderr'
+      stderr.toLowerCase().includes('warning') ||
+        stderr.toLowerCase().includes('lenient') ||
+        stderr.toLowerCase().includes('fallback'),
+      'Should show warning about lenient fallback'
+    );
+
+    // The JSON output should include lenientMode metadata
+    const result = JSON.parse(stdout);
+    assert.ok(
+      result.metadata?.lenientMode === true,
+      'Should indicate lenient mode in metadata'
     );
   });
 
-  it('shows validation error message for invalid spec', async () => {
+  it('shows validation warning before falling back to lenient mode', async () => {
     const { stderr } = await runCLI([INVALID_SPEC_PATH]);
 
-    // SwaggerParser validation error should mention the issue
+    // Should show warning about validation failure before fallback
     assert.ok(
-      stderr.toLowerCase().includes('error') ||
-        stderr.toLowerCase().includes('invalid') ||
-        stderr.toLowerCase().includes('missing'),
-      'Should explain validation error'
+      stderr.toLowerCase().includes('warning') ||
+        stderr.toLowerCase().includes('validation') ||
+        stderr.toLowerCase().includes('lenient'),
+      'Should explain validation fallback'
     );
   });
 
-  it('handles malformed JSON spec', async () => {
+  it('handles malformed JSON spec that cannot be parsed', async () => {
     const MALFORMED_JSON = join(__dirname, 'fixtures', 'malformed.json');
     const { exitCode, stderr } = await runCLI([MALFORMED_JSON]);
 
+    // Truly malformed JSON cannot be parsed even in lenient mode
     assert.strictEqual(
       exitCode,
       2,
-      'Should exit with code 2 for malformed JSON'
+      'Should exit with code 2 for unparseable JSON'
     );
     assert.ok(
       stderr.includes('Error') || stderr.includes('error'),
