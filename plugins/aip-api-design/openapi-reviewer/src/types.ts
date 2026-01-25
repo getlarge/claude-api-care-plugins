@@ -128,6 +128,10 @@ export interface ReviewResult {
     reviewedAt: string;
     reviewerVersion: string;
     rulesApplied: string[];
+    /** True if review was done in lenient mode (strict OpenAPI validation was skipped) */
+    lenientMode?: boolean;
+    /** Reason for lenient mode (explicit request or auto-fallback) */
+    lenientReason?: string;
   };
 }
 

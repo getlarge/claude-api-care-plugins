@@ -41,6 +41,10 @@ interface ReviewResultData {
   specVersion?: string;
   findings: BaseFinding[];
   summary: { errors: number; warnings: number; suggestions: number };
+  metadata?: {
+    lenientMode?: boolean;
+    lenientReason?: string;
+  };
 }
 
 /**
@@ -51,7 +55,7 @@ export async function executeReview(
   deps: ReviewHandlerDeps
 ): Promise<CallToolResult> {
   const { workerPool, fastify } = deps;
-  const { specPath, specUrl, strict, categories, skipRules } = params;
+  const { specPath, specUrl, strict, lenient, categories, skipRules } = params;
 
   // Validate input: either specPath or specUrl must be provided
   if (!specPath && !specUrl) {
@@ -92,6 +96,7 @@ export async function executeReview(
     type: 'review',
     payload: {
       strict,
+      lenient,
       categories,
       skipRules,
     },
@@ -176,6 +181,10 @@ export async function executeReview(
       warnings: summary.warnings,
       suggestions: summary.suggestions,
     },
+    ...(resultData.metadata?.lenientMode && {
+      lenientMode: true,
+      lenientReason: resultData.metadata.lenientReason,
+    }),
     expiresAt: new Date(stored.expiresAt).toISOString(),
   };
 
