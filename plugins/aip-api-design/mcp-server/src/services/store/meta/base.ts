@@ -23,7 +23,12 @@ export interface StoredSpec {
 }
 
 export interface StoreOptions {
-  /** Time-to-live in milliseconds (default: 5 minutes) */
+  /**
+   * Time-to-live in milliseconds.
+   * - Positive value: entries expire after this duration
+   * - 0 or negative: entries never expire (infinite TTL)
+   * Default: 5 minutes
+   */
   ttlMs?: number;
 }
 
@@ -179,9 +184,20 @@ export abstract class BaseStore extends EventEmitter {
   }
 
   /**
+   * Check if TTL is infinite (no expiration).
+   */
+  protected get hasInfiniteTtl(): boolean {
+    return this.ttlMs <= 0;
+  }
+
+  /**
    * Calculate expiry timestamp from now.
+   * Returns Number.MAX_SAFE_INTEGER for infinite TTL.
    */
   protected calculateExpiry(): number {
+    if (this.hasInfiniteTtl) {
+      return Number.MAX_SAFE_INTEGER;
+    }
     return Date.now() + this.ttlMs;
   }
 

@@ -23,7 +23,7 @@ import {
   ListOptions,
   ListResult,
 } from './base.js';
-import { FileBackend, LocalFileBackend } from './file-backend.js';
+import { FileBackend, LocalFileBackend } from '../files/file-backend.js';
 import { runMigrations } from './migrations/index.js';
 import allMigrations from './migrations/all.js';
 

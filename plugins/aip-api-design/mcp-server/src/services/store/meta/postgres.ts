@@ -20,7 +20,7 @@ import {
   ListOptions,
   ListResult,
 } from './base.js';
-import { FileBackend, LocalFileBackend } from './file-backend.js';
+import { FileBackend, LocalFileBackend } from '../files/file-backend.js';
 import { runPgMigrations } from './migrations/postgres.js';
 import allPgMigrations from './migrations/all_pg.js';
 
@@ -125,8 +125,9 @@ export class PostgresStore extends BaseStore {
     // For default table name, run migrations
     // For custom table names (e.g., testing), create table inline
     if (this.tableName === 'specs') {
+      // pool is guaranteed to be set at this point (either provided or created above)
       const migrationsApplied = await runPgMigrations(
-        this.pool,
+        this.pool!,
         allPgMigrations
       );
       if (migrationsApplied > 0) {

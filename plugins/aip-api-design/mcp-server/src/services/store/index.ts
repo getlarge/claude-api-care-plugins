@@ -2,9 +2,13 @@
  * Store Module
  *
  * Exports storage implementations and factory for creating stores.
+ *
+ * Directory structure:
+ * - meta/   - Metadata stores (memory, sqlite, postgres)
+ * - files/  - File backends (local, s3)
  */
 
-export { BaseStore } from './base.js';
+export { BaseStore } from './meta/base.js';
 export type {
   StoredSpec,
   StoreOptions,
@@ -12,31 +16,37 @@ export type {
   StoreStats,
   ListOptions,
   ListResult,
-} from './base.js';
+} from './meta/base.js';
 
-export { MemoryStore } from './memory.js';
-export type { MemoryStoreOptions } from './memory.js';
-export { SqliteStore } from './sqlite.js';
-export type { SqliteStoreOptions } from './sqlite.js';
-export { PostgresStore } from './postgres.js';
-export type { PostgresStoreOptions } from './postgres.js';
-export type { FileBackend } from './file-backend.js';
+// Re-export from meta stores
+export { MemoryStore, SqliteStore, PostgresStore } from './meta/index.js';
+export type {
+  MemoryStoreOptions,
+  SqliteStoreOptions,
+  PostgresStoreOptions,
+} from './meta/index.js';
+
+// Re-export from file backends
 export {
   LocalFileBackend,
   S3FileBackend,
   createS3FileBackend,
-} from './file-backend.js';
-export type { S3FileBackendOptions, S3Client } from './file-backend.js';
+} from './files/index.js';
+export type {
+  FileBackend,
+  S3FileBackendOptions,
+  S3Client,
+} from './files/index.js';
 
-import { BaseStore } from './base.js';
-import type { StoreOptions } from './base.js';
-import { MemoryStore } from './memory.js';
-import type { MemoryStoreOptions } from './memory.js';
-import { SqliteStore } from './sqlite.js';
-import type { SqliteStoreOptions } from './sqlite.js';
-import { PostgresStore } from './postgres.js';
-import type { PostgresStoreOptions } from './postgres.js';
-import type { FileBackend } from './file-backend.js';
+import { BaseStore } from './meta/base.js';
+import type { StoreOptions } from './meta/base.js';
+import { MemoryStore, SqliteStore, PostgresStore } from './meta/index.js';
+import type {
+  MemoryStoreOptions,
+  SqliteStoreOptions,
+  PostgresStoreOptions,
+} from './meta/index.js';
+import type { FileBackend } from './files/index.js';
 
 export type StoreType = 'memory' | 'sqlite' | 'postgres';
 

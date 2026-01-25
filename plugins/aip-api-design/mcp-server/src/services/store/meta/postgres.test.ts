@@ -8,7 +8,7 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { PostgresStore, type PgPool } from './postgres.js';
-import type { FileBackend } from './file-backend.js';
+import type { FileBackend } from '../files/file-backend.js';
 
 /**
  * Create a mock file backend for testing.

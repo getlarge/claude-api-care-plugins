@@ -34,6 +34,7 @@ export interface StorageConfig {
 
   /**
    * TTL for findings storage in milliseconds.
+   * Use 0 or negative for infinite TTL (no expiration).
    */
   findingsTtlMs: number;
 }
@@ -60,7 +61,8 @@ export function getStorageConfig(): StorageConfig {
     databaseUrl: process.env['DATABASE_URL'],
     s3: getS3Config(),
     tempTtlMs: parseInt(process.env['TEMP_TTL_MS'] ?? '300000', 10), // 5 minutes
-    findingsTtlMs: parseInt(process.env['FINDINGS_TTL_MS'] ?? '86400000', 10), // 24 hours
+    // Default to infinite TTL for postgres (persistent), 24h for others
+    findingsTtlMs: parseFindingsTtl(storeType),
   };
 }
 
@@ -68,20 +70,27 @@ export function getStorageConfig(): StorageConfig {
  * Get S3 configuration if environment variables are set.
  */
 function getS3Config(): S3Config | undefined {
-  const accessKeyId = process.env['S3_ACCESS_KEY_ID'];
-  const secretAccessKey = process.env['S3_SECRET_ACCESS_KEY'];
+  // Support both S3_* (explicit) and AWS_* (Fly Tigris auto-set) env vars
+  const accessKeyId =
+    process.env['S3_ACCESS_KEY_ID'] ?? process.env['AWS_ACCESS_KEY_ID'];
+  const secretAccessKey =
+    process.env['S3_SECRET_ACCESS_KEY'] ?? process.env['AWS_SECRET_ACCESS_KEY'];
 
   if (!accessKeyId || !secretAccessKey) {
     return undefined;
   }
 
+  // Fly Tigris uses BUCKET_NAME for a single bucket, we need two
+  // Fall back to single bucket with prefixes if separate buckets not configured
+  const defaultBucket = process.env['BUCKET_NAME'] ?? 'aip-mcp';
+
   return {
-    endpoint: process.env['S3_ENDPOINT'],
+    endpoint: process.env['S3_ENDPOINT'] ?? process.env['AWS_ENDPOINT_URL_S3'],
     accessKeyId,
     secretAccessKey,
-    bucketSpecs: process.env['S3_BUCKET_SPECS'] ?? 'aip-specs',
-    bucketFindings: process.env['S3_BUCKET_FINDINGS'] ?? 'aip-findings',
-    region: process.env['S3_REGION'] ?? 'us-east-1',
+    bucketSpecs: process.env['S3_BUCKET_SPECS'] ?? defaultBucket,
+    bucketFindings: process.env['S3_BUCKET_FINDINGS'] ?? defaultBucket,
+    region: process.env['S3_REGION'] ?? process.env['AWS_REGION'] ?? 'auto',
     forcePathStyle: process.env['S3_FORCE_PATH_STYLE'] === 'true',
   };
 }
@@ -94,6 +103,19 @@ function detectDefaultStoreType(): StoreType {
     return 'postgres';
   }
   return 'sqlite';
+}
+
+/**
+ * Parse findings TTL from environment.
+ * Defaults to infinite (0) for postgres, 24 hours for others.
+ */
+function parseFindingsTtl(storeType: StoreType): number {
+  const envValue = process.env['FINDINGS_TTL_MS'];
+  if (envValue !== undefined) {
+    return parseInt(envValue, 10);
+  }
+  // Default: infinite for postgres, 24 hours for others
+  return storeType === 'postgres' ? 0 : 24 * 60 * 60 * 1000;
 }
 
 /**
@@ -110,7 +132,7 @@ export async function createFileBackendFromConfig(
 
   // Dynamic import to avoid bundling issues
   const { createS3FileBackend } =
-    await import('../services/store/s3-file-backend.js');
+    await import('../services/store/files/s3-file-backend.js');
 
   return createS3FileBackend({
     endpoint: config.s3.endpoint,

@@ -17,13 +17,13 @@
 import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert';
 
-import { MemoryStore } from './memory.js';
-import { SqliteStore } from './sqlite.js';
-import { PostgresStore } from './postgres.js';
-import { LocalFileBackend } from './file-backend.js';
-import { createS3FileBackend } from './s3-file-backend.js';
-import type { BaseStore } from './base.js';
-import type { FileBackend } from './file-backend.js';
+import { MemoryStore } from './meta/memory.js';
+import { SqliteStore } from './meta/sqlite.js';
+import { PostgresStore } from './meta/postgres.js';
+import { LocalFileBackend } from './files/file-backend.js';
+import { createS3FileBackend } from './files/s3-file-backend.js';
+import type { BaseStore } from './meta/base.js';
+import type { FileBackend } from './files/file-backend.js';
 
 // Test spec fixture
 const TEST_SPEC = {
