@@ -44,7 +44,7 @@ interface ApplyFixesResult {
 }
 
 /**
- * Execute the aip-apply-fixes tool.
+ * Execute the baume-apply-fixes tool.
  */
 export async function executeApplyFixes(
   params: ApplyFixesInput,
@@ -76,7 +76,7 @@ export async function executeApplyFixes(
         {
           type: 'text' as const,
           text: JSON.stringify({
-            error: `No cached findings found for reviewId: ${reviewId}. Run aip-review first.`,
+            error: `No cached findings found for reviewId: ${reviewId}. Run baume-review first.`,
           }),
         },
       ],
@@ -180,7 +180,7 @@ export async function executeApplyFixes(
     contentType === 'yaml' ? 'application/x-yaml' : 'application/json';
   const filename = `fixed-spec.${contentType === 'yaml' ? 'yaml' : 'json'}`;
 
-  const resourceUri = `aip://specs?id=${stored.id}`;
+  const resourceUri = `baume://specs?id=${stored.id}`;
 
   // TODO: Notify subscribers of updated findings resource
   // await fastify.mcpSendToSession(sessionId, {

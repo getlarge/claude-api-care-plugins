@@ -1,7 +1,7 @@
 /**
  * E2E tests for rule discovery tools
  *
- * Tests aip-list-rules and aip-get-info tools via STDIO transport.
+ * Tests baume-list-rules and baume-get-info tools via STDIO transport.
  */
 
 import { test, describe, before, after } from 'node:test';
@@ -19,9 +19,9 @@ describe('Rule Discovery E2E', () => {
     await client.stop();
   });
 
-  describe('aip-list-rules', () => {
+  describe('baume-list-rules', () => {
     test('returns list of available rules', async () => {
-      const response = await client.callTool('aip-list-rules', {});
+      const response = await client.callTool('baume-list-rules', {});
 
       assert.ok(!response.result?.isError, 'Should not be an error');
 
@@ -36,7 +36,7 @@ describe('Rule Discovery E2E', () => {
     });
 
     test('can filter rules by category', async () => {
-      const response = await client.callTool('aip-list-rules', {
+      const response = await client.callTool('baume-list-rules', {
         category: 'pagination',
       });
 
@@ -51,7 +51,7 @@ describe('Rule Discovery E2E', () => {
     });
 
     test('includes rule metadata', async () => {
-      const response = await client.callTool('aip-list-rules', {});
+      const response = await client.callTool('baume-list-rules', {});
 
       const content = client.parseTextContent(response);
       const rules = content?.rules as Array<{
@@ -71,9 +71,9 @@ describe('Rule Discovery E2E', () => {
     });
   });
 
-  describe('aip-get-info', () => {
+  describe('baume-get-info', () => {
     test('returns info for valid AIP number', async () => {
-      const response = await client.callTool('aip-get-info', { aip: 158 });
+      const response = await client.callTool('baume-get-info', { aip: 158 });
 
       assert.ok(!response.result?.isError, 'Should not be an error');
 
@@ -85,7 +85,7 @@ describe('Rule Discovery E2E', () => {
     });
 
     test('includes AIP metadata', async () => {
-      const response = await client.callTool('aip-get-info', { aip: 193 });
+      const response = await client.callTool('baume-get-info', { aip: 193 });
 
       const content = client.parseTextContent(response);
       assert.ok(content, 'Should parse content');
@@ -106,7 +106,7 @@ describe('Rule Discovery E2E', () => {
       const wellKnownAips = [122, 131, 132, 133, 134, 135, 158, 193];
 
       for (const aip of wellKnownAips) {
-        const response = await client.callTool('aip-get-info', { aip });
+        const response = await client.callTool('baume-get-info', { aip });
         const content = client.parseTextContent(response);
 
         assert.ok(content, `AIP ${aip} should return content`);

@@ -1,5 +1,5 @@
 /**
- * E2E tests for aip-review tool
+ * E2E tests for baume-review tool
  *
  * Tests the review tool via STDIO transport, including compact response format,
  * resource linking, and caching behavior.
@@ -23,7 +23,7 @@ const FIXTURES_DIR = join(
 );
 const TEST_SPEC = join(FIXTURES_DIR, 'acme-commerce.yaml');
 
-describe('aip-review E2E', () => {
+describe('baume-review E2E', () => {
   const client = new McpTestClient();
 
   before(async () => {
@@ -36,7 +36,7 @@ describe('aip-review E2E', () => {
 
   describe('Compact response format', () => {
     test('returns reviewId and summary', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -65,7 +65,7 @@ describe('aip-review E2E', () => {
     });
 
     test('extracts spec metadata', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -79,7 +79,7 @@ describe('aip-review E2E', () => {
 
   describe('Resource linking', () => {
     test('returns resource_link to findings', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -89,8 +89,8 @@ describe('aip-review E2E', () => {
       assert.ok(resourceLink, 'Should have resource_link content');
       assert.ok(resourceLink.uri, 'resource_link should have uri');
       assert.ok(
-        resourceLink.uri?.startsWith('aip://findings?id='),
-        'uri should be aip://findings?id={reviewId}'
+        resourceLink.uri?.startsWith('baume://findings?id='),
+        'uri should be baume://findings?id={reviewId}'
       );
       assert.strictEqual(
         resourceLink.mimeType,
@@ -100,7 +100,7 @@ describe('aip-review E2E', () => {
     });
 
     test('findings are accessible via resources/read', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -140,10 +140,10 @@ describe('aip-review E2E', () => {
 
   describe('Caching and deduplication', () => {
     test('same spec content produces same reviewId', async () => {
-      const response1 = await client.callTool('aip-review', {
+      const response1 = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
-      const response2 = await client.callTool('aip-review', {
+      const response2 = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 

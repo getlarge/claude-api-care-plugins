@@ -56,7 +56,7 @@ describe('MCP Resources E2E', () => {
 
       // Should have findings and specs base resources
       const findingsResource = resources.find(
-        (r) => r.uri === 'aip://findings'
+        (r) => r.uri === 'baume://findings'
       );
       assert.ok(findingsResource, 'Should have findings resource');
       assert.strictEqual(
@@ -65,7 +65,7 @@ describe('MCP Resources E2E', () => {
         'Findings should be JSON'
       );
 
-      const specsResource = resources.find((r) => r.uri === 'aip://specs');
+      const specsResource = resources.find((r) => r.uri === 'baume://specs');
       assert.ok(specsResource, 'Should have specs resource');
     });
 
@@ -90,7 +90,7 @@ describe('MCP Resources E2E', () => {
   describe('resources/read', () => {
     test('should read findings resource by query param URI', async () => {
       // Create a review first
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
       const reviewContent = client.parseTextContent(reviewResponse);
@@ -99,7 +99,7 @@ describe('MCP Resources E2E', () => {
 
       // Read the resource using query param format
       const readResponse = await client.send('resources/read', {
-        uri: `aip://findings?id=${reviewId}`,
+        uri: `baume://findings?id=${reviewId}`,
       });
 
       assert.ok(!readResponse.error, 'Should not have error');
@@ -120,7 +120,7 @@ describe('MCP Resources E2E', () => {
 
     test('should return error for non-existent resource', async () => {
       const readResponse = await client.send('resources/read', {
-        uri: 'aip://findings?id=nonexistent-id-12345',
+        uri: 'baume://findings?id=nonexistent-id-12345',
       });
 
       assert.ok(!readResponse.error, 'JSON-RPC should not error');
@@ -138,16 +138,16 @@ describe('MCP Resources E2E', () => {
 
     test('should match base URI with uriSchema for query param URIs', async () => {
       // Create a review
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
       const reviewContent = client.parseTextContent(reviewResponse);
       const reviewId = reviewContent?.reviewId as string;
 
-      // The URI format is aip://findings?id={reviewId}
+      // The URI format is baume://findings?id={reviewId}
       // Query param stripping should find base URI and uriSchema validates
       const readResponse = await client.send('resources/read', {
-        uri: `aip://findings?id=${reviewId}`,
+        uri: `baume://findings?id=${reviewId}`,
       });
 
       assert.ok(!readResponse.error, 'Should not have JSON-RPC error');
@@ -179,7 +179,7 @@ describe('MCP Resources E2E', () => {
 
       // Check for findings template
       const findingsTemplate = templates.find(
-        (t) => t.uriTemplate === 'aip://findings/{reviewId}'
+        (t) => t.uriTemplate === 'baume://findings/{reviewId}'
       );
       assert.ok(findingsTemplate, 'Should have findings template');
       assert.strictEqual(
@@ -191,7 +191,7 @@ describe('MCP Resources E2E', () => {
 
       // Check for specs template
       const specsTemplate = templates.find(
-        (t) => t.uriTemplate === 'aip://specs/{specId}'
+        (t) => t.uriTemplate === 'baume://specs/{specId}'
       );
       assert.ok(specsTemplate, 'Should have specs template');
       assert.strictEqual(
@@ -222,12 +222,12 @@ describe('MCP Resources E2E', () => {
   describe('resources/subscribe and resources/unsubscribe', () => {
     test('should accept subscription request', async () => {
       // First create a resource to subscribe to
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
       const reviewContent = client.parseTextContent(reviewResponse);
       const reviewId = reviewContent?.reviewId as string;
-      const uri = `aip://findings?id=${reviewId}`;
+      const uri = `baume://findings?id=${reviewId}`;
 
       // Subscribe to the resource
       const subscribeResponse = await client.send('resources/subscribe', {
@@ -245,7 +245,7 @@ describe('MCP Resources E2E', () => {
     });
 
     test('should accept unsubscribe request', async () => {
-      const uri = 'aip://findings?id=some-review-id';
+      const uri = 'baume://findings?id=some-review-id';
 
       const unsubscribeResponse = await client.send('resources/unsubscribe', {
         uri,

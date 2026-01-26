@@ -1,5 +1,5 @@
 /**
- * HTTP E2E tests for aip-review tool
+ * HTTP E2E tests for baume-review tool
  *
  * Tests the review tool via HTTP transport.
  * Requires the MCP server to be running (manually or via Docker Compose).
@@ -37,7 +37,7 @@ const TEST_SPEC = join(FIXTURES_DIR, 'acme-commerce.yaml');
 // Server URL from environment or default
 const SERVER_URL = process.env['MCP_SERVER_URL'] ?? 'http://localhost:4000';
 
-describe('aip-review HTTP E2E', () => {
+describe('baume-review HTTP E2E', () => {
   const client = new HttpMcpTestClient({ baseUrl: SERVER_URL });
 
   before(async () => {
@@ -77,19 +77,19 @@ describe('aip-review HTTP E2E', () => {
 
       const toolNames = tools.map((t) => t.name);
       assert.ok(
-        toolNames.includes('aip-review'),
-        'Should have aip-review tool'
+        toolNames.includes('baume-review'),
+        'Should have baume-review tool'
       );
       assert.ok(
-        toolNames.includes('aip-list-rules'),
-        'Should have aip-list-rules tool'
+        toolNames.includes('baume-list-rules'),
+        'Should have baume-list-rules tool'
       );
     });
   });
 
   describe('Review with specPath', () => {
     test('returns reviewId and summary for local file', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -112,7 +112,7 @@ describe('aip-review HTTP E2E', () => {
     });
 
     test('extracts spec metadata', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -128,7 +128,7 @@ describe('aip-review HTTP E2E', () => {
     test('accepts inline YAML spec', async () => {
       const specContent = await readFile(TEST_SPEC, 'utf-8');
 
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         spec: specContent,
         contentType: 'yaml',
       });
@@ -144,7 +144,7 @@ describe('aip-review HTTP E2E', () => {
 
   describe('Resource linking', () => {
     test('returns resource_link to findings', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -154,13 +154,13 @@ describe('aip-review HTTP E2E', () => {
       assert.ok(resourceLink, 'Should have resource_link content');
       assert.ok(resourceLink.uri, 'resource_link should have uri');
       assert.ok(
-        resourceLink.uri?.startsWith('aip://findings?id='),
-        'uri should be aip://findings?id={reviewId}'
+        resourceLink.uri?.startsWith('baume://findings?id='),
+        'uri should be baume://findings?id={reviewId}'
       );
     });
 
     test('findings are accessible via resources/read', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -189,10 +189,10 @@ describe('aip-review HTTP E2E', () => {
 
   describe('Caching behavior', () => {
     test('same spec content produces same reviewId', async () => {
-      const response1 = await client.callTool('aip-review', {
+      const response1 = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
-      const response2 = await client.callTool('aip-review', {
+      const response2 = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -209,7 +209,7 @@ describe('aip-review HTTP E2E', () => {
 
   describe('Filtering options', () => {
     test('filters by category', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
         categories: ['pagination'],
       });
@@ -225,7 +225,7 @@ describe('aip-review HTTP E2E', () => {
     });
 
     test('skips specific rules', async () => {
-      const response = await client.callTool('aip-review', {
+      const response = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
         skipRules: ['naming/plural-resources'],
       });
@@ -238,7 +238,7 @@ describe('aip-review HTTP E2E', () => {
   });
 });
 
-describe('aip-list-rules HTTP E2E', () => {
+describe('baume-list-rules HTTP E2E', () => {
   const client = new HttpMcpTestClient({ baseUrl: SERVER_URL });
 
   before(async () => {
@@ -251,7 +251,7 @@ describe('aip-list-rules HTTP E2E', () => {
   });
 
   test('lists all rules', async () => {
-    const response = await client.callTool('aip-list-rules', {});
+    const response = await client.callTool('baume-list-rules', {});
 
     assert.ok(!response.result?.isError, 'Should not be an error');
 
@@ -262,7 +262,7 @@ describe('aip-list-rules HTTP E2E', () => {
   });
 
   test('filters by category', async () => {
-    const response = await client.callTool('aip-list-rules', {
+    const response = await client.callTool('baume-list-rules', {
       category: 'pagination',
     });
 

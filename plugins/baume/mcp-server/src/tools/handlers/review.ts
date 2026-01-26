@@ -48,7 +48,7 @@ interface ReviewResultData {
 }
 
 /**
- * Execute the aip-review tool.
+ * Execute the baume-review tool.
  */
 export async function executeReview(
   params: ReviewInput,
@@ -129,7 +129,7 @@ export async function executeReview(
   // Calculate total from summary components
   const total = summary.errors + summary.warnings + summary.suggestions;
 
-  const resourceUri = `aip://findings?id=${reviewId}`;
+  const resourceUri = `baume://findings?id=${reviewId}`;
 
   // Cache findings for later use (e.g., by apply-fixes with reviewId)
   let stored: {

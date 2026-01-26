@@ -1,5 +1,5 @@
 /**
- * E2E tests for aip-apply-fixes tool
+ * E2E tests for baume-apply-fixes tool
  *
  * Tests fix application via STDIO transport, including dry-run mode,
  * reviewId caching, and error handling.
@@ -23,7 +23,7 @@ const FIXTURES_DIR = join(
 );
 const TEST_SPEC = join(FIXTURES_DIR, 'acme-commerce.yaml');
 
-describe('aip-apply-fixes E2E', () => {
+describe('baume-apply-fixes E2E', () => {
   const client = new McpTestClient();
 
   before(async () => {
@@ -37,7 +37,7 @@ describe('aip-apply-fixes E2E', () => {
   describe('ReviewId caching', () => {
     test('can retrieve findings by reviewId and apply fixes (dry run)', async () => {
       // First, run a review to get the reviewId
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
 
@@ -45,7 +45,7 @@ describe('aip-apply-fixes E2E', () => {
       assert.ok(reviewContent?.reviewId, 'Should have reviewId from review');
 
       // Now call apply-fixes with reviewId
-      const fixResponse = await client.callTool('aip-apply-fixes', {
+      const fixResponse = await client.callTool('baume-apply-fixes', {
         specPath: TEST_SPEC,
         reviewId: reviewContent.reviewId,
         dryRun: true,
@@ -68,7 +68,7 @@ describe('aip-apply-fixes E2E', () => {
     });
 
     test('reports error for invalid reviewId', async () => {
-      const response = await client.callTool('aip-apply-fixes', {
+      const response = await client.callTool('baume-apply-fixes', {
         specPath: TEST_SPEC,
         reviewId: 'nonexistent-id',
         dryRun: true,
@@ -86,13 +86,13 @@ describe('aip-apply-fixes E2E', () => {
   describe('Fix summary', () => {
     test('provides accurate summary statistics', async () => {
       // Get reviewId first
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
       const reviewContent = client.parseTextContent(reviewResponse);
 
       // Apply fixes
-      const fixResponse = await client.callTool('aip-apply-fixes', {
+      const fixResponse = await client.callTool('baume-apply-fixes', {
         specPath: TEST_SPEC,
         reviewId: reviewContent?.reviewId,
         dryRun: true,
@@ -126,13 +126,13 @@ describe('aip-apply-fixes E2E', () => {
 
     test('includes detailed fix results', async () => {
       // Get reviewId first
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
       const reviewContent = client.parseTextContent(reviewResponse);
 
       // Apply fixes
-      const fixResponse = await client.callTool('aip-apply-fixes', {
+      const fixResponse = await client.callTool('baume-apply-fixes', {
         specPath: TEST_SPEC,
         reviewId: reviewContent?.reviewId,
         dryRun: true,
@@ -161,13 +161,13 @@ describe('aip-apply-fixes E2E', () => {
   describe('Modified spec output', () => {
     test('returns resource link to modified spec', async () => {
       // Get reviewId first
-      const reviewResponse = await client.callTool('aip-review', {
+      const reviewResponse = await client.callTool('baume-review', {
         specPath: TEST_SPEC,
       });
       const reviewContent = client.parseTextContent(reviewResponse);
 
       // Apply fixes
-      const fixResponse = await client.callTool('aip-apply-fixes', {
+      const fixResponse = await client.callTool('baume-apply-fixes', {
         specPath: TEST_SPEC,
         reviewId: reviewContent?.reviewId,
         dryRun: true,
@@ -180,8 +180,8 @@ describe('aip-apply-fixes E2E', () => {
       assert.ok(resourceLink, 'Should have resource_link to modified spec');
       assert.ok(resourceLink.uri, 'resource_link should have uri');
       assert.ok(
-        resourceLink.uri?.startsWith('aip://specs?id='),
-        'uri should be aip://specs?id={specId}'
+        resourceLink.uri?.startsWith('baume://specs?id='),
+        'uri should be baume://specs?id={specId}'
       );
     });
   });

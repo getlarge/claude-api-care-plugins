@@ -256,7 +256,7 @@ async function correlateOne(
 // =============================================================================
 
 /**
- * Execute the aip-correlate tool.
+ * Execute the baume-correlate tool.
  */
 export async function executeCorrelate(
   params: CorrelateInput,
@@ -310,7 +310,7 @@ export async function executeCorrelate(
           type: 'text' as const,
           text: JSON.stringify({
             error: `Review not found: ${reviewId}`,
-            hint: 'Run aip-review first to generate findings.',
+            hint: 'Run baume-review first to generate findings.',
           }),
         },
       ],
@@ -397,7 +397,7 @@ export async function executeCorrelate(
     },
   };
 
-  const resourceUri = `aip://findings?id=${reviewId}`;
+  const resourceUri = `baume://findings?id=${reviewId}`;
   // Store enriched findings (UPDATE at same reviewId)
   let stored: StoreResult;
   try {
@@ -446,7 +446,7 @@ export async function executeCorrelate(
 
   context.request.log.info(compactOutput.summary, 'Correlation complete');
 
-  // Build response with resource link (similar to aip-review pattern)
+  // Build response with resource link (similar to baume-review pattern)
   const textContent = {
     type: 'text' as const,
     text: JSON.stringify(compactOutput, null, 2),

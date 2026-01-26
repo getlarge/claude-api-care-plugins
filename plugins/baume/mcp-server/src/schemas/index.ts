@@ -34,7 +34,7 @@ export const CorrelationLevelSchema = Type.Union([
 export type CorrelationLevel = Static<typeof CorrelationLevelSchema>;
 
 // =============================================================================
-// Spec Change Schema (from aip-review findings)
+// Spec Change Schema (from baume-review findings)
 // =============================================================================
 
 export const SpecChangeSchema = Type.Object({
@@ -270,7 +270,7 @@ export const ApplyFixesInputSchema = Type.Object({
   ),
   reviewId: Type.String({
     description:
-      'Review ID from aip-review to retrieve cached findings for applying fixes.',
+      'Review ID from baume-review to retrieve cached findings for applying fixes.',
   }),
   dryRun: Type.Optional(
     Type.Boolean({
@@ -337,7 +337,7 @@ export type ApplyFixesOutput = Static<typeof ApplyFixesOutputSchema>;
 export const CorrelateInputSchema = Type.Object({
   reviewId: Type.String({
     description:
-      'Review ID from aip-review to retrieve cached findings for correlation.',
+      'Review ID from baume-review to retrieve cached findings for correlation.',
   }),
   specPath: Type.Optional(
     Type.String({
