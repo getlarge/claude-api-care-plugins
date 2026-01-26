@@ -17,7 +17,11 @@ COPY plugins/baume/mcp-server ./plugins/baume/mcp-server
 # Install all dependencies (needed for build)
 RUN npm ci
 
-# Build the bundles
+# Build openapi-reviewer first (mcp-server depends on its types)
+WORKDIR /app/plugins/baume/openapi-reviewer
+RUN npm run build
+
+# Build mcp-server
 WORKDIR /app/plugins/baume/mcp-server
 RUN npm run build
 
