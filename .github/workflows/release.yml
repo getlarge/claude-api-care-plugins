@@ -55,23 +55,23 @@ jobs:
 
           # Update plugin.json
           jq --arg v "$VERSION" '.version = $v' \
-            plugins/aip-api-design/.claude-plugin/plugin.json > tmp.json \
-            && mv tmp.json plugins/aip-api-design/.claude-plugin/plugin.json
+            plugins/baume/.claude-plugin/plugin.json > tmp.json \
+            && mv tmp.json plugins/baume/.claude-plugin/plugin.json
 
           # Update openapi-reviewer package.json
-          cd plugins/aip-api-design/openapi-reviewer
+          cd plugins/baume/openapi-reviewer
           npm version "$VERSION" --no-git-tag-version --allow-same-version
           cd ../../..
 
           # Update mcp-server package.json
-          cd plugins/aip-api-design/mcp-server
+          cd plugins/baume/mcp-server
           npm version "$VERSION" --no-git-tag-version --allow-same-version
           cd ../../..
 
           echo "=== Updated versions ==="
-          echo "plugin.json: $(jq -r '.version' plugins/aip-api-design/.claude-plugin/plugin.json)"
-          echo "openapi-reviewer: $(jq -r '.version' plugins/aip-api-design/openapi-reviewer/package.json)"
-          echo "mcp-server: $(jq -r '.version' plugins/aip-api-design/mcp-server/package.json)"
+          echo "plugin.json: $(jq -r '.version' plugins/baume/.claude-plugin/plugin.json)"
+          echo "openapi-reviewer: $(jq -r '.version' plugins/baume/openapi-reviewer/package.json)"
+          echo "mcp-server: $(jq -r '.version' plugins/baume/mcp-server/package.json)"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -91,28 +91,28 @@ jobs:
       - name: Verify bundles exist
         run: |
           echo "Checking openapi-reviewer bundles..."
-          ls -la plugins/aip-api-design/openapi-reviewer/dist/
-          test -f plugins/aip-api-design/openapi-reviewer/dist/reviewer.bundle.js
-          test -f plugins/aip-api-design/openapi-reviewer/dist/cli.bundle.js
-          test -f plugins/aip-api-design/openapi-reviewer/dist/discover.bundle.js
+          ls -la plugins/baume/openapi-reviewer/dist/
+          test -f plugins/baume/openapi-reviewer/dist/reviewer.bundle.js
+          test -f plugins/baume/openapi-reviewer/dist/cli.bundle.js
+          test -f plugins/baume/openapi-reviewer/dist/discover.bundle.js
 
           echo "Checking mcp-server bundles..."
-          ls -la plugins/aip-api-design/mcp-server/dist/
-          test -f plugins/aip-api-design/mcp-server/dist/server.bundle.js
-          test -f plugins/aip-api-design/mcp-server/dist/stdio.bundle.js
-          test -f plugins/aip-api-design/mcp-server/dist/worker.bundle.js
+          ls -la plugins/baume/mcp-server/dist/
+          test -f plugins/baume/mcp-server/dist/server.bundle.js
+          test -f plugins/baume/mcp-server/dist/stdio.bundle.js
+          test -f plugins/baume/mcp-server/dist/worker.bundle.js
 
           echo "All bundles verified!"
 
       - name: Smoke test - CLI help
         run: |
-          node plugins/aip-api-design/openapi-reviewer/dist/cli.bundle.js --help
+          node plugins/baume/openapi-reviewer/dist/cli.bundle.js --help
           echo "CLI bundle works!"
 
       - name: Smoke test - MCP server starts
         run: |
           # Start server in background, wait, then check health
-          timeout 10 node plugins/aip-api-design/mcp-server/dist/server.bundle.js &
+          timeout 10 node plugins/baume/mcp-server/dist/server.bundle.js &
           sleep 3
           curl -sf http://localhost:4000/health || echo "Health check (expected to fail in CI without full setup)"
           echo "Server bundle starts!"
@@ -120,19 +120,19 @@ jobs:
       - name: Create release archives
         run: |
           # Create dist archive for openapi-reviewer
-          cd plugins/aip-api-design/openapi-reviewer
+          cd plugins/baume/openapi-reviewer
           tar -czvf ../../../openapi-reviewer-dist.tar.gz dist/
           cd ../../..
 
           # Create dist archive for mcp-server
-          cd plugins/aip-api-design/mcp-server
+          cd plugins/baume/mcp-server
           tar -czvf ../../../mcp-server-dist.tar.gz dist/
           cd ../../..
 
           # Create combined archive
           mkdir -p release-dist
-          cp plugins/aip-api-design/openapi-reviewer/dist/*.bundle.js release-dist/
-          cp plugins/aip-api-design/mcp-server/dist/*.bundle.js release-dist/
+          cp plugins/baume/openapi-reviewer/dist/*.bundle.js release-dist/
+          cp plugins/baume/mcp-server/dist/*.bundle.js release-dist/
           tar -czvf aip-plugin-bundles.tar.gz release-dist/
 
       - name: Generate checksums
@@ -141,8 +141,8 @@ jobs:
           sha256sum mcp-server-dist.tar.gz >> checksums.txt
           sha256sum aip-plugin-bundles.tar.gz >> checksums.txt
           # Also checksum individual bundles
-          sha256sum plugins/aip-api-design/openapi-reviewer/dist/*.bundle.js >> checksums.txt
-          sha256sum plugins/aip-api-design/mcp-server/dist/*.bundle.js >> checksums.txt
+          sha256sum plugins/baume/openapi-reviewer/dist/*.bundle.js >> checksums.txt
+          sha256sum plugins/baume/mcp-server/dist/*.bundle.js >> checksums.txt
           echo "=== Checksums ==="
           cat checksums.txt
 
@@ -170,12 +170,12 @@ jobs:
             mcp-server-dist.tar.gz
             aip-plugin-bundles.tar.gz
             checksums.txt
-            plugins/aip-api-design/openapi-reviewer/dist/reviewer.bundle.js
-            plugins/aip-api-design/openapi-reviewer/dist/cli.bundle.js
-            plugins/aip-api-design/openapi-reviewer/dist/discover.bundle.js
-            plugins/aip-api-design/mcp-server/dist/server.bundle.js
-            plugins/aip-api-design/mcp-server/dist/stdio.bundle.js
-            plugins/aip-api-design/mcp-server/dist/worker.bundle.js
+            plugins/baume/openapi-reviewer/dist/reviewer.bundle.js
+            plugins/baume/openapi-reviewer/dist/cli.bundle.js
+            plugins/baume/openapi-reviewer/dist/discover.bundle.js
+            plugins/baume/mcp-server/dist/server.bundle.js
+            plugins/baume/mcp-server/dist/stdio.bundle.js
+            plugins/baume/mcp-server/dist/worker.bundle.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -186,7 +186,7 @@ jobs:
           echo "### Bundles" >> $GITHUB_STEP_SUMMARY
           echo "| Package | Bundle | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|---------|--------|------|" >> $GITHUB_STEP_SUMMARY
-          for f in plugins/aip-api-design/openapi-reviewer/dist/*.bundle.js plugins/aip-api-design/mcp-server/dist/*.bundle.js; do
+          for f in plugins/baume/openapi-reviewer/dist/*.bundle.js plugins/baume/mcp-server/dist/*.bundle.js; do
             size=$(du -h "$f" | cut -f1)
             name=$(basename "$f")
             pkg=$(echo "$f" | grep -o 'openapi-reviewer\|mcp-server')

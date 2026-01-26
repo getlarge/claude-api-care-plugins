@@ -1,4 +1,4 @@
-# AIP API Design Plugin - Project Context
+# Baume Plugin - Project Context
 
 This document summarizes the Claude Code plugin for API design review following Google's API Improvement Proposals (AIP).
 
@@ -32,7 +32,7 @@ We chose a **spec-first, framework-agnostic** approach:
 ```
 OpenAPI Spec (YAML/JSON)
     ↓
-AIP Reviewer (Framework-Agnostic)
+Baume Reviewer (Framework-Agnostic)
   • Analyzes spec against AIP rules
   • Outputs structured findings with context
   • Machine-readable (JSON, Markdown)
@@ -51,41 +51,40 @@ Framework-Specific Fixers (Future)
 Inspired by HumanLayer's command structure, the plugin follows a **progressive disclosure** pattern where each step produces a well-structured markdown document that becomes input for the next:
 
 ```
-┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│  DISCOVER   │───▶│   REVIEW    │───▶│    PLAN     │───▶│     FIX     │───▶│  VALIDATE   │
-│             │    │             │    │             │    │             │    │             │
-│/api-discover│    │ /api-review │    │  /api-plan  │    │  /api-fix   │    │/api-validate│
-└─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
-       │                  │                  │                  │                  │
-       ▼                  ▼                  ▼                  ▼                  ▼
-   thoughts/          thoughts/          thoughts/          (code             thoughts/
-   api/discovery/     api/reviews/       api/plans/         changes)          api/plans/
-   YYYY-MM-DD-*.md    YYYY-MM-DD-*.md    YYYY-MM-DD-*.md                      (updated)
+┌───────────────┐    ┌───────────────┐    ┌─────────────┐    ┌───────────┐    ┌─────────────────┐
+│   DISCOVER    │───▶│    REVIEW     │───▶│    PLAN     │───▶│    FIX    │───▶│    VALIDATE     │
+│               │    │               │    │             │    │           │    │                 │
+│/baume-discover│    │ /baume-review │    │ /baume-plan │    │/baume-fix │    │ /baume-validate │
+└───────────────┘    └───────────────┘    └─────────────┘    └───────────┘    └─────────────────┘
+       │                    │                   │                  │                   │
+       ▼                    ▼                   ▼                  ▼                   ▼
+    .baume/              .baume/             .baume/            (code              .baume/
+    discovery/           reviews/            plans/             changes)           plans/
+    YYYY-MM-DD-*.md      YYYY-MM-DD-*.md     YYYY-MM-DD-*.md                       (updated)
 ```
 
 ### Commands
 
-| Command                | Input             | Output                                | Skip When                 |
-| ---------------------- | ----------------- | ------------------------------------- | ------------------------- |
-| `/api-discover`        | (scans codebase)  | Discovery document listing all specs  | Spec path already known   |
-| `/api-review {spec}`   | OpenAPI spec file | Review findings document              | Already reviewed recently |
-| `/api-plan {review}`   | Review document   | Prioritized fix plan with phases      | Few obvious fixes         |
-| `/api-fix {plan}`      | Plan document     | Code changes, updates plan checkboxes | Manual fixes preferred    |
-| `/api-validate {plan}` | Plan document     | Re-runs review, updates plan status   | Quick iteration           |
+| Command                  | Input             | Output                                | Skip When                 |
+| ------------------------ | ----------------- | ------------------------------------- | ------------------------- |
+| `/baume-discover`        | (scans codebase)  | Discovery document listing all specs  | Spec path already known   |
+| `/baume-review {spec}`   | OpenAPI spec file | Review findings document              | Already reviewed recently |
+| `/baume-plan {review}`   | Review document   | Prioritized fix plan with phases      | Few obvious fixes         |
+| `/baume-fix {plan}`      | Plan document     | Code changes, updates plan checkboxes | Manual fixes preferred    |
+| `/baume-validate {plan}` | Plan document     | Re-runs review, updates plan status   | Quick iteration           |
 
-### The `thoughts/` Directory Pattern
+### The `.baume/` Directory Pattern
 
-All generated documents live in `thoughts/api/`:
+All generated documents live in `.baume/`:
 
 ```
-thoughts/
-└── api/
-    ├── discovery/
-    │   └── 2025-01-15-discovery.md
-    ├── reviews/
-    │   └── 2025-01-15-orders-api-review.md
-    └── plans/
-        └── 2025-01-15-orders-api-plan.md
+.baume/
+├── discovery/
+│   └── 2025-01-15-discovery.md
+├── reviews/
+│   └── 2025-01-15-orders-api-review.md
+└── plans/
+    └── 2025-01-15-orders-api-plan.md
 ```
 
 **Why this matters:**
@@ -100,27 +99,27 @@ thoughts/
 ## Plugin Structure
 
 ```
-claude-aip-plugins/                    # Marketplace root
+claude-api-care-plugins/                    # Marketplace root
 ├── .claude-plugin/
 │   └── marketplace.json               # Lists available plugins
 ├── README.md
 └── plugins/
-    └── aip-api-design/                # The plugin (v0.2.1)
+    └── baume/                         # The plugin
         ├── .claude-plugin/
         │   └── plugin.json            # Plugin manifest
         ├── .mcp.json                  # MCP server configuration
         ├── README.md
         │
         ├── commands/                  # Slash commands (5)
-        │   ├── api-discover.md        # Find OpenAPI specs
-        │   ├── api-review.md          # Run AIP rule checks
-        │   ├── api-plan.md            # Create prioritized fix plan
-        │   ├── api-fix.md             # Implement fixes phase-by-phase
-        │   └── api-validate.md        # Verify fixes, update plan
+        │   ├── baume-discover.md      # Find OpenAPI specs
+        │   ├── baume-review.md        # Run AIP rule checks
+        │   ├── baume-plan.md          # Create prioritized fix plan
+        │   ├── baume-fix.md           # Implement fixes phase-by-phase
+        │   └── baume-validate.md      # Verify fixes, update plan
         │
         ├── agents/                    # Agents (2)
-        │   ├── aip-lookup.md          # Fetch specific AIPs on demand
-        │   └── aip-code-locator.md    # Locate code related to API findings
+        │   ├── baume-lookup.md        # Fetch specific AIPs on demand
+        │   └── baume-code-locator.md  # Locate code related to API findings
         │
         ├── skills/
         │   ├── aip-knowledge/         # Reference material (9 files)
@@ -134,7 +133,7 @@ claude-aip-plugins/                    # Marketplace root
         │   │   ├── rest-mapping.md    # Proto concepts → REST/OpenAPI
         │   │   └── linter-rules.md    # All 17 automated rules reference
         │   │
-        │   └── aip-code-correlator/   # Code correlation guidance
+        │   └── baume-code-correlator/ # Code correlation guidance
         │       ├── SKILL.md           # Code correlation skill guide
         │       └── diff-templates.md  # Diff generation templates
         │
@@ -153,7 +152,7 @@ claude-aip-plugins/                    # Marketplace root
         │       ├── formatters.js      # Console, Markdown, JSON, SARIF output
         │       └── cli.js             # Command-line interface
         │
-        └── mcp-server/                # MCP server (@platformatic/mcp)
+        └── mcp-server/                # MCP server (@getlarge/fastify-mcp)
             ├── package.json
             └── src/
                 ├── server.ts          # Main server (Fastify-based)
@@ -236,31 +235,31 @@ interface Finding {
 
 ## MCP Server Features
 
-The MCP server exposes the reviewer functionality via the Model Context Protocol using `@platformatic/mcp`.
+The MCP server exposes the reviewer functionality via the Model Context Protocol using `@getlarge/fastify-mcp`.
 
 ### Tools (5)
 
-| Tool              | Description                                                                |
-| ----------------- | -------------------------------------------------------------------------- |
-| `aip-review`      | Analyze OpenAPI spec against AIP guidelines. Returns reviewId for caching. |
-| `aip-list-rules`  | List available rules. Filter by AIP number or category.                    |
-| `aip-get-info`    | Get information about a specific AIP (summary and link).                   |
-| `aip-apply-fixes` | Apply suggested fixes to spec. Supports writeBack for local files.         |
-| `aip-correlate`   | Correlate findings with code locations (NestJS, Fastify, Express).         |
+| Tool                | Description                                                                |
+| ------------------- | -------------------------------------------------------------------------- |
+| `baume-review`      | Analyze OpenAPI spec against AIP guidelines. Returns reviewId for caching. |
+| `baume-list-rules`  | List available rules. Filter by AIP number or category.                    |
+| `baume-get-info`    | Get information about a specific AIP (summary and link).                   |
+| `baume-apply-fixes` | Apply suggested fixes to spec. Supports writeBack for local files.         |
+| `baume-correlate`   | Correlate findings with code locations (NestJS, Fastify, Express).         |
 
 ### Prompts (2)
 
-| Prompt         | Description                                                       |
-| -------------- | ----------------------------------------------------------------- |
-| `code-locator` | Generate instructions for finding API endpoint code in a project. |
-| `aip-lookup`   | Generate instructions for fetching and explaining a specific AIP. |
+| Prompt               | Description                                                       |
+| -------------------- | ----------------------------------------------------------------- |
+| `baume-code-locator` | Generate instructions for finding API endpoint code in a project. |
+| `baume-lookup`       | Generate instructions for fetching and explaining a specific AIP. |
 
 ### Resources (2)
 
-| URI Pattern                    | Description                                 |
-| ------------------------------ | ------------------------------------------- |
-| `aip://findings?id={reviewId}` | Access cached review findings by review ID. |
-| `aip://specs?id={specId}`      | Access modified OpenAPI specs by spec ID.   |
+| URI Pattern                      | Description                                 |
+| -------------------------------- | ------------------------------------------- |
+| `baume://findings?id={reviewId}` | Access cached review findings by review ID. |
+| `baume://specs?id={specId}`      | Access modified OpenAPI specs by spec ID.   |
 
 Resources support subscriptions for real-time updates (memory or Redis backend).
 
@@ -299,7 +298,7 @@ Supports OIDC discovery and OAuth flows for secured deployments.
 ### 4. Fetch AIPs On Demand
 
 - Don't bundle all 200+ AIPs
-- The `aip-lookup` agent fetches from https://google.aip.dev/{number}
+- The `baume-lookup` agent fetches from https://google.aip.dev/{number}
 - Raw markdown available at https://github.com/aip-dev/google.aip.dev
 
 ---
@@ -351,35 +350,35 @@ To improve the plugin based on real usage:
 
 ```bash
 # From GitHub (once pushed)
-/plugin marketplace add getlarge/claude-aip-plugins
+/plugin marketplace add getlarge/claude-api-care-plugins
 
 # Or locally during development
-/plugin marketplace add ./path/to/claude-aip-plugins
+/plugin marketplace add ./path/to/claude-api-care-plugins
 ```
 
 ### Install Plugin
 
 ```bash
-/plugin install aip-api-design@getlarge-aip-plugins
+/plugin install baume@getlarge-baume-plugins
 ```
 
 ### Test the Workflow
 
 ```bash
 # 1. Find specs
-/api-discover
+/baume-discover
 
 # 2. Review a spec
-/api-review openapi.yaml
+/baume-review openapi.yaml
 
 # 3. Create fix plan
-/api-plan thoughts/api/reviews/YYYY-MM-DD-review.md
+/baume-plan .baume/reviews/YYYY-MM-DD-review.md
 
 # 4. Implement fixes
-/api-fix thoughts/api/plans/YYYY-MM-DD-plan.md
+/baume-fix .baume/plans/YYYY-MM-DD-plan.md
 
 # 5. Validate
-/api-validate thoughts/api/plans/YYYY-MM-DD-plan.md
+/baume-validate .baume/plans/YYYY-MM-DD-plan.md
 ```
 
 ---
@@ -397,7 +396,7 @@ To improve the plugin based on real usage:
 
 ### Framework-Specific Code Fixers
 
-The `aip-correlate` tool locates code, but automated code fixes are not yet implemented:
+The `baume-correlate` tool locates code, but automated code fixes are not yet implemented:
 
 - NestJS: Generate decorators, DTOs, exception filters from findings
 - Fastify: Generate schemas, error handlers from findings
@@ -411,15 +410,15 @@ The `aip-correlate` tool locates code, but automated code fixes are not yet impl
 ### Already Implemented ✓
 
 - ~~SARIF output for IDE integration~~ (formatters.js supports SARIF)
-- ~~Framework detection~~ (aip-correlate supports NestJS, Fastify, Express)
-- ~~Code location correlation~~ (aip-correlate tool)
+- ~~Framework detection~~ (baume-correlate supports NestJS, Fastify, Express)
+- ~~Code location correlation~~ (baume-correlate tool)
 - ~~MCP resources with subscriptions~~ (memory + Redis backends)
 
 ---
 
 ## Repository
 
-- **Marketplace:** https://github.com/getlarge/claude-aip-plugins
+- **Marketplace:** https://github.com/getlarge/claude-api-care-plugins
 - **AIP Source:** https://github.com/aip-dev/google.aip.dev
 
 ---

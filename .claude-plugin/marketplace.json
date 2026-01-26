@@ -1,15 +1,15 @@
 {
   "description": "Claude Code plugins for API design, security consulting, and development productivity",
-  "name": "getlarge-aip-plugins",
+  "name": "getlarge-baume-plugins",
   "owner": {
     "name": "getlarge",
     "url": "https://github.com/getlarge"
   },
   "plugins": [
     {
-      "description": "Review and improve REST APIs following Google's API Improvement Proposals (AIP). Commands for discovering specs, reviewing against AIP rules, planning fixes, and framework-specific remediation.",
-      "name": "aip-api-design",
-      "source": "./plugins/aip-api-design"
+      "description": "API hygiene coach - review and improve REST APIs using best practices from Google's API Improvement Proposals (AIP). Discover specs, review against rules, plan fixes, and apply framework-specific remediation.",
+      "name": "baume",
+      "source": "./plugins/baume"
     }
   ]
 }

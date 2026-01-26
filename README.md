@@ -8,7 +8,7 @@ A collection of Claude Code plugins for API design, security consulting, and dev
 
 ```bash
 # In Claude Code
-/plugin marketplace add getlarge/claude-aip-plugins
+/plugin marketplace add getlarge/claude-api-care-plugins
 ```
 
 ### Install Plugins
@@ -18,34 +18,57 @@ A collection of Claude Code plugins for API design, security consulting, and dev
 /plugin
 
 # Or install directly
-/plugin install aip-api-design@getlarge-aip-plugins
+/plugin install baume@getlarge-baume-plugins
 ```
 
 ## Available Plugins
 
-### aip-api-design
+### Baume
 
 Review and improve REST APIs following Google's [API Improvement Proposals (AIP)](https://google.aip.dev).
 
 **Commands:**
 
-- `/api-discover` — Find all OpenAPI specs in your project
-- `/api-review` — Run AIP rules against a spec
-- `/api-plan` — Create prioritized fix plan from review
-- `/api-fix` — Implement fixes phase by phase
-- `/api-validate` — Verify fixes and track progress
+- `/baume-discover` — Find all OpenAPI specs in your project
+- `/baume-review` — Run AIP rules against a spec
+- `/baume-plan` — Create prioritized fix plan from review
+- `/baume-fix` — Implement fixes phase by phase
+- `/baume-validate` — Verify fixes and track progress
 
 **Workflow:**
 
 ```
-/api-discover → /api-review → /api-plan → /api-fix → /api-validate
-                                              ↑            │
-                                              └────────────┘
+/baume-discover → /baume-review → /baume-plan → /baume-fix → /baume-validate
+                                                      ↑            │
+                                                      └────────────┘
 ```
 
-All artifacts are stored in `thoughts/api/` for persistence and human review.
+All artifacts are stored in `.baume/` for persistence and human review.
 
-[Full documentation →](./plugins/aip-api-design/README.md)
+[Full documentation →](./plugins/baume/README.md)
+
+## Roadmap
+
+### Baume Plugin
+
+**Current (v0.2.x):**
+
+- 17 AIP-based rules for REST API linting
+- Code correlation for NestJS, Fastify, Express
+- Auto-fix support for OpenAPI specs
+- MCP server for Claude Code integration
+
+**Planned:**
+
+| Feature                     | Description                                                                    | Status      |
+| --------------------------- | ------------------------------------------------------------------------------ | ----------- |
+| **Declarative Rule Engine** | Custom rules via YAML — no code execution, CEL sandbox for complex expressions | 🔬 Research |
+| **Custom Rulesets**         | Presets (strict, standard, minimal) + company-specific rule configurations     | 🔬 Research |
+| **API Hygiene Scoring**     | Score APIs on a 0-100 scale with levels (Biohazard → Operating Room)           | 🔬 Research |
+| **Coaching Dashboard**      | Track API quality over time, get prioritized fix suggestions                   | 📋 Planned  |
+| **Rule Distribution**       | Local rules in `.api-hygiene/`, future registry for shared rules               | 📋 Planned  |
+
+See [research notes](./thoughts/shared/research/2026-01-25-api-hygiene-coaching.md) for detailed designs.
 
 ## Development
 
@@ -53,13 +76,13 @@ All artifacts are stored in `thoughts/api/` for persistence and human review.
 
 ```bash
 # Clone the repo
-git clone https://github.com/getlarge/claude-aip-plugins.git
+git clone https://github.com/getlarge/claude-api-care-plugins.git
 
 # In Claude Code, add as local marketplace
-/plugin marketplace add ./claude-aip-plugins
+/plugin marketplace add ./claude-api-care-plugins
 
 # Install and test
-/plugin install aip-api-design@getlarge-aip-plugins
+/plugin install baume@getlarge-baume-plugins
 ```
 
 ### Adding New Plugins
