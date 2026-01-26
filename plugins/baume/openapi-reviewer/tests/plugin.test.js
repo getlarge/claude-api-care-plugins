@@ -109,19 +109,19 @@ describe('Plugin Commands', () => {
     }
   });
 
-  it('api-review command references the CLI script', async () => {
+  it('baume-review command references the CLI script', async () => {
     const content = await readFile(
-      join(PLUGIN_ROOT, 'commands', 'api-review.md'),
+      join(PLUGIN_ROOT, 'commands', 'baume-review.md'),
       'utf-8'
     );
 
     assert.ok(
       content.includes('cli.js'),
-      'api-review should reference the CLI script'
+      'baume-review should reference the CLI script'
     );
     assert.ok(
       content.includes('CLAUDE_PLUGIN_ROOT'),
-      'api-review should reference CLAUDE_PLUGIN_ROOT'
+      'baume-review should reference CLAUDE_PLUGIN_ROOT'
     );
   });
 });
@@ -153,23 +153,23 @@ describe('Plugin Agents', () => {
     }
   });
 
-  it('aip-lookup agent has required sections', async () => {
+  it('baume-lookup agent has required sections', async () => {
     const content = await readFile(
-      join(PLUGIN_ROOT, 'agents', 'aip-lookup.md'),
+      join(PLUGIN_ROOT, 'agents', 'baume-lookup.md'),
       'utf-8'
     );
 
     assert.ok(
       content.includes('## When to Use'),
-      'aip-lookup should have "When to Use" section'
+      'baume-lookup should have "When to Use" section'
     );
     assert.ok(
       content.includes('## AIP Sources'),
-      'aip-lookup should have "AIP Sources" section'
+      'baume-lookup should have "AIP Sources" section'
     );
     assert.ok(
       content.includes('google.aip.dev'),
-      'aip-lookup should reference google.aip.dev'
+      'baume-lookup should reference google.aip.dev'
     );
   });
 });
@@ -212,7 +212,7 @@ describe('Plugin Scripts', () => {
     const pkg = JSON.parse(await readFile(pkgPath, 'utf-8'));
 
     assert.ok(pkg.bin, 'package.json should have bin entry');
-    assert.ok(pkg.bin['aip-review'], 'Should have aip-review bin');
+    assert.ok(pkg.bin['baume-review'], 'Should have baume-review bin');
   });
 
   it('all exported rules have required properties', async () => {
