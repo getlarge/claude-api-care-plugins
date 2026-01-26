@@ -1,0 +1,18 @@
+# Intermediate build artifacts
+*.tsbuildinfo
+node_modules/
+
+# Build outputs - bundles are distributed via GitHub releases
+dist/
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+
+# SQLite database files
+*.db
+*.db-journal
+
+# Ory Network exported configs (may contain sensitive data)
+ory-config/

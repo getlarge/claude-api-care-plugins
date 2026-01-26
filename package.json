@@ -1,7 +1,7 @@
 {
-  "name": "claude-aip-plugins",
+  "name": "claude-api-care-plugins",
   "private": true,
-  "description": "Claude Code plugins for API design following Google's AIPs",
+  "description": "Claude Code plugins for API hygiene and design",
   "type": "module",
   "workspaces": [
     "plugins/*/*"
@@ -16,7 +16,7 @@
     "format:check": "prettier --check .",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "build": "npm run build -w @getlarge/aip-openapi-reviewer && npm run build -w @getlarge/aip-openapi-reviewer-mcp",
+    "build": "npm run build -w @getlarge/baume-reviewer && npm run build -w @getlarge/baume-mcp",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "npm run test:e2e --workspaces --if-present",
     "prepare": "test \"$HUSKY\" = \"0\" || husky"

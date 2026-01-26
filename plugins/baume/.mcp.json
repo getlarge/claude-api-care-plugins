@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "baume": {
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-server/dist/stdio.bundle.js"],
+      "command": "node",
+      "description": "Baume API Hygiene Coach - provides tools for reviewing OpenAPI specs against API best practices"
+    }
+  }
+}

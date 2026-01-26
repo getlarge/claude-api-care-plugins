@@ -1,0 +1,70 @@
+{
+  "name": "@getlarge/baume-reviewer",
+  "version": "0.3.0",
+  "description": "Baume API Hygiene Coach - Review OpenAPI specs against API best practices",
+  "type": "module",
+  "main": "./dist/reviewer.bundle.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/reviewer.bundle.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts"
+    },
+    "./rules": {
+      "import": "./src/rules/index.js"
+    },
+    "./formatters": {
+      "import": "./src/formatters.js"
+    }
+  },
+  "bin": {
+    "baume-review": "./dist/cli.bundle.js",
+    "baume-discover": "./dist/discover.bundle.js"
+  },
+  "scripts": {
+    "review": "node dist/cli.bundle.js",
+    "discover": "node dist/discover.bundle.js",
+    "test": "node --test src/**/*.test.js",
+    "test:integration": "node --test tests/integration.test.js",
+    "test:plugin": "node --test tests/plugin.test.js",
+    "test:e2e": "node --test tests/e2e.test.js",
+    "test:all": "node --test src/**/*.test.js tests/**/*.test.js",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "build": "npm run build:types && npm run build:bundle",
+    "build:types": "tsc",
+    "build:bundle": "node build.mjs"
+  },
+  "keywords": [
+    "openapi",
+    "api",
+    "baume",
+    "hygiene",
+    "linter",
+    "review",
+    "rest",
+    "swagger"
+  ],
+  "license": "Apache-2.0",
+  "files": [
+    "src/"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@apidevtools/swagger-parser": "^10.1.0",
+    "compromise": "^14.14.4",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^22.16.0",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "typescript": "^5.0.0"
+  }
+}

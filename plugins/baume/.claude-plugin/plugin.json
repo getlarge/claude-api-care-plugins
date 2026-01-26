@@ -1,0 +1,21 @@
+{
+  "author": {
+    "name": "Edouard Maleix",
+    "url": "https://getlarge.eu"
+  },
+  "description": "API hygiene coach - review and improve REST APIs using best practices from Google's API Improvement Proposals (AIP). Discover specs, review against rules, plan fixes, and apply framework-specific remediation.",
+  "homepage": "https://github.com/getlarge/claude-baume",
+  "keywords": [
+    "api",
+    "openapi",
+    "baume",
+    "hygiene",
+    "rest",
+    "linter",
+    "design"
+  ],
+  "license": "Apache 2.0",
+  "name": "baume",
+  "repository": "https://github.com/getlarge/claude-baume",
+  "version": "0.3.0"
+}

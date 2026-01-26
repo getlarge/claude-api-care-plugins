@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "aip-reviewer": {
-      "args": ["./plugins/aip-api-design/mcp-server/dist/stdio.js"],
+    "baume": {
+      "args": ["./plugins/baume/mcp-server/dist/stdio.js"],
       "command": "node"
     }
   }
