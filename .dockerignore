@@ -1,0 +1,42 @@
+# Dependencies - installed fresh in Docker
+node_modules/
+.pnpm-store/
+
+# Build outputs
+*.tgz
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# Local development
+.env
+.env.local
+
+# Claude Code artifacts
+thoughts/
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed for build)
+*.md
+!plugins/baume/openapi-reviewer/RULES.md
+
+# Patches are needed for npm install (patch-package)
+# patches/

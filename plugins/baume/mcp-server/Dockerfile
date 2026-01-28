@@ -6,7 +6,10 @@ FROM node:22-slim AS builder
 WORKDIR /app
 
 # Copy workspace root files for npm workspace resolution
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json .npmrc ./
+
+# Copy patches for patch-package
+COPY patches ./patches
 
 # Copy the openapi-reviewer (peer dependency bundled into output)
 COPY plugins/baume/openapi-reviewer ./plugins/baume/openapi-reviewer
@@ -15,7 +18,8 @@ COPY plugins/baume/openapi-reviewer ./plugins/baume/openapi-reviewer
 COPY plugins/baume/mcp-server ./plugins/baume/mcp-server
 
 # Install all dependencies (needed for build)
-RUN npm ci
+# Use npm install instead of npm ci to handle optional deps resolution differences
+RUN npm install
 
 # Build openapi-reviewer first (mcp-server depends on its types)
 WORKDIR /app/plugins/baume/openapi-reviewer
@@ -41,8 +45,9 @@ COPY --from=builder /app/plugins/baume/openapi-reviewer ./plugins/baume/openapi-
 COPY --from=builder /app/plugins/baume/mcp-server/package.json ./plugins/baume/mcp-server/
 
 # Install optional runtime dependencies (marked external in esbuild)
+# Skip postinstall scripts since patch-package is a devDep and patches are already applied in builder
 WORKDIR /app/plugins/baume/mcp-server
-RUN HUSKY=0 npm install --omit=dev --include=optional
+RUN HUSKY=0 npm install --omit=dev --include=optional --ignore-scripts
 WORKDIR /app
 
 # Copy only the self-contained bundles
