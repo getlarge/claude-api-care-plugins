@@ -25,15 +25,41 @@ log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_step() { echo -e "${BLUE}[STEP]${NC} $1"; }
 
+# Detect OS for install hints
+detect_install_hint() {
+    local pkg="$1"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        case "$pkg" in
+            ory) echo "brew install ory/tap/ory" ;;
+            jq) echo "brew install jq" ;;
+        esac
+    elif [[ -f /etc/debian_version ]]; then
+        case "$pkg" in
+            ory) echo "curl -sSL https://raw.githubusercontent.com/ory/meta/master/install.sh | bash -s -- -b /usr/local/bin ory" ;;
+            jq) echo "sudo apt-get install jq" ;;
+        esac
+    elif [[ -f /etc/redhat-release ]]; then
+        case "$pkg" in
+            ory) echo "curl -sSL https://raw.githubusercontent.com/ory/meta/master/install.sh | bash -s -- -b /usr/local/bin ory" ;;
+            jq) echo "sudo dnf install jq" ;;
+        esac
+    else
+        case "$pkg" in
+            ory) echo "See https://www.ory.sh/docs/guides/cli/installation" ;;
+            jq) echo "See https://jqlang.github.io/jq/download/" ;;
+        esac
+    fi
+}
+
 # Check if ory CLI is installed
 if ! command -v ory &> /dev/null; then
-    log_error "Ory CLI not found. Install with: brew install ory/tap/ory"
+    log_error "Ory CLI not found. Install with: $(detect_install_hint ory)"
     exit 1
 fi
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
-    log_error "jq not found. Install with: brew install jq"
+    log_error "jq not found. Install with: $(detect_install_hint jq)"
     exit 1
 fi
 
@@ -162,8 +188,8 @@ if [[ "$DRY_RUN" != "true" ]]; then
 fi
 
 # Create temp directory for extracted configs
-TEMP_DIR=$(mktemp -d)
-trap "rm -rf $TEMP_DIR" EXIT
+TEMP_DIR=$(mktemp -d) || { log_error "Failed to create temp directory"; exit 1; }
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Extract configs from project.json
 log_step "Extracting configuration from project.json..."

@@ -23,15 +23,41 @@ log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
+# Detect OS for install hints
+detect_install_hint() {
+    local pkg="$1"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        case "$pkg" in
+            ory) echo "brew install ory/tap/ory" ;;
+            jq) echo "brew install jq" ;;
+        esac
+    elif [[ -f /etc/debian_version ]]; then
+        case "$pkg" in
+            ory) echo "curl -sSL https://raw.githubusercontent.com/ory/meta/master/install.sh | bash -s -- -b /usr/local/bin ory" ;;
+            jq) echo "sudo apt-get install jq" ;;
+        esac
+    elif [[ -f /etc/redhat-release ]]; then
+        case "$pkg" in
+            ory) echo "curl -sSL https://raw.githubusercontent.com/ory/meta/master/install.sh | bash -s -- -b /usr/local/bin ory" ;;
+            jq) echo "sudo dnf install jq" ;;
+        esac
+    else
+        case "$pkg" in
+            ory) echo "See https://www.ory.sh/docs/guides/cli/installation" ;;
+            jq) echo "See https://jqlang.github.io/jq/download/" ;;
+        esac
+    fi
+}
+
 # Check if ory CLI is installed
 if ! command -v ory &> /dev/null; then
-    log_error "Ory CLI not found. Install with: brew install ory/tap/ory"
+    log_error "Ory CLI not found. Install with: $(detect_install_hint ory)"
     exit 1
 fi
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
-    log_error "jq not found. Install with: brew install jq"
+    log_error "jq not found. Install with: $(detect_install_hint jq)"
     exit 1
 fi
 
@@ -103,9 +129,11 @@ CLIENT_COUNT=$(jq '.items | length' "$OUTPUT_DIR/oauth2-clients.json" 2>/dev/nul
 log_info "  Found $CLIENT_COUNT OAuth2 client(s)"
 
 # Create export manifest
+# Use portable date format (works on both BSD/macOS and GNU/Linux)
+EXPORT_TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 cat > "$OUTPUT_DIR/manifest.json" << EOF
 {
-  "exported_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "exported_at": "$EXPORT_TIMESTAMP",
   "source": {
     "project_id": "$PROJECT_ID",
     "project_name": "$PROJECT_NAME",
