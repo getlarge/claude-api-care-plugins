@@ -9,7 +9,7 @@ primary_region = "cdg"  # Paris
 
 [env]
   PORT = "4000"
-  LOG_LEVEL = "info"
+  LOG_LEVEL = "debug"
   NODE_ENV = "production"
   # Storage auto-detection:
   # - STORE_TYPE: 'postgres' if DATABASE_URL set, else 'sqlite'
