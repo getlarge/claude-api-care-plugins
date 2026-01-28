@@ -35,6 +35,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
       - name: Extract version from tag
         id: version
         run: |
@@ -72,12 +78,6 @@ jobs:
           echo "plugin.json: $(jq -r '.version' plugins/baume/.claude-plugin/plugin.json)"
           echo "openapi-reviewer: $(jq -r '.version' plugins/baume/openapi-reviewer/package.json)"
           echo "mcp-server: $(jq -r '.version' plugins/baume/mcp-server/package.json)"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
