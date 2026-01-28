@@ -1,0 +1,52 @@
+# Fly.io configuration for Baume MCP Server
+# See docs/DEPLOYMENT.md for full setup instructions
+
+app = "baume-mcp"
+primary_region = "cdg"  # Paris
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "4000"
+  LOG_LEVEL = "debug"
+  NODE_ENV = "production"
+  # Storage auto-detection:
+  # - STORE_TYPE: 'postgres' if DATABASE_URL set, else 'sqlite'
+  # - S3: enabled if AWS_ACCESS_KEY_ID set (auto-set by fly storage create)
+  #
+  # Secrets to configure (via fly secrets set):
+  # - DATABASE_URL: auto-set by `fly postgres attach`
+  # - AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, BUCKET_NAME, AWS_ENDPOINT_URL_S3:
+  #   auto-set by `fly storage create`
+  # - AUTH_ENABLED: set to "true" to enable OAuth2
+  # - ORY_PROJECT_URL: Ory Network project URL (required if AUTH_ENABLED=true)
+  # - ORY_PROJECT_API_KEY: Ory admin API key (optional, for token introspection)
+  # - MCP_RESOURCE_URI: Public URL of this server (e.g., https://baume-mcp.fly.dev)
+  # - OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET: OAuth2 client credentials (optional)
+  # - ANTHROPIC_API_KEY: For baume-correlate tool (optional)
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+[[http_service.checks]]
+  grace_period = "30s"
+  interval = "30s"
+  method = "GET"
+  path = "/health"
+  timeout = "5s"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

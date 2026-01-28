@@ -70,7 +70,7 @@ services:
     build:
       context: ../../..
       dockerfile: plugins/baume/mcp-server/Dockerfile
-    container_name: baume-mcp-server
+    container_name: baume-mcp
     depends_on:
       postgres:
         condition: service_healthy

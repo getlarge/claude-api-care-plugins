@@ -6,7 +6,11 @@
 
 import Fastify from 'fastify';
 import mcpPlugin from '@getlarge/fastify-mcp';
-import type { AuthorizationConfig } from '@getlarge/fastify-mcp';
+import type {
+  AuthorizationConfig,
+  DCRRequest,
+  DCRResponse,
+} from '@getlarge/fastify-mcp';
 
 import { securityPlugin } from './plugins/security.js';
 import {
@@ -58,6 +62,36 @@ const DEFAULT_CONFIG = {
 } satisfies Omit<Required<ServerConfig>, 'workerPath'>;
 
 /**
+ * Clean DCR response to remove empty/null fields that break Claude Code's Zod validation.
+ * Claude Code expects optional URI fields to be valid URLs or absent, not empty strings.
+ * See: https://github.com/anthropics/claude-code/issues/13685
+ */
+function cleanDcrResponse(response: DCRResponse): DCRResponse {
+  const cleaned = { ...response };
+
+  // Fields that must be valid URLs or absent (not empty strings)
+  const uriFields = [
+    'client_uri',
+    'logo_uri',
+    'tos_uri',
+    'policy_uri',
+    'jwks_uri',
+  ] as const;
+  for (const field of uriFields) {
+    if (cleaned[field] === '' || cleaned[field] === null) {
+      delete cleaned[field];
+    }
+  }
+
+  // Fields that must be arrays or absent (not null)
+  if (cleaned.contacts === null) {
+    delete cleaned.contacts;
+  }
+
+  return cleaned;
+}
+
+/**
  * Build authorization config from environment or explicit config.
  */
 function buildAuthConfig(config?: OryAuthConfig): AuthorizationConfig {
@@ -77,11 +111,14 @@ function buildAuthConfig(config?: OryAuthConfig): AuthorizationConfig {
     return { enabled: false };
   }
 
+  // Check if audience validation should be disabled (for debugging)
+  const validateAudience = process.env['VALIDATE_AUDIENCE'] !== 'false';
+
   return {
     enabled: true,
     authorizationServers: [projectUrl],
     resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
-    // Paths excluded from OAuth (health check, metrics, etc.)
+    // Health endpoint excluded from OAuth
     excludedPaths: ['/health'],
     tokenValidation: {
       // Prefer JWKS for JWT validation (works without API key)
@@ -90,21 +127,39 @@ function buildAuthConfig(config?: OryAuthConfig): AuthorizationConfig {
       introspectionEndpoint:
         config?.introspectionEndpoint ??
         (projectApiKey ? `${projectUrl}/admin/oauth2/introspect` : undefined),
-      validateAudience: true,
-    },
-    // OAuth2 client config - enabled if client credentials are provided
-    oauth2Client:
-      clientId && clientSecret
-        ? {
-            clientId,
-            clientSecret,
-            authorizationServer: projectUrl,
-            resourceUri:
-              resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
-            scopes: config?.scopes ?? ['openid'],
-            dynamicRegistration: false,
-          }
+      // Introspection auth - use bearer token with Ory API key if available
+      introspectionAuth: projectApiKey
+        ? { type: 'bearer' as const, token: projectApiKey }
         : undefined,
+      // Audience validation can be disabled via VALIDATE_AUDIENCE=false
+      validateAudience,
+    },
+    // OAuth2 client config - supports both static credentials and dynamic registration
+    oauth2Client: {
+      // Static credentials (optional - if not provided, DCR will be used)
+      ...(clientId && clientSecret ? { clientId, clientSecret } : {}),
+      authorizationServer: projectUrl,
+      resourceUri: resourceUri ?? `http://localhost:${DEFAULT_CONFIG.port}`,
+      scopes: config?.scopes ?? ['openid'],
+      // Enable DCR when no static credentials are configured
+      dynamicRegistration: !clientId || !clientSecret,
+    },
+    // DCR hooks for proxying to Ory and cleaning responses
+    dcrHooks: {
+      // Bypass OIDC discovery to avoid infinite loop when registration_endpoint points to us
+      upstreamEndpoint: `${projectUrl}/oauth2/register`,
+      onRequest: (request: DCRRequest, log) => {
+        log.info({ dcrRequest: request }, 'DCR: forwarding request to Ory');
+        return request;
+      },
+      onResponse: (response: DCRResponse, request: DCRRequest, log) => {
+        log.info({ dcrResponse: response }, 'DCR: received response from Ory');
+        // Clean response to remove empty/null fields that break Claude Code's Zod validation
+        const cleaned = cleanDcrResponse(response);
+        log.info({ dcrCleanedResponse: cleaned }, 'DCR: cleaned response');
+        return cleaned;
+      },
+    },
   };
 }
 
@@ -170,7 +225,12 @@ export async function createServer(
   const authorization = buildAuthConfig(authConfig);
   if (authorization.enabled) {
     fastify.log.info(
-      { authorizationServers: authorization.authorizationServers },
+      {
+        authorizationServers: authorization.authorizationServers,
+        resourceUri: authorization.resourceUri,
+        validateAudience: authorization.tokenValidation?.validateAudience,
+        jwksUri: authorization.tokenValidation?.jwksUri,
+      },
       'OAuth2 authorization enabled'
     );
   } else {
