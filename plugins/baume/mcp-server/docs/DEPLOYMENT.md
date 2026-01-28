@@ -613,6 +613,99 @@ ory auth
 ory auth whoami
 ```
 
+### Local Development with OAuth (MCP Inspector)
+
+Ory Network **does not allow CORS from localhost origins**. To test OAuth-protected MCP endpoints locally with browser-based tools like MCP Inspector, use **Ory Tunnel**.
+
+#### How It Works
+
+Ory Tunnel creates a local proxy that:
+
+- Runs on `http://localhost:4000` (default)
+- Proxies all Ory APIs (`/.well-known/*`, `/oauth2/*`, `/ui/*`, etc.)
+- Rewrites URLs in responses to use localhost
+- Enables cookies and CORS to work on localhost
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  MCP Inspector  │────▶│   MCP Server    │────▶│   Ory Tunnel    │
+│ localhost:6274  │     │  localhost:3000 │     │  localhost:4000 │
+└─────────────────┘     └─────────────────┘     └────────┬────────┘
+                                                         │
+                                                         ▼
+                                               ┌─────────────────┐
+                                               │  Ory Network    │
+                                               │ *.oryapis.com   │
+                                               └─────────────────┘
+```
+
+#### Setup Steps
+
+1. **Create Ory Project API Key** (for headless tunnel operation):
+
+   ```bash
+   # Go to console.ory.sh → Project Settings → API Keys
+   # Create a new API key and export it
+   export ORY_PROJECT_API_KEY="ory_pat_..."
+   ```
+
+2. **Start Ory Tunnel**:
+
+   ```bash
+   ory tunnel --dev --project YOUR-PROJECT-ID http://localhost:3000
+   # Tunnel listens on http://localhost:4000
+   ```
+
+3. **Run MCP Server Locally** (pointing to tunnel):
+
+   ```bash
+   # Build the image first
+   docker build -t baume-mcp:test -f plugins/baume/mcp-server/Dockerfile .
+
+   # Run with tunnel as OAuth provider
+   docker run -d --name baume-local -p 3000:4000 \
+     -e AUTH_ENABLED=true \
+     -e ORY_PROJECT_URL="http://host.docker.internal:4000" \
+     -e MCP_RESOURCE_URI="http://localhost:3000" \
+     -e ALLOWED_ORIGINS="http://localhost:6274" \
+     baume-mcp:test
+   ```
+
+4. **Test with MCP Inspector**:
+
+   ```bash
+   npx @modelcontextprotocol/inspector
+   # Opens http://localhost:6274
+
+   # In Inspector UI:
+   # - Transport Type: Streamable HTTP
+   # - URL: http://localhost:3000/mcp
+   ```
+
+The OAuth flow works because:
+
+- Inspector fetches `/.well-known/oauth-protected-resource` from MCP server
+- MCP server returns `authorization_servers: ["http://localhost:4000"]` (tunnel)
+- Inspector fetches OAuth metadata from tunnel (no CORS issues - same origin)
+- User authenticates via tunnel UI at `http://localhost:4000/ui/login`
+
+#### Production CORS Configuration
+
+For production browser clients on custom domains, enable CORS in Ory Network:
+
+```bash
+ory patch project YOUR-PROJECT-ID \
+  --workspace YOUR-WORKSPACE-ID \
+  --replace '/cors_public/enabled=true' \
+  --replace '/cors_public/origins=["https://*.yourdomain.com"]'
+```
+
+Notes:
+
+- Wildcard subdomains (`https://*.example.com`) are supported
+- `localhost` and `127.0.0.1` are **never** allowed by Ory Network
+- Exact matches are recommended for better security
+
 ---
 
 ## CI/CD with GitHub Actions
