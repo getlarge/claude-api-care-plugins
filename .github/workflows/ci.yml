@@ -176,6 +176,34 @@ jobs:
         run: npm run test:e2e
         timeout-minutes: 10
 
+      - name: Run HTTP e2e tests
+        run: |
+          # Start MCP server in background
+          cd plugins/baume/mcp-server
+          npm run start &
+          SERVER_PID=$!
+
+          # Wait for server to be ready
+          echo "Waiting for MCP server..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:4000/health > /dev/null 2>&1; then
+              echo "MCP server is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "MCP server failed to start within 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Run HTTP e2e tests
+          npm run test:e2e:http
+
+          # Stop server
+          kill $SERVER_PID || true
+        timeout-minutes: 5
+
       - name: Cleanup
         if: always()
         run: docker rm -f hydra || true
