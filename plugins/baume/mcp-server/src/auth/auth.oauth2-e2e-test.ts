@@ -53,6 +53,9 @@ describe('OAuth2 E2E Tests', () => {
       hydraAdminUrl: HYDRA_ADMIN_URL,
     });
 
+    // Disable audience validation for e2e tests (Hydra doesn't set audience by default)
+    process.env['VALIDATE_AUDIENCE'] = 'false';
+
     // Start MCP server with OAuth enabled
     console.log('Starting MCP server on port', MCP_SERVER_PORT);
     server = await createServer(
@@ -194,14 +197,16 @@ describe('OAuth2 E2E Tests', () => {
 
     it('rejects unauthenticated tool calls', async () => {
       const client = new HttpMcpTestClient({ baseUrl: MCP_SERVER_URL });
-      await client.start();
+      // Don't call start() - we expect initialization to fail without auth
 
-      const response = await client.callTool('baume-list-rules', {});
-
-      // Should get an error response (401 or similar)
-      assert.ok(
-        response.error,
-        'Unauthenticated request should return an error'
+      // Try to initialize without auth - should throw with 401
+      await assert.rejects(
+        async () => client.start(),
+        (error: Error) => {
+          // Should get HTTP 401 Unauthorized
+          return error.message.includes('401');
+        },
+        'Unauthenticated request should be rejected with 401'
       );
     });
 

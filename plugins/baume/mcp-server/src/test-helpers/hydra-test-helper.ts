@@ -40,10 +40,44 @@ export interface HydraTestHelperOptions {
 export class HydraTestHelper {
   private hydraPublicUrl: string;
   private hydraAdminUrl: string;
+  // Store cookies between requests to maintain CSRF state
+  private cookies: Map<string, string> = new Map();
 
   constructor(options: HydraTestHelperOptions = {}) {
     this.hydraPublicUrl = options.hydraPublicUrl ?? 'http://localhost:4444';
     this.hydraAdminUrl = options.hydraAdminUrl ?? 'http://localhost:4445';
+  }
+
+  /**
+   * Extract and store cookies from a response.
+   */
+  private extractCookies(response: Response): void {
+    const setCookies = response.headers.getSetCookie?.() ?? [];
+    for (const cookie of setCookies) {
+      const [nameValue] = cookie.split(';');
+      if (nameValue) {
+        const [name, value] = nameValue.split('=');
+        if (name && value) {
+          this.cookies.set(name.trim(), value.trim());
+        }
+      }
+    }
+  }
+
+  /**
+   * Build Cookie header from stored cookies.
+   */
+  private getCookieHeader(): string {
+    return Array.from(this.cookies.entries())
+      .map(([name, value]) => `${name}=${value}`)
+      .join('; ');
+  }
+
+  /**
+   * Clear stored cookies (for starting a fresh flow).
+   */
+  clearCookies(): void {
+    this.cookies.clear();
   }
 
   /**
@@ -74,7 +108,13 @@ export class HydraTestHelper {
       );
     }
 
+    // Clear cookies from any previous flow
+    this.clearCookies();
+
     const response = await fetch(url, { redirect: 'manual' });
+    // Store cookies (including CSRF cookie)
+    this.extractCookies(response);
+
     if (response.status !== 302 && response.status !== 303) {
       const body = await response.text();
       throw new Error(
@@ -144,10 +184,16 @@ export class HydraTestHelper {
     const data = (await response.json()) as { redirect_to: string };
 
     // Follow the redirect to /oauth2/auth to get consent challenge
-    // Hydra will redirect to the consent URL
+    // Include cookies to maintain CSRF state
     const redirectResponse = await fetch(data.redirect_to, {
       redirect: 'manual',
+      headers: {
+        Cookie: this.getCookieHeader(),
+      },
     });
+    // Store any new cookies
+    this.extractCookies(redirectResponse);
+
     if (redirectResponse.status !== 302 && redirectResponse.status !== 303) {
       throw new Error(
         `Expected redirect after login, got ${redirectResponse.status}`
@@ -213,10 +259,16 @@ export class HydraTestHelper {
     const data = (await acceptResponse.json()) as { redirect_to: string };
 
     // Follow the redirect to /oauth2/auth to get the final callback
-    // Hydra will redirect to the client's redirect_uri with the auth code
+    // Include cookies to maintain CSRF state
     const redirectResponse = await fetch(data.redirect_to, {
       redirect: 'manual',
+      headers: {
+        Cookie: this.getCookieHeader(),
+      },
     });
+    // Store any new cookies
+    this.extractCookies(redirectResponse);
+
     if (redirectResponse.status !== 302 && redirectResponse.status !== 303) {
       throw new Error(
         `Expected redirect after consent, got ${redirectResponse.status}`
