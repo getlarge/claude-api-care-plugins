@@ -26,6 +26,7 @@ import { executeListRules } from './handlers/list-rules.js';
 import { executeGetInfo } from './handlers/get-info.js';
 import { executeApplyFixes } from './handlers/apply-fixes.js';
 import { executeCorrelate } from './handlers/correlate.js';
+import { executeWhoami } from './handlers/whoami.js';
 import type { WorkerPool } from './worker-pool.js';
 
 /**
@@ -108,6 +109,19 @@ export function registerBaumeTools(
     },
     async (params: CorrelateInput, context: HandlerContext) => {
       return executeCorrelate(params, { ...toolDeps, context });
+    }
+  );
+
+  // baume-whoami: Return authenticated user info (for E2E testing)
+  fastify.mcpAddTool(
+    {
+      name: 'baume-whoami',
+      description:
+        'Return information about the authenticated user from the OAuth2 token. Useful for verifying authentication is working correctly.',
+      inputSchema: {}, // No input parameters
+    },
+    async (_params: Record<string, never>, context: HandlerContext) => {
+      return executeWhoami(context);
     }
   );
 }
