@@ -15,11 +15,13 @@ import {
   GetInfoInputSchema,
   ApplyFixesInputSchema,
   CorrelateInputSchema,
+  WhoamiInputSchema,
   type ReviewInput,
   type ListRulesInput,
   type GetInfoInput,
   type ApplyFixesInput,
   type CorrelateInput,
+  type WhoamiInput,
 } from '../schemas/index.js';
 import { executeReview } from './handlers/review.js';
 import { executeListRules } from './handlers/list-rules.js';
@@ -52,7 +54,9 @@ export function registerBaumeTools(
     {
       name: 'baume-review',
       description:
-        'Analyze/lint an OpenAPI spec against Google AIP guidelines. Checks naming, pagination, errors, idempotency, filtering. Returns reviewId for caching - pass to baume-apply-fixes or access via baume://findings resource.',
+        'Analyze/lint an OpenAPI spec against Google AIP guidelines. ' +
+        'Checks naming, pagination, errors, idempotency, filtering. ' +
+        'Returns reviewId for caching - pass to baume-apply-fixes or access via baume://findings resource.',
       inputSchema: ReviewInputSchema,
     },
     async (params: ReviewInput, context: HandlerContext) => {
@@ -91,7 +95,9 @@ export function registerBaumeTools(
     {
       name: 'baume-apply-fixes',
       description:
-        'Auto-fix AIP violations in an OpenAPI spec. Requires reviewId from baume-review. Supports specPath (local file, can writeBack) or specUrl (HTTP). Returns modified spec via signed URL or writes to disk.',
+        'Auto-fix AIP violations in an OpenAPI spec. Requires reviewId from baume-review. ' +
+        'Supports spec.path (local file, can writeBack) or spec.url (HTTP). ' +
+        'Returns modified spec via signed URL or writes to disk.',
       inputSchema: ApplyFixesInputSchema,
     },
     async (params: ApplyFixesInput, context: HandlerContext) => {
@@ -118,9 +124,9 @@ export function registerBaumeTools(
       name: 'baume-whoami',
       description:
         'Return information about the authenticated user from the OAuth2 token. Useful for verifying authentication is working correctly.',
-      inputSchema: {}, // No input parameters
+      inputSchema: WhoamiInputSchema,
     },
-    async (_params: Record<string, never>, context: HandlerContext) => {
+    async (_params: WhoamiInput, context: HandlerContext) => {
       return executeWhoami(context);
     }
   );

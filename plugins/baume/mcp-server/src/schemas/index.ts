@@ -112,20 +112,24 @@ export type BaseFinding = Static<typeof BaseFindingSchema>;
 // Review Tool Schemas
 // =============================================================================
 
-export const ReviewInputSchema = Type.Object({
-  specPath: Type.Optional(
-    Type.String({
-      description:
-        'Path to local OpenAPI spec file (YAML/JSON). Preferred for STDIO transport.',
-    })
-  ),
-  specUrl: Type.Optional(
-    Type.String({
+// Spec source schema - discriminated union requiring either path OR url
+// Note: fastify-mcp requires Type.Object at top level, so we wrap the union
+const SpecSourceSchema = Type.Union([
+  Type.Object({
+    path: Type.String({
+      description: 'Path to local OpenAPI spec file (YAML/JSON).',
+    }),
+  }),
+  Type.Object({
+    url: Type.String({
       format: 'uri',
-      description:
-        'URL to fetch OpenAPI spec from (HTTP/HTTPS). Works with remote HTTP transport.',
-    })
-  ),
+      description: 'URL to fetch OpenAPI spec from (HTTP/HTTPS).',
+    }),
+  }),
+]);
+
+export const ReviewInputSchema = Type.Object({
+  spec: SpecSourceSchema,
   strict: Type.Optional(
     Type.Boolean({
       default: false,
@@ -136,7 +140,7 @@ export const ReviewInputSchema = Type.Object({
     Type.Boolean({
       default: false,
       description:
-        'Skip strict OpenAPI schema validation. Use when specs have minor schema issues but are still processable. The server will automatically fallback to lenient mode if strict validation fails.',
+        'Skip strict OpenAPI schema validation. Use when specs have minor schema issues but are still processable.',
     })
   ),
   categories: Type.Optional(
@@ -254,20 +258,24 @@ export type GetInfoOutput = Static<typeof GetInfoOutputSchema>;
 // Apply Fixes Tool Schemas
 // =============================================================================
 
-export const ApplyFixesInputSchema = Type.Object({
-  specPath: Type.Optional(
-    Type.String({
-      description:
-        'Path to local OpenAPI spec file (YAML/JSON). Preferred for STDIO transport.',
-    })
-  ),
-  specUrl: Type.Optional(
-    Type.String({
+// Spec source for apply-fixes - discriminated union requiring either path OR url
+const ApplyFixesSpecSourceSchema = Type.Union([
+  Type.Object({
+    path: Type.String({
+      description: 'Path to local OpenAPI spec file (YAML/JSON).',
+    }),
+  }),
+  Type.Object({
+    url: Type.String({
       format: 'uri',
       description:
         'URL to fetch OpenAPI spec from (HTTP/HTTPS). Note: cannot write back to URL.',
-    })
-  ),
+    }),
+  }),
+]);
+
+export const ApplyFixesInputSchema = Type.Object({
+  spec: ApplyFixesSpecSourceSchema,
   reviewId: Type.String({
     description:
       'Review ID from baume-review to retrieve cached findings for applying fixes.',
@@ -283,7 +291,7 @@ export const ApplyFixesInputSchema = Type.Object({
     Type.Boolean({
       default: false,
       description:
-        'Write modified spec back to specPath (only works with specPath, ignored for specUrl)',
+        'Write modified spec back to spec.path (only works with path, ignored for url)',
     })
   ),
 });
@@ -341,7 +349,8 @@ export const CorrelateInputSchema = Type.Object({
   }),
   specPath: Type.Optional(
     Type.String({
-      description: 'Path to the OpenAPI spec file (for context extraction)',
+      description:
+        'Path to the OpenAPI spec file (for context extraction). Optional.',
     })
   ),
   projectRoot: Type.Optional(
@@ -434,3 +443,21 @@ export const ExtendedFindingSchema = Type.Object({
   suggestedDiffs: Type.Optional(SuggestedDiffsSchema),
 });
 export type ExtendedFinding = Static<typeof ExtendedFindingSchema>;
+
+// =============================================================================
+// Whoami Tool Schemas
+// =============================================================================
+
+export const WhoamiInputSchema = Type.Object({});
+export type WhoamiInput = Static<typeof WhoamiInputSchema>;
+
+export const WhoamiOutputSchema = Type.Object({
+  authenticated: Type.Boolean(),
+  userId: Type.Optional(Type.String()),
+  clientId: Type.Optional(Type.String()),
+  scopes: Type.Optional(Type.Array(Type.String())),
+  tokenType: Type.Optional(Type.String()),
+  expiresAt: Type.Optional(Type.String()),
+  authorizationServer: Type.Optional(Type.String()),
+});
+export type WhoamiOutput = Static<typeof WhoamiOutputSchema>;

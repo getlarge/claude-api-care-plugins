@@ -7,17 +7,7 @@
 
 import type { CallToolResult } from '@getlarge/fastify-mcp';
 import type { HandlerContext } from '../../types/mcp-context.js';
-
-export interface WhoamiOutput {
-  authenticated: boolean;
-  userId?: string;
-  clientId?: string;
-  scopes?: string[];
-  tokenType?: string;
-  expiresAt?: string;
-  authorizationServer?: string;
-  [key: string]: unknown;
-}
+import type { WhoamiOutput } from '../../schemas/index.js';
 
 /**
  * Execute the baume-whoami tool.
