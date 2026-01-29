@@ -2,6 +2,26 @@
 
 This document summarizes the Claude Code plugin for API design review following Google's API Improvement Proposals (AIP).
 
+## Quick Start
+
+```bash
+node -v                  # Requires Node >= 22.5.0
+npm install              # Install all workspaces
+npm run build            # Build reviewer then mcp-server
+npm run typecheck        # Verify types
+npm run test             # Run unit tests
+```
+
+For E2E tests (MCP server):
+
+```bash
+npm run docker:up:e2e -w @getlarge/baume-mcp   # Start Postgres, Redis, Minio, Hydra
+npm run test:e2e -w @getlarge/baume-mcp        # Run E2E tests
+npm run docker:down:e2e -w @getlarge/baume-mcp # Cleanup
+```
+
+---
+
 ## Project Goal
 
 Create tooling to help design and review REST APIs following Google's AIPs, adapted for OpenAPI/REST contexts (not just gRPC/protobuf).
@@ -379,6 +399,58 @@ To improve the plugin based on real usage:
 
 # 5. Validate
 /baume-validate .baume/plans/YYYY-MM-DD-plan.md
+```
+
+---
+
+## Development Commands
+
+### Root (monorepo)
+
+```bash
+npm run build          # Build all packages (reviewer then mcp-server)
+npm run lint           # Run ESLint across all workspaces
+npm run typecheck      # Run TypeScript type checking across all workspaces
+npm run test           # Run unit tests across all workspaces
+npm run test:e2e       # Run E2E tests across all workspaces
+npm run format         # Format code with Prettier
+npm run format:check   # Check formatting without writing
+```
+
+### MCP Server (`-w @getlarge/baume-mcp`)
+
+```bash
+npm run build -w @getlarge/baume-mcp             # Build types + bundle
+npm run typecheck -w @getlarge/baume-mcp         # Type check without emitting
+npm run lint -w @getlarge/baume-mcp              # ESLint
+npm run test -w @getlarge/baume-mcp              # Unit tests
+npm run test:e2e -w @getlarge/baume-mcp          # E2E tests (requires docker:up:e2e)
+npm run test:integration -w @getlarge/baume-mcp  # Integration tests
+npm run dev -w @getlarge/baume-mcp               # Watch mode development server
+npm run start -w @getlarge/baume-mcp             # Run production bundle
+
+# Docker (dev)
+npm run docker:up -w @getlarge/baume-mcp         # Start postgres, redis, minio
+npm run docker:down -w @getlarge/baume-mcp       # Stop containers
+npm run docker:logs -w @getlarge/baume-mcp       # Tail container logs
+npm run docker:reset -w @getlarge/baume-mcp      # Reset volumes and restart
+
+# Docker (E2E - includes Hydra for OAuth)
+npm run docker:up:e2e -w @getlarge/baume-mcp     # Start E2E infrastructure
+npm run docker:down:e2e -w @getlarge/baume-mcp   # Stop E2E containers
+npm run docker:logs:e2e -w @getlarge/baume-mcp   # Tail E2E logs
+```
+
+### OpenAPI Reviewer (`-w @getlarge/baume-reviewer`)
+
+```bash
+npm run build -w @getlarge/baume-reviewer      # Build types + bundle
+npm run typecheck -w @getlarge/baume-reviewer  # Type check without emitting
+npm run lint -w @getlarge/baume-reviewer       # ESLint
+npm run test -w @getlarge/baume-reviewer       # Unit tests
+npm run test:e2e -w @getlarge/baume-reviewer   # E2E tests
+npm run review -w @getlarge/baume-reviewer     # Run CLI reviewer
+npm run discover -w @getlarge/baume-reviewer   # Run CLI spec discovery
 ```
 
 ---

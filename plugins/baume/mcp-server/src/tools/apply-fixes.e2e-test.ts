@@ -38,7 +38,7 @@ describe('baume-apply-fixes E2E', () => {
     test('can retrieve findings by reviewId and apply fixes (dry run)', async () => {
       // First, run a review to get the reviewId
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
 
       const reviewContent = client.parseTextContent(reviewResponse);
@@ -46,7 +46,7 @@ describe('baume-apply-fixes E2E', () => {
 
       // Now call apply-fixes with reviewId
       const fixResponse = await client.callTool('baume-apply-fixes', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         reviewId: reviewContent.reviewId,
         dryRun: true,
       });
@@ -69,7 +69,7 @@ describe('baume-apply-fixes E2E', () => {
 
     test('reports error for invalid reviewId', async () => {
       const response = await client.callTool('baume-apply-fixes', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         reviewId: 'nonexistent-id',
         dryRun: true,
       });
@@ -87,13 +87,13 @@ describe('baume-apply-fixes E2E', () => {
     test('provides accurate summary statistics', async () => {
       // Get reviewId first
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const reviewContent = client.parseTextContent(reviewResponse);
 
       // Apply fixes
       const fixResponse = await client.callTool('baume-apply-fixes', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         reviewId: reviewContent?.reviewId,
         dryRun: true,
       });
@@ -127,13 +127,13 @@ describe('baume-apply-fixes E2E', () => {
     test('includes detailed fix results', async () => {
       // Get reviewId first
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const reviewContent = client.parseTextContent(reviewResponse);
 
       // Apply fixes
       const fixResponse = await client.callTool('baume-apply-fixes', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         reviewId: reviewContent?.reviewId,
         dryRun: true,
       });
@@ -162,13 +162,13 @@ describe('baume-apply-fixes E2E', () => {
     test('returns resource link to modified spec', async () => {
       // Get reviewId first
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const reviewContent = client.parseTextContent(reviewResponse);
 
       // Apply fixes
       const fixResponse = await client.callTool('baume-apply-fixes', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         reviewId: reviewContent?.reviewId,
         dryRun: true,
       });

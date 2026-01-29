@@ -89,6 +89,22 @@ jobs:
       matrix:
         node-version: [22, 24]
 
+    services:
+      # PostgreSQL for Hydra
+      postgres-hydra:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: hydra
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: hydra
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -105,9 +121,92 @@ jobs:
       - name: Build packages
         run: npm run build
 
+      - name: Start Hydra
+        run: |
+          # Run Hydra migrations
+          docker run --rm --network host \
+            -e DSN=postgres://hydra:secret@localhost:5433/hydra?sslmode=disable \
+            oryd/hydra:v2.3.0 migrate sql -e --yes
+
+          # Start Hydra server
+          docker run -d --name hydra --network host \
+            -e DSN=postgres://hydra:secret@localhost:5433/hydra?sslmode=disable \
+            -e SECRETS_SYSTEM=youReallyNeedToChangeThisSystemSecret \
+            -e URLS_SELF_ISSUER=http://localhost:4444 \
+            -e URLS_LOGIN=http://localhost:4455/login \
+            -e URLS_CONSENT=http://localhost:4455/consent \
+            -e URLS_LOGOUT=http://localhost:4455/logout \
+            -e SERVE_PUBLIC_CORS_ENABLED=true \
+            -e SERVE_ADMIN_CORS_ENABLED=true \
+            -e OAUTH2_EXPOSE_INTERNAL_ERRORS=true \
+            -e STRATEGIES_ACCESS_TOKEN=jwt \
+            -e TTL_ACCESS_TOKEN=1h \
+            oryd/hydra:v2.3.0 serve all --dev
+
+          # Wait for Hydra to be ready
+          echo "Waiting for Hydra..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:4444/health/ready > /dev/null 2>&1; then
+              echo "Hydra is ready"
+              break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Hydra failed to start within 60 seconds"
+              docker logs hydra
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Create test OAuth2 client
+          curl -sf -X POST http://localhost:4445/admin/clients \
+            -H "Content-Type: application/json" \
+            -d '{
+              "client_id": "mcp-server-client",
+              "client_secret": "mcp-server-secret",
+              "client_name": "MCP Server E2E Test Client",
+              "grant_types": ["authorization_code", "refresh_token"],
+              "response_types": ["code"],
+              "scope": "openid offline_access",
+              "redirect_uris": ["http://localhost:4000/oauth/callback"],
+              "token_endpoint_auth_method": "client_secret_basic"
+            }'
+
       - name: Run e2e tests
         run: npm run test:e2e
         timeout-minutes: 10
+
+      - name: Run HTTP e2e tests
+        run: |
+          # Start MCP server in background
+          cd plugins/baume/mcp-server
+          npm run start &
+          SERVER_PID=$!
+
+          # Wait for server to be ready
+          echo "Waiting for MCP server..."
+          for i in {1..30}; do
+            if curl -sf http://localhost:4000/health > /dev/null 2>&1; then
+              echo "MCP server is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "MCP server failed to start within 30 seconds"
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Run HTTP e2e tests
+          npm run test:e2e:http
+
+          # Stop server
+          kill $SERVER_PID || true
+        timeout-minutes: 5
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f hydra || true
 
   integration-test:
     needs: checks

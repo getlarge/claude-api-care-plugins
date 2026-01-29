@@ -1,0 +1,125 @@
+# Docker Compose for E2E testing with Ory Hydra
+#
+# This setup provides Hydra as an OAuth2/OIDC server for integration testing.
+# Login and consent are handled programmatically via Hydra's admin API,
+# bypassing the need for a UI or identity provider.
+#
+# Usage:
+#   docker compose -f docker-compose.e2e.yml up -d
+#   npm run test:e2e:oauth
+
+services:
+  # PostgreSQL database for Hydra
+  postgres-e2e:
+    image: postgres:16-alpine
+    container_name: baume-e2e-postgres
+    environment:
+      POSTGRES_USER: hydra
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: hydra
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U hydra -d hydra']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - '5433:5432'
+    # No volumes - E2E tests don't need persistence
+
+  # Ory Hydra migrations
+  hydra-migrate:
+    image: oryd/hydra:v2.3.0
+    container_name: baume-e2e-hydra-migrate
+    environment:
+      DSN: postgres://hydra:secret@postgres-e2e:5432/hydra?sslmode=disable
+    command: migrate sql -e --yes
+    depends_on:
+      postgres-e2e:
+        condition: service_healthy
+
+  # Ory Hydra - OAuth2/OIDC Server
+  hydra:
+    image: oryd/hydra:v2.3.0
+    container_name: baume-e2e-hydra
+    environment:
+      DSN: postgres://hydra:secret@postgres-e2e:5432/hydra?sslmode=disable
+      SECRETS_SYSTEM: youReallyNeedToChangeThisSystemSecret
+      URLS_SELF_ISSUER: http://localhost:4444
+      # Point to dummy URLs - we handle login/consent via admin API
+      URLS_LOGIN: http://localhost:4455/login
+      URLS_CONSENT: http://localhost:4455/consent
+      URLS_LOGOUT: http://localhost:4455/logout
+      SERVE_PUBLIC_CORS_ENABLED: 'true'
+      SERVE_PUBLIC_CORS_ALLOWED_ORIGINS: '*'
+      SERVE_ADMIN_CORS_ENABLED: 'true'
+      SERVE_ADMIN_CORS_ALLOWED_ORIGINS: '*'
+      LOG_LEVEL: debug
+      LOG_FORMAT: json
+      OAUTH2_EXPOSE_INTERNAL_ERRORS: 'true'
+      # PKCE settings
+      OAUTH2_PKCE_ENFORCED: 'false'
+      OAUTH2_PKCE_ENFORCED_FOR_PUBLIC_CLIENTS: 'true'
+      # Dynamic Client Registration
+      OIDC_DYNAMIC_CLIENT_REGISTRATION_ENABLED: 'true'
+      OIDC_DYNAMIC_CLIENT_REGISTRATION_DEFAULT_SCOPE: openid,offline_access
+      # Token TTLs
+      TTL_ACCESS_TOKEN: 1h
+      TTL_REFRESH_TOKEN: 720h
+      TTL_ID_TOKEN: 1h
+      # Use JWT access tokens for easier debugging
+      STRATEGIES_ACCESS_TOKEN: jwt
+    command: serve all --dev
+    ports:
+      - '4444:4444' # Public (token, auth, OIDC discovery)
+      - '4445:4445' # Admin (client management, introspection, login/consent accept)
+    depends_on:
+      hydra-migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--spider',
+          '--quiet',
+          'http://localhost:4444/health/ready',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Setup test OAuth2 client
+  hydra-setup:
+    image: curlimages/curl:latest
+    container_name: baume-e2e-hydra-setup
+    depends_on:
+      hydra:
+        condition: service_healthy
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -e
+        echo "Creating test OAuth2 client..."
+
+        # Delete existing client if present
+        curl -sf -X DELETE "http://hydra:4445/admin/clients/mcp-server-client" || true
+
+        # Create test client
+        curl -sf -X POST "http://hydra:4445/admin/clients" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "client_id": "mcp-server-client",
+            "client_secret": "mcp-server-secret",
+            "client_name": "MCP Server E2E Test Client",
+            "grant_types": ["authorization_code", "refresh_token"],
+            "response_types": ["code"],
+            "scope": "openid offline_access",
+            "redirect_uris": ["http://localhost:4000/oauth/callback"],
+            "token_endpoint_auth_method": "client_secret_basic"
+          }'
+
+        echo ""
+        echo "Test client created successfully"
+        echo "  Client ID:     mcp-server-client"
+        echo "  Client Secret: mcp-server-secret"

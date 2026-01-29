@@ -4,9 +4,9 @@
  * Analyzes an OpenAPI spec against Google AIP guidelines.
  * Adapted for @platformatic/mcp HandlerContext.
  *
- * Supports two input modes:
- * - specPath: Local file path (STDIO transport)
- * - specUrl: HTTP(S) URL to fetch spec (HTTP transport)
+ * Supports two input modes via spec union:
+ * - spec.path: Local file path (STDIO transport)
+ * - spec.url: HTTP(S) URL to fetch spec (HTTP transport)
  *
  * Spec data is transferred to worker via SharedArrayBuffer for
  * zero-copy transfer. Parsing happens in the worker thread.
@@ -55,32 +55,33 @@ export async function executeReview(
   deps: ReviewHandlerDeps
 ): Promise<CallToolResult> {
   const { workerPool, fastify } = deps;
-  const { specPath, specUrl, strict, lenient, categories, skipRules } = params;
+  // Extract spec source from union type (spec.path or spec.url)
+  const specPath = 'path' in params.spec ? params.spec.path : undefined;
+  const specUrl = 'url' in params.spec ? params.spec.url : undefined;
+  const { strict, lenient, categories, skipRules } = params;
 
-  // Validate input: either specPath or specUrl must be provided
-  if (!specPath && !specUrl) {
+  // Load spec as raw buffer (no parsing on main thread)
+  let loaded;
+  try {
+    loaded = await loadSpecRaw({ specPath, specUrl });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to load spec';
     return {
       content: [
-        {
-          type: 'text' as const,
-          text: JSON.stringify({
-            error: 'Either specPath or specUrl must be provided',
-          }),
-        },
+        { type: 'text' as const, text: JSON.stringify({ error: message }) },
       ],
       isError: true,
     };
   }
 
-  // Load spec as raw buffer (no parsing on main thread)
-  const loaded = await loadSpecRaw({ specPath, specUrl });
   if (!loaded) {
     return {
       content: [
         {
           type: 'text' as const,
           text: JSON.stringify({
-            error: 'No spec provided. Use specPath or specUrl.',
+            error: 'No spec provided. Use spec.path or spec.url.',
           }),
         },
       ],

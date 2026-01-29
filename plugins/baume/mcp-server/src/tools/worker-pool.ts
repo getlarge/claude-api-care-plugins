@@ -56,7 +56,10 @@ export class WorkerPool {
     private poolSize: number = Math.max(1, availableParallelism() - 1),
     workerPath?: string
   ) {
-    this.workerPath = workerPath ?? join(__dirname, 'worker.js');
+    // Use .ts extension when running with tsx (dev/test), .js for production builds
+    const isTsx = __filename.endsWith('.ts');
+    const workerFile = isTsx ? 'worker.ts' : 'worker.js';
+    this.workerPath = workerPath ?? join(__dirname, workerFile);
   }
 
   /**

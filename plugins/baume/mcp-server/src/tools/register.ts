@@ -15,17 +15,20 @@ import {
   GetInfoInputSchema,
   ApplyFixesInputSchema,
   CorrelateInputSchema,
+  WhoamiInputSchema,
   type ReviewInput,
   type ListRulesInput,
   type GetInfoInput,
   type ApplyFixesInput,
   type CorrelateInput,
+  type WhoamiInput,
 } from '../schemas/index.js';
 import { executeReview } from './handlers/review.js';
 import { executeListRules } from './handlers/list-rules.js';
 import { executeGetInfo } from './handlers/get-info.js';
 import { executeApplyFixes } from './handlers/apply-fixes.js';
 import { executeCorrelate } from './handlers/correlate.js';
+import { executeWhoami } from './handlers/whoami.js';
 import type { WorkerPool } from './worker-pool.js';
 
 /**
@@ -51,7 +54,9 @@ export function registerBaumeTools(
     {
       name: 'baume-review',
       description:
-        'Analyze/lint an OpenAPI spec against Google AIP guidelines. Checks naming, pagination, errors, idempotency, filtering. Returns reviewId for caching - pass to baume-apply-fixes or access via baume://findings resource.',
+        'Analyze/lint an OpenAPI spec against Google AIP guidelines. ' +
+        'Checks naming, pagination, errors, idempotency, filtering. ' +
+        'Returns reviewId for caching - pass to baume-apply-fixes or access via baume://findings resource.',
       inputSchema: ReviewInputSchema,
     },
     async (params: ReviewInput, context: HandlerContext) => {
@@ -90,7 +95,9 @@ export function registerBaumeTools(
     {
       name: 'baume-apply-fixes',
       description:
-        'Auto-fix AIP violations in an OpenAPI spec. Requires reviewId from baume-review. Supports specPath (local file, can writeBack) or specUrl (HTTP). Returns modified spec via signed URL or writes to disk.',
+        'Auto-fix AIP violations in an OpenAPI spec. Requires reviewId from baume-review. ' +
+        'Supports spec.path (local file, can writeBack) or spec.url (HTTP). ' +
+        'Returns modified spec via signed URL or writes to disk.',
       inputSchema: ApplyFixesInputSchema,
     },
     async (params: ApplyFixesInput, context: HandlerContext) => {
@@ -108,6 +115,19 @@ export function registerBaumeTools(
     },
     async (params: CorrelateInput, context: HandlerContext) => {
       return executeCorrelate(params, { ...toolDeps, context });
+    }
+  );
+
+  // baume-whoami: Return authenticated user info (for E2E testing)
+  fastify.mcpAddTool(
+    {
+      name: 'baume-whoami',
+      description:
+        'Return information about the authenticated user from the OAuth2 token. Useful for verifying authentication is working correctly.',
+      inputSchema: WhoamiInputSchema,
+    },
+    async (_params: WhoamiInput, context: HandlerContext) => {
+      return executeWhoami(context);
     }
   );
 }
