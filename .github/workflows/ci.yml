@@ -145,10 +145,15 @@ jobs:
 
           # Wait for Hydra to be ready
           echo "Waiting for Hydra..."
-          for i in {1..30}; do
+          for i in {1..60}; do
             if curl -sf http://localhost:4444/health/ready > /dev/null 2>&1; then
               echo "Hydra is ready"
               break
+            fi
+            if [ $i -eq 60 ]; then
+              echo "Hydra failed to start within 60 seconds"
+              docker logs hydra
+              exit 1
             fi
             sleep 1
           done

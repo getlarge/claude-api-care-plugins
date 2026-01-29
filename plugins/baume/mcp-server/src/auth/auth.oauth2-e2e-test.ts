@@ -43,8 +43,10 @@ describe('OAuth2 E2E Tests', () => {
   let server: Awaited<ReturnType<typeof createServer>>;
 
   before(async () => {
-    // Wait for Hydra to be available
-    await waitForHydra(HYDRA_PUBLIC_URL, 30000);
+    // Wait for Hydra to be available (up to 60 seconds in CI)
+    console.log('Waiting for Hydra at', HYDRA_PUBLIC_URL);
+    await waitForHydra(HYDRA_PUBLIC_URL, 60000);
+    console.log('Hydra is ready');
 
     hydraHelper = new HydraTestHelper({
       hydraPublicUrl: HYDRA_PUBLIC_URL,
@@ -52,6 +54,7 @@ describe('OAuth2 E2E Tests', () => {
     });
 
     // Start MCP server with OAuth enabled
+    console.log('Starting MCP server on port', MCP_SERVER_PORT);
     server = await createServer(
       { port: MCP_SERVER_PORT, host: '127.0.0.1' },
       {
@@ -64,6 +67,7 @@ describe('OAuth2 E2E Tests', () => {
 
     // Wait for server to be ready
     await waitForServer(MCP_SERVER_URL, { timeout: 10000 });
+    console.log('MCP server is ready');
   });
 
   after(async () => {
