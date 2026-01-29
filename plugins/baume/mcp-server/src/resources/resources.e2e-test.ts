@@ -91,7 +91,7 @@ describe('MCP Resources E2E', () => {
     test('should read findings resource by query param URI', async () => {
       // Create a review first
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const reviewContent = client.parseTextContent(reviewResponse);
       const reviewId = reviewContent?.reviewId as string;
@@ -139,7 +139,7 @@ describe('MCP Resources E2E', () => {
     test('should match base URI with uriSchema for query param URIs', async () => {
       // Create a review
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const reviewContent = client.parseTextContent(reviewResponse);
       const reviewId = reviewContent?.reviewId as string;
@@ -223,7 +223,7 @@ describe('MCP Resources E2E', () => {
     test('should accept subscription request', async () => {
       // First create a resource to subscribe to
       const reviewResponse = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const reviewContent = client.parseTextContent(reviewResponse);
       const reviewId = reviewContent?.reviewId as string;

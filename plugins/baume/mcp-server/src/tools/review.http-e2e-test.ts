@@ -16,7 +16,6 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { readFile } from 'node:fs/promises';
 import {
   HttpMcpTestClient,
   waitForServer,
@@ -87,10 +86,10 @@ describe('baume-review HTTP E2E', () => {
     });
   });
 
-  describe('Review with specPath', () => {
+  describe('Review with spec.path', () => {
     test('returns reviewId and summary for local file', async () => {
       const response = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
 
       assert.ok(!response.result?.isError, 'Should not be an error');
@@ -100,7 +99,7 @@ describe('baume-review HTTP E2E', () => {
       assert.ok(content, 'Should parse content as JSON');
 
       assert.ok(content.reviewId, 'Should have reviewId');
-      assert.ok(content.specPath, 'Should have specPath');
+      assert.ok(content.specPath, 'Should have specPath in output');
       assert.ok(content.summary, 'Should have summary');
       assert.ok(content.expiresAt, 'Should have expiresAt');
 
@@ -113,7 +112,7 @@ describe('baume-review HTTP E2E', () => {
 
     test('extracts spec metadata', async () => {
       const response = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
 
       const content = client.parseTextContent(response);
@@ -124,28 +123,13 @@ describe('baume-review HTTP E2E', () => {
     });
   });
 
-  describe('Review with inline spec', () => {
-    test('accepts inline YAML spec', async () => {
-      const specContent = await readFile(TEST_SPEC, 'utf-8');
-
-      const response = await client.callTool('baume-review', {
-        spec: specContent,
-        contentType: 'yaml',
-      });
-
-      assert.ok(!response.result?.isError, 'Should not be an error');
-
-      const content = client.parseTextContent(response);
-      assert.ok(content, 'Should parse content as JSON');
-      assert.ok(content.reviewId, 'Should have reviewId');
-      assert.ok(content.summary, 'Should have summary');
-    });
-  });
+  // Note: Inline spec content is not supported in the schema.
+  // Use spec.path (local file) or spec.url (HTTP) instead.
 
   describe('Resource linking', () => {
     test('returns resource_link to findings', async () => {
       const response = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
 
       const resourceLink = response.result?.content?.find(
@@ -161,7 +145,7 @@ describe('baume-review HTTP E2E', () => {
 
     test('findings are accessible via resources/read', async () => {
       const response = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
 
       const content = client.parseTextContent(response);
@@ -190,10 +174,10 @@ describe('baume-review HTTP E2E', () => {
   describe('Caching behavior', () => {
     test('same spec content produces same reviewId', async () => {
       const response1 = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
       const response2 = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
       });
 
       const content1 = client.parseTextContent(response1);
@@ -210,7 +194,7 @@ describe('baume-review HTTP E2E', () => {
   describe('Filtering options', () => {
     test('filters by category', async () => {
       const response = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         categories: ['pagination'],
       });
 
@@ -226,7 +210,7 @@ describe('baume-review HTTP E2E', () => {
 
     test('skips specific rules', async () => {
       const response = await client.callTool('baume-review', {
-        specPath: TEST_SPEC,
+        spec: { path: TEST_SPEC },
         skipRules: ['naming/plural-resources'],
       });
 
